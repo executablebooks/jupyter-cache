@@ -1,0 +1,38 @@
+language: python
+cache: pip
+matrix:
+    include:
+      # Not working with some of the annotation syntax in jupyter_cache
+      # - python: 3.5
+      #   env: TEST_TYPE="pytest"
+      - python: 3.6
+        env: TEST_TYPE="pytest"
+      - python: 3.7
+        env: TEST_TYPE="pytest"
+      - python: 3.7
+        env: TEST_TYPE="pre-commit"
+install:
+  - pip install --upgrade pip wheel setuptools
+  - |
+      if [[ "$TEST_TYPE" == "pre-commit" ]]; then
+        pip install -e .[code_style]
+      fi
+  - |
+      if [[ "$TEST_TYPE" == "pytest" ]]; then
+        pip install -e .[testing,jupyter_cache]
+        pip install coveralls
+      fi
+script:
+- |
+  if [[ "$TEST_TYPE" == "pytest" ]]; then
+      pytest -v --cov=sandbox --cov-report=
+  fi
+- |
+  if [[ "$TEST_TYPE" == "pre-commit" ]]; then
+    pre-commit run --all-files || ( git status --short ; git diff ; exit 1 )
+  fi
+after_success:
+- |
+  if [[ "$TEST_TYPE" == "pytest" ]]; then
+      coveralls
+  fi
