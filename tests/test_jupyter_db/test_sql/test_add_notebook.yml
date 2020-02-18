@@ -139,7 +139,6 @@ codecells:
 documents:
 - meta_data: null
   pk: 1
-  uri: /Users/cjs14/GitHub/sandbox/tests/test_jupyter_db/notebooks/complex_outputs.ipynb
 kernelinfo: []
 kernels:
 - doc_order: 0
