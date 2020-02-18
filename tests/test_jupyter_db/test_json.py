@@ -29,3 +29,10 @@ def test_get_notebook(tmp_path, data_regression):
     db.add_notebook_file(uri=uri)
     notebook = db.get_notebook(uri=uri)
     data_regression.check(json.loads(nbformat.writes(notebook)))
+
+
+def test_list_notebooks(tmp_path):
+    db = JupyterCacheJson(str(tmp_path))
+    uri = os.path.join(NB_PATH, "complex_outputs.ipynb")
+    db.add_notebook_file(uri=uri)
+    assert db.list_notebooks() == {uri}

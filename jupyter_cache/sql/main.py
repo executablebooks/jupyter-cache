@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 import pathlib
 from sqlite3 import Connection as SQLite3Connection
-from typing import Iterator, Optional
+from typing import Iterator, Optional, Set
 
 import sqlalchemy as sqla
 from sqlalchemy.orm import sessionmaker, Session
@@ -109,6 +109,7 @@ class JupyterCacheSql(JupyterCacheAbstract):
         *,
         session: Optional[Session] = None,
     ):
+        """Add a single notebook to the cache."""
         with self.context_session(
             session=session, final_commit=True
         ) as session:  # type: Session
@@ -126,6 +127,10 @@ class JupyterCacheSql(JupyterCacheAbstract):
     def get_notebook(
         self, uri: str, with_outputs=True, *, session: Optional[Session] = None
     ) -> nbformat.NotebookNode:
+        """Get a single notebook from the cache.
+
+        If `with_outputs` is False, return with all outputs removed.
+        """
         with self.context_session(
             session=session, final_commit=False
         ) as session:  # type: Session
@@ -144,3 +149,9 @@ class JupyterCacheSql(JupyterCacheAbstract):
             if doc is None:
                 return
             session.delete(doc)
+
+    def list_notebooks(self) -> Set[str]:
+        """list the notebook uri's in the cache."""
+        with self.context_session() as session:  # type: Session
+            uris = session.query(OrmDocument.uri).all()
+        return {u for u, in uris}
