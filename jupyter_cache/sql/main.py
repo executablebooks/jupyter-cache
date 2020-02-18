@@ -6,9 +6,9 @@ from typing import Iterator, Optional, Set
 import sqlalchemy as sqla
 from sqlalchemy.orm import sessionmaker, Session
 
-import nbformat
+import nbformat as nbf
 
-from jupyter_cache.base import JupyterCacheAbstract, CacheError
+from jupyter_cache.base import JupyterCacheAbstract, CachingError, RetrievalError
 from .orm import (  # noqa: F401
     OrmBase,
     OrmCellExecution,
@@ -103,7 +103,7 @@ class JupyterCacheSql(JupyterCacheAbstract):
 
     def add_notebook_node(
         self,
-        node: nbformat.NotebookNode,
+        node: nbf.NotebookNode,
         uri: str,
         overwrite=False,
         *,
@@ -117,7 +117,7 @@ class JupyterCacheSql(JupyterCacheAbstract):
             if doc and overwrite:
                 session.delete(doc)
             elif doc:
-                raise CacheError(f"document already exists: {uri}")
+                raise CachingError(f"document already exists: {uri}")
             doc = OrmDocument(uri=uri)
             session.add(doc)
             session.commit()
@@ -126,7 +126,7 @@ class JupyterCacheSql(JupyterCacheAbstract):
 
     def get_notebook(
         self, uri: str, with_outputs=True, *, session: Optional[Session] = None
-    ) -> nbformat.NotebookNode:
+    ) -> nbf.NotebookNode:
         """Get a single notebook from the cache.
 
         If `with_outputs` is False, return with all outputs removed.
@@ -136,22 +136,50 @@ class JupyterCacheSql(JupyterCacheAbstract):
         ) as session:  # type: Session
             doc = session.query(OrmDocument).filter_by(uri=uri).one_or_none()
             if doc is None or not doc.kernels:
-                raise CacheError(uri)
+                raise RetrievalError(uri)
             if len(doc.kernels) > 1:
-                raise CacheError(f"document has more than one kernel: {uri}")
+                raise RetrievalError(f"document has more than one kernel: {uri}")
             kernel = doc.kernels[0]
             return kernel.to_nbformat(with_outputs=with_outputs)
 
     def remove_notebook(self, uri: str, *, session: Optional[Session] = None):
         """Remove a document and its associated kernels and code cells."""
-        with self.context_session() as session:  # type: Session
+        with self.context_session(
+            session=session, final_commit=True
+        ) as session:  # type: Session
             doc = session.query(OrmDocument).filter_by(uri=uri).one_or_none()
             if doc is None:
                 return
             session.delete(doc)
 
-    def list_notebooks(self) -> Set[str]:
+    def list_notebooks(self, *, session: Optional[Session] = None) -> Set[str]:
         """list the notebook uri's in the cache."""
-        with self.context_session() as session:  # type: Session
+        with self.context_session(
+            session=session, final_commit=False
+        ) as session:  # type: Session
             uris = session.query(OrmDocument.uri).all()
         return {u for u, in uris}
+
+    def get_codecell(
+        self, uri: str, index: int, *, session: Optional[Session] = None
+    ) -> nbf.NotebookNode:
+        """Return the code cell from a particular notebook.
+
+        NOTE: the index **only** refers to the list of code cells, e.g.
+        `[codecell_0, textcell_1, codecell_2]` would map {0: codecell_0, 1: codecell_2}
+        """
+        with self.context_session(
+            session=session, final_commit=False
+        ) as session:  # type: Session
+            doc: OrmDocument = session.query(OrmDocument).filter_by(
+                uri=uri
+            ).one_or_none()
+            if doc is None:
+                raise RetrievalError(f"uri: {uri}")
+            if len(doc.codecells) < (index + 1):
+                raise RetrievalError(
+                    f"notebook contains less than {index+1} code cell(s)"
+                )
+            cell = doc.codecells[index]
+            nb_cell = cell.to_nbformat(with_outputs=True)
+        return nb_cell

@@ -1,19 +1,29 @@
 import pathlib
 from typing import Set
 
-from jupyter_cache.base import JupyterCacheAbstract, CacheError, NB_VERSION
+from jupyter_cache.base import (
+    JupyterCacheAbstract,
+    CachingError,
+    RetrievalError,
+    NB_VERSION,
+)
 
 import nbformat as nbf
 from tinydb import TinyDB, Query
 from tinydb.database import Table
 
+from .utils import CacheDict
+
 
 class JupyterCacheJson(JupyterCacheAbstract):
     """A JSON based database cache for code kernels, cells, outputs, etc."""
 
-    def __init__(self, db_folder_path: str):
+    def __init__(self, db_folder_path: str, cache_nbs: int = 1):
         self._path = pathlib.Path(db_folder_path) / "jupyter_cache"
         self._db = TinyDB(self.path / "db.json")
+        # this cache makes it more efficient to retrieve notebook multiple times,
+        # by storing a limited number in memory
+        self._nbcache = CacheDict(cache_nbs)
 
     @property
     def path(self) -> pathlib.Path:
@@ -38,9 +48,10 @@ class JupyterCacheJson(JupyterCacheAbstract):
         """Add a single notebook to the cache."""
         table = self._doc_table()
         if table.contains(Query().uri == uri) and not overwrite:
-            raise CacheError(f"document already exists: {uri}")
+            raise CachingError(f"document already exists: {uri}")
         (doc_id,) = table.upsert({"uri": uri}, Query().uri == uri)
         self._get_nb_path(doc_id).write_text(nbf.writes(node, NB_VERSION))
+        self._nbcache[uri] = node
 
     def get_notebook(self, uri: str, with_outputs=True) -> nbf.NotebookNode:
         """Get a single notebook from the cache.
@@ -50,8 +61,12 @@ class JupyterCacheJson(JupyterCacheAbstract):
         table = self._doc_table()
         record = table.get(Query().uri == uri)
         if record is None:
-            raise CacheError(uri)
-        nb = nbf.reads(self._get_nb_path(record.doc_id).read_text(), NB_VERSION)
+            raise RetrievalError(uri)
+        if uri in self._nbcache:
+            nb = self._nbcache[uri]
+        else:
+            nb = nbf.reads(self._get_nb_path(record.doc_id).read_text(), NB_VERSION)
+            self._nbcache[uri] = nb
         if with_outputs:
             return nb
         for cell in nb.cells:
@@ -68,8 +83,25 @@ class JupyterCacheJson(JupyterCacheAbstract):
         if self._get_nb_path(record.doc_id).exists():
             self._get_nb_path(record.doc_id).unlink()
         table.remove(Query().uri == uri)
+        self._nbcache.pop(uri)
 
     def list_notebooks(self) -> Set[str]:
         """list the notebook uri's in the cache."""
         table = self._doc_table()
         return {result["uri"] for result in table.all()}
+
+    def get_codecell(self, uri: str, index: int) -> nbf.NotebookNode:
+        """Return the code cell from a particular notebook.
+
+        NOTE: the index **only** refers to the list of code cells, e.g.
+        `[codecell_0, textcell_1, codecell_2]` would map {0: codecell_0, 1: codecell_2}
+        """
+        nb = self.get_notebook(uri)
+        _code_index = 0
+        for cell in nb.cells:
+            if cell.cell_type != "code":
+                continue
+            if _code_index == index:
+                return cell
+            _code_index += 1
+        raise RetrievalError(f"notebook contains less than {index+1} code cell(s)")

@@ -6,7 +6,15 @@ import nbformat as nbf
 NB_VERSION = 4
 
 
-class CacheError(Exception):
+class CachingError(Exception):
+    """An error to raise when adding to the cache fails."""
+
+    pass
+
+
+class RetrievalError(Exception):
+    """An error to raise when retrieving from the cache fails."""
+
     pass
 
 
@@ -41,4 +49,13 @@ class JupyterCacheAbstract(ABC):
     @abstractmethod
     def list_notebooks(self) -> Set[str]:
         """list the notebook uri's in the cache."""
+        pass
+
+    @abstractmethod
+    def get_codecell(self, uri: str, index: int) -> nbf.NotebookNode:
+        """Return the code cell from a particular notebook.
+
+        NOTE: the index **only** refers to the list of code cells, e.g.
+        `[codecell_0, textcell_1, codecell_2]` would map {0: codecell_0, 1: codecell_2}
+        """
         pass

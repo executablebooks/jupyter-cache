@@ -38,3 +38,11 @@ def test_list_notebooks(tmp_path):
     uri = os.path.join(NB_PATH, "complex_outputs.ipynb")
     db.add_notebook_file(uri=uri)
     assert db.list_notebooks() == {uri}
+
+
+def test_get_codecell(tmp_path, data_regression):
+    db = JupyterCacheSql(str(tmp_path), echo=False)
+    uri = os.path.join(NB_PATH, "complex_outputs.ipynb")
+    db.add_notebook_file(uri=uri)
+    cell = db.get_codecell(uri=uri, index=3)
+    data_regression.check(json.loads(nbformat.writes(cell)))
