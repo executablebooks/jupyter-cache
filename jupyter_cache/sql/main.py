@@ -8,7 +8,7 @@ from sqlalchemy.orm import sessionmaker, Session
 
 import nbformat
 
-from jupyter_cache.base import JupyterCacheAbstract
+from jupyter_cache.base import JupyterCacheAbstract, CacheError
 from .orm import (  # noqa: F401
     OrmBase,
     OrmCellExecution,
@@ -34,12 +34,8 @@ def _set_sqlite_pragma(dbapi_connection, connection_record):
         cursor.close()
 
 
-class NonExistent(Exception):
-    pass
-
-
 class JupyterCacheSql(JupyterCacheAbstract):
-    """A database cache for code kernels, cells and outputs."""
+    """An SQL based database cache for code kernels, cells, outputs, etc."""
 
     def __init__(self, db_folder_path: str, db_file_name: str = "jupyter.db", **kwargs):
         self._db_path = (pathlib.Path(db_folder_path) / db_file_name).absolute()
@@ -120,7 +116,7 @@ class JupyterCacheSql(JupyterCacheAbstract):
             if doc and overwrite:
                 session.delete(doc)
             elif doc:
-                raise ValueError(f"document already exists: {uri}")
+                raise CacheError(f"document already exists: {uri}")
             doc = OrmDocument(uri=uri)
             session.add(doc)
             session.commit()
@@ -135,8 +131,16 @@ class JupyterCacheSql(JupyterCacheAbstract):
         ) as session:  # type: Session
             doc = session.query(OrmDocument).filter_by(uri=uri).one_or_none()
             if doc is None or not doc.kernels:
-                raise NonExistent(uri)
+                raise CacheError(uri)
             if len(doc.kernels) > 1:
-                raise ValueError(f"document has more than one kernel: {uri}")
+                raise CacheError(f"document has more than one kernel: {uri}")
             kernel = doc.kernels[0]
             return kernel.to_nbformat(with_outputs=with_outputs)
+
+    def remove_notebook(self, uri: str, *, session: Optional[Session] = None):
+        """Remove a document and its associated kernels and code cells."""
+        with self.context_session() as session:  # type: Session
+            doc = session.query(OrmDocument).filter_by(uri=uri).one_or_none()
+            if doc is None:
+                return
+            session.delete(doc)

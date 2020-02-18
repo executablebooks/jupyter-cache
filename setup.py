@@ -41,7 +41,7 @@ setup(
             "pytest-regressions",
             "beautifulsoup4",
         ],
-        "jupyter_cache": ["sqlalchemy", "nbformat"],
+        "jupyter_cache": ["nbformat", "tinydb", "sqlalchemy"],
     },
     zip_safe=True,
 )
