@@ -1,13 +1,14 @@
-"""sandbox package setup."""
+"""jupyter-cache package setup."""
+from importlib import import_module
 from setuptools import find_packages, setup
 
 setup(
-    name="sandbox",
-    version="0.0.1",
-    description=("sandbox."),
+    name="jupyter-cache",
+    version=import_module("jupyter_cache").__version__,
+    description=("A defined interface for working with a cache of jupyter notebooks."),
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/ExecutableBookProject/sandbox",
+    url="https://github.com/ExecutableBookProject/jupyter-cache",
     author="Chris Sewell",
     author_email="chrisj_sewell@hotmail.com",
     license="MIT",
@@ -28,10 +29,9 @@ setup(
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: Implementation :: PyPy",
         "Topic :: Software Development :: Libraries :: Python Modules",
-        "Topic :: Text Processing :: Markup",
     ],
     python_requires=">=3.5",
-    install_requires=[],
+    install_requires=["nbformat", "tinydb", "sqlalchemy"],
     extras_require={
         "code_style": ["flake8<3.8.0,>=3.7.0", "black", "pre-commit==1.17.0"],
         "testing": [
@@ -41,7 +41,6 @@ setup(
             "pytest-regressions",
             "beautifulsoup4",
         ],
-        "jupyter_cache": ["nbformat", "tinydb", "sqlalchemy"],
     },
     zip_safe=True,
 )

@@ -1,16 +1,16 @@
-# sandbox
+# jupyter-cache
 
-[![Build Status](https://travis-ci.org/ExecutableBookProject/sandbox.svg?branch=master)](https://travis-ci.org/ExecutableBookProject/sandbox)
+[![Build Status](https://travis-ci.org/ExecutableBookProject/jupyter-cache.svg?branch=master)](https://travis-ci.org/ExecutableBookProject/jupyter-cache)
 
-Sandbox for testing / demoing code.
+A defined interface for working with a cache of jupyter notebooks.
 
 ## Usage
 
 ```bash
-git clone https://github.com/ExecutableBookProject/sandbox
-cd sandbox
+git clone https://github.com/ExecutableBookProject/jupyter-cache
+cd jupyter-cache
 git checkout develop
-pip install -e .[code_style,testing,jupyter_cache]
+pip install -e .[code_style,testing]
 ```
 
 ## Contributing
@@ -21,13 +21,13 @@ Code style is tested using [flake8](http://flake8.pycqa.org),
 with the configuration set in `.flake8`,
 and code formatted with [black](https://github.com/ambv/black).
 
-Installing with `sandbox[code_style]` makes the [pre-commit](https://pre-commit.com/)
+Installing with `jupyter-cache[code_style]` makes the [pre-commit](https://pre-commit.com/)
 package available, which will ensure this style is met before commits are submitted, by reformatting the code
 and testing for lint errors.
 It can be setup by:
 
 ```shell
->> cd sandbox
+>> cd jupyter-cache
 >> pre-commit install
 ```
 
