@@ -2,7 +2,7 @@ language: python
 cache: pip
 matrix:
     include:
-      # Not working with some of the annotation syntax in jupyter_cache
+      # Not working with some of the annotation syntax
       # - python: 3.5
       #   env: TEST_TYPE="pytest"
       - python: 3.6
@@ -19,13 +19,13 @@ install:
       fi
   - |
       if [[ "$TEST_TYPE" == "pytest" ]]; then
-        pip install -e .[testing,jupyter_cache]
+        pip install -e .[testing]
         pip install coveralls
       fi
 script:
 - |
   if [[ "$TEST_TYPE" == "pytest" ]]; then
-      pytest -v --cov=sandbox --cov-report=
+      pytest -v --cov=jupyter_cache --cov-report=
   fi
 - |
   if [[ "$TEST_TYPE" == "pre-commit" ]]; then
