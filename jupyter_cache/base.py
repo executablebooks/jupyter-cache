@@ -1,5 +1,10 @@
+"""This module defines the abstract interface of the cache.
+
+API access to the cache should use this interface,
+with no assumptions about the backend storage/retrieval mechanisms.
+"""
 from abc import ABC, abstractmethod
-from typing import Set
+from typing import Optional, Set
 
 import nbformat as nbf
 
@@ -19,43 +24,55 @@ class RetrievalError(Exception):
 
 
 class JupyterCacheAbstract(ABC):
-    """An abstract cache for code kernels, cells and outputs."""
+    """An abstract cache for storing pre/post executed notebooks."""
 
     @abstractmethod
-    def add_notebook_node(
-        self, node: nbf.NotebookNode, uri: str, overwrite: bool = False
-    ):
-        """Add a single notebook to the cache."""
+    def stage_notebook_node(self, node: nbf.NotebookNode, uri: str):
+        """Stage a single notebook to the cache."""
         pass
 
-    def add_notebook_file(self, uri: str, overwrite: bool = False):
-        """Add a single notebook to the cache."""
-        notebook = nbf.read(uri, NB_VERSION)
-        return self.add_notebook_node(notebook, uri, overwrite)
+    def stage_notebook_file(self, path: str, uri: Optional[str] = None):
+        """Stage a single notebook to the cache.
+
+        If uri is None, then will be set as path.
+        """
+        notebook = nbf.read(path, NB_VERSION)
+        return self.stage_notebook_node(notebook, uri or path)
 
     @abstractmethod
-    def get_notebook(self, uri: str, with_outputs: bool = True) -> nbf.NotebookNode:
-        """Get a single notebook from the cache.
+    def list_staged_notebooks(self) -> Set:
+        """list staged notebook uri's in the cache."""
+        pass
 
-        If `with_outputs` is False, return with all outputs removed.
+    @abstractmethod
+    def list_committed_notebooks(self) -> Set:
+        """list committed notebook uri's in the cache."""
+        pass
+
+    @abstractmethod
+    def invalidate_notebook(self, uri: str):
+        """Invalidate a notebook in the cache.
+
+        This moves it from committed -> staged.
         """
         pass
 
     @abstractmethod
-    def remove_notebook(self, uri: str) -> nbf.NotebookNode:
-        """Remove a single notebook from the cache."""
+    def remove_notebook(self, uri: str):
+        """Completely remove a single notebook from the cache."""
         pass
 
     @abstractmethod
-    def list_notebooks(self) -> Set[str]:
-        """list the notebook uri's in the cache."""
+    def get_committed_notebook(self, uri: str) -> nbf.NotebookNode:
+        """Return a single notebook from the cache."""
         pass
 
-    @abstractmethod
-    def get_codecell(self, uri: str, index: int) -> nbf.NotebookNode:
-        """Return the code cell from a particular notebook.
+    # @abstractmethod
+    # def get_codecell(self, uri: str, index: int) -> nbf.NotebookNode:
+    #     """Return the code cell from a particular notebook.
 
-        NOTE: the index **only** refers to the list of code cells, e.g.
-        `[codecell_0, textcell_1, codecell_2]` would map {0: codecell_0, 1: codecell_2}
-        """
-        pass
+    #     NOTE: the index **only** refers to the list of code cells, e.g.
+    #     `[codecell_0, textcell_1, codecell_2]`
+    #     would map {0: codecell_0, 1: codecell_2}
+    #     """
+    #     pass

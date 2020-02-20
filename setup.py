@@ -31,16 +31,10 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
     python_requires=">=3.5",
-    install_requires=["nbformat", "tinydb", "sqlalchemy"],
+    install_requires=["gitpython", "nbformat", "nbdime", "sqlalchemy"],
     extras_require={
         "code_style": ["flake8<3.8.0,>=3.7.0", "black", "pre-commit==1.17.0"],
-        "testing": [
-            "coverage",
-            "pytest>=3.6,<4",
-            "pytest-cov",
-            "pytest-regressions",
-            "beautifulsoup4",
-        ],
+        "testing": ["coverage", "pytest>=3.6,<4", "pytest-cov", "pytest-regressions"],
     },
     zip_safe=True,
 )

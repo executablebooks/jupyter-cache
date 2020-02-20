@@ -4,6 +4,17 @@
 
 A defined interface for working with a cache of jupyter notebooks.
 
+Requirements:
+
+- Persistent
+- Separates out "edits to content" from "edits to code cells". Cell
+  rearranges and code cell changes should require a re-execution. Content changes should not.
+- Allow parallel access to of notebooks (for execution)
+- Store execution statistics/reports
+- Store external assets: Notebooks being executed often require external assets: importing scripts/data/etc. These are prepared by the users.
+- Store execution artifacts: created during exeution
+- A transparent and robust cache invalidation: imagine the user updating an external dependency or a Python module, or checking out a different git branch.
+
 ## Usage
 
 ```bash
