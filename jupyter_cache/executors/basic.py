@@ -18,8 +18,8 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
             try:
                 with tempfile.TemporaryDirectory() as tmpdirname:
                     executenb(nb_bundle.nb, cwd=tmpdirname)
-            except Exception as err:
-                self.logger.error("Failed: {}".format(nb_bundle.uri), exc_info=err)
+            except Exception:
+                self.logger.error("Failed: {}".format(nb_bundle.uri), exc_info=True)
             else:
                 self.logger.info("Success: {}".format(nb_bundle.uri))
                 self.cache.stage_notebook_bundle(nb_bundle)

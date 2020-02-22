@@ -128,6 +128,25 @@ def invalidate_nbs(cache_path, nbpaths):
     click.secho("Success!", fg="green")
 
 
+@jcache.command("remove-nbs")
+@arguments.NB_PATHS
+@options.CACHE_PATH
+def remove_nbs(cache_path, nbpaths):
+    """Remove a notebook(s) from the cache."""
+    db = JupyterCacheGit(cache_path)
+    for path in nbpaths:
+        # TODO deal with errors (print all at end? or option to ignore)
+        click.echo("Removing: {}".format(path))
+        try:
+            db.remove_notebook(path)
+        except RetrievalError:
+            click.secho("Does not exist", fg="red")
+        except CachingError as err:
+            click.secho("Error: ", fg="red")
+            click.echo(str(err))
+    click.secho("Success!", fg="green")
+
+
 @jcache.command("list-execution")
 @options.CACHE_PATH
 def list_execution(cache_path):

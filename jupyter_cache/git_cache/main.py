@@ -11,6 +11,7 @@ import nbdime
 import nbformat as nbf
 from nbdime.prettyprint import pretty_print_diff, PrettyPrintConfig
 import sqlalchemy as sqla
+from sqlalchemy.orm import Session
 
 from jupyter_cache.base import (  # noqa: F401
     JupyterCacheAbstract,
@@ -88,6 +89,14 @@ class JupyterCacheGit(JupyterCacheAbstract):
             else:
                 pk = result[0]
         return Path(f"notebook_{pk}", "base.ipynb")
+
+    def rm_notebook_path(self, uri, raise_on_missing=False):
+        """"Retrieve a relative path to a notebook, from its URI."""
+        with self.db_session() as session:  # type: Session
+            nb = session.query(OrmNotebook).filter_by(uri=uri).one_or_none()
+            if nb is not None:
+                session.delete(nb)
+                session.commit()
 
     def get_notebook_uri(self, path):
         """"Retrieve a notebook URI, from its relative path."""
@@ -185,17 +194,19 @@ class JupyterCacheGit(JupyterCacheAbstract):
     def remove_notebook(self, uri: str):
         """Completely remove a single notebook from the cache."""
         path = self.get_notebook_path(uri, raise_on_missing=True)
+        uncommit = uri in self.list_committed_notebooks()
         # remove the entire folder
         folder = self.path.joinpath(path.parent)
         to_remove = [str(path.parent)] + [
             str(p.relative_to(self.path)) for p in folder.glob("**/*")
         ]
         try:
-            self.repo.index.remove([str(folder)], True, r=True)
+            self.repo.index.remove([str(folder)], True, f=True, r=True)
         except Exception as err:
             raise CachingError(err)
-        self._commit_some(to_remove, "remove notebook")
-        # TODO remove uri from global database
+        if uncommit:
+            self._commit_some(to_remove, "remove notebook")
+        self.rm_notebook_path(uri)
 
     def discard_staged_notebook(self, uri: str):
         """Discard any staged changes to a previously committed notebook."""
