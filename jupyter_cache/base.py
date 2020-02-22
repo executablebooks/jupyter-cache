@@ -4,7 +4,7 @@ API access to the cache should use this interface,
 with no assumptions about the backend storage/retrieval mechanisms.
 """
 from abc import ABC, abstractmethod
-from typing import Iterable, NamedTuple, Optional, Set
+from typing import Iterable, List, NamedTuple, Optional, Set
 
 import nbformat as nbf
 
@@ -70,6 +70,16 @@ class JupyterCacheAbstract(ABC):
         """Completely remove a single notebook from the cache."""
         pass
 
+    def commit_all(self, message=None, **kwargs):
+        """Commit all staged files."""
+        # TODO commit tag option
+        pass
+
+    def commit_some(self, paths: List[str], message=None, **kwargs):
+        """Commit some staged files."""
+        # TODO commit tag option
+        pass
+
     @abstractmethod
     def get_staged_notebook(self, uri: str) -> NbBundle:
         """Return a single notebook from the cache."""
@@ -82,7 +92,7 @@ class JupyterCacheAbstract(ABC):
 
     @abstractmethod
     def iter_notebooks_to_exec(
-        self, compare_nb_meta=("kernelspec",), compare_cell_meta=None
+        self, compare_nb_meta=("kernelspec", "invalidated"), compare_cell_meta=None
     ) -> Iterable[NbBundle]:
         """Iterate through notebooks that require re-execution.
 

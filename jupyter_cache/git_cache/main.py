@@ -194,6 +194,8 @@ class JupyterCacheGit(JupyterCacheAbstract):
     def get_committed_notebook(self, uri: str) -> NbBundle:
         path = self.get_notebook_path(uri)
         # TODO optionally include assets
+        # TODO cache notebook reads in memory (when retrieving from this cache,
+        # should check that the cache represents the last commit)
         return NbBundle(nbf.reads(self._get_committed_text(path), NB_VERSION), uri)
 
     def diff_staged_notebook(self, uri: str, as_str=False, **kwargs):

@@ -15,7 +15,9 @@ setup(
     packages=find_packages(),
     entry_points={
         "console_scripts": [],
-        # "jupyter_executors": ["default = jupyter_sphinx.executor:run_execution"],
+        "jupyter_executors": [
+            "basic = jupyter_cache.executors.basic:JupyterExecutorBasic"
+        ],
     },
     classifiers=[
         "Development Status :: 3 - Alpha",
@@ -31,7 +33,7 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
     python_requires=">=3.5",
-    install_requires=["gitpython", "nbformat", "nbdime", "sqlalchemy"],
+    install_requires=["gitpython", "nbformat", "nbdime", "nbconvert", "sqlalchemy"],
     extras_require={
         "code_style": ["flake8<3.8.0,>=3.7.0", "black", "pre-commit==1.17.0"],
         "testing": ["coverage", "pytest>=3.6,<4", "pytest-cov", "pytest-regressions"],

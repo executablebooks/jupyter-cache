@@ -83,3 +83,24 @@ def test_basic_workflow(tmp_path, data_regression):
 
     to_exec = [nb_bundle.uri for nb_bundle in db.iter_notebooks_to_exec()]
     assert set(to_exec) == {"basic.ipynb", "basic3.ipynb"}
+
+
+def test_execution(tmp_path, data_regression):
+    from jupyter_cache.executors import load_executor
+
+    db = JupyterCacheGit(str(tmp_path))
+    db.stage_notebook_file(
+        path=os.path.join(NB_PATH, "basic_unrun.ipynb"), uri="basic.ipynb"
+    )
+    db.stage_notebook_file(
+        path=os.path.join(NB_PATH, "basic_failing.ipynb"), uri="basic2.ipynb"
+    )
+    executor = load_executor("basic", db)
+    assert executor.run() == ["basic.ipynb"]
+    assert db.get_staged_notebook("basic.ipynb").nb.cells[1] == {
+        "cell_type": "code",
+        "execution_count": 1,
+        "metadata": {},
+        "outputs": [{"name": "stdout", "output_type": "stream", "text": "1\n"}],
+        "source": "a=1\nprint(a)",
+    }
