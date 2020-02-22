@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import logging
 import pkg_resources
-from typing import List
+from typing import List, Optional
 
 from jupyter_cache.base import JupyterCacheAbstract
 
@@ -30,8 +30,14 @@ class JupyterExecutorAbstract(ABC):
         return self._logger
 
     @abstractmethod
-    def run(self) -> List[str]:
-        """Run execution, stage successfully executed notebooks and return their URIs"""
+    def run(self, uri_filter: Optional[List[str]] = None) -> List[str]:
+        """Run execution, stage successfully executed notebooks and return their URIs
+
+        Parameters
+        ----------
+        uri_filter: list
+            if specified only run these uris.
+        """
         pass
 
 

@@ -4,7 +4,7 @@ API access to the cache should use this interface,
 with no assumptions about the backend storage/retrieval mechanisms.
 """
 from abc import ABC, abstractmethod
-from typing import Iterable, List, NamedTuple, Optional, Set
+from typing import Iterable, NamedTuple, Optional, Set
 
 import nbformat as nbf
 
@@ -14,13 +14,20 @@ NB_VERSION = 4
 class CachingError(Exception):
     """An error to raise when adding to the cache fails."""
 
-    pass
-
 
 class RetrievalError(Exception):
     """An error to raise when retrieving from the cache fails."""
 
-    pass
+
+class NbValidityError(Exception):
+    """Signals a notebook may not be valid to commit.
+
+    For example, because it has not yet been executed.
+    """
+
+    def __init__(self, uri, message, *args, **kwargs):
+        self.uri = uri
+        super().__init__(message, *args, **kwargs)
 
 
 class NbBundle(NamedTuple):
@@ -33,6 +40,11 @@ class NbBundle(NamedTuple):
 
 class JupyterCacheAbstract(ABC):
     """An abstract cache for storing pre/post executed notebooks."""
+
+    @abstractmethod
+    def clear_cache(self):
+        """Clear the cache completely."""
+        pass
 
     @abstractmethod
     def stage_notebook_bundle(self, bundle: NbBundle):
@@ -48,6 +60,11 @@ class JupyterCacheAbstract(ABC):
         return self.stage_notebook_bundle(NbBundle(notebook, uri or path))
 
     @abstractmethod
+    def get_staged_notebook(self, uri: str) -> NbBundle:
+        """Return a single notebook from the cache."""
+        pass
+
+    @abstractmethod
     def list_staged_notebooks(self) -> Set:
         """list staged notebook uri's in the cache."""
         pass
@@ -58,36 +75,52 @@ class JupyterCacheAbstract(ABC):
         pass
 
     @abstractmethod
-    def invalidate_notebook(self, uri: str):
-        """Invalidate a notebook in the cache.
-
-        This moves it from committed -> staged.
-        """
-        pass
-
-    @abstractmethod
     def remove_notebook(self, uri: str):
         """Completely remove a single notebook from the cache."""
         pass
 
-    def commit_all(self, message=None, **kwargs):
-        """Commit all staged files."""
-        # TODO commit tag option
-        pass
-
-    def commit_some(self, paths: List[str], message=None, **kwargs):
-        """Commit some staged files."""
-        # TODO commit tag option
+    @abstractmethod
+    def invalidate_notebook(self, uri: str):
+        """Invalidate a notebook in the cache (making a staged copy)."""
         pass
 
     @abstractmethod
-    def get_staged_notebook(self, uri: str) -> NbBundle:
-        """Return a single notebook from the cache."""
+    def discard_staged_notebook(self, uri: str):
+        """Discard any staged changes to a previously committed notebook."""
+        pass
+
+    @abstractmethod
+    def diff_staged_notebook(self, uri: str, as_str=False, **kwargs):
+        """Return a diff of a staged notebook to its committed counterpart."""
+        pass
+
+    @abstractmethod
+    def commit_staged_notebook(self, uri: str, check_validity: bool = True):
+        """Commit a staged notebook.
+
+        If check_validity, then check that the notebook has been executed correctly,
+        by asserting `execution_count`s are consecutive and start at 1
+        """
+        pass
+
+    @abstractmethod
+    def commit_all(self, message=None, **kwargs):
+        """Commit all staged files."""
         pass
 
     @abstractmethod
     def get_committed_notebook(self, uri: str) -> NbBundle:
         """Return a single notebook from the cache."""
+        pass
+
+    @abstractmethod
+    def get_committed_codecell(self, uri: str, index: int) -> nbf.NotebookNode:
+        """Return a code cell from a committed notebook.
+
+        NOTE: the index **only** refers to the list of code cells, e.g.
+        `[codecell_0, textcell_1, codecell_2]`
+        would map {0: codecell_0, 1: codecell_2}
+        """
         pass
 
     @abstractmethod
@@ -108,13 +141,3 @@ class JupyterCacheAbstract(ABC):
 
         """
         pass
-
-    # @abstractmethod
-    # def get_codecell(self, uri: str, index: int) -> nbf.NotebookNode:
-    #     """Return the code cell from a particular notebook.
-
-    #     NOTE: the index **only** refers to the list of code cells, e.g.
-    #     `[codecell_0, textcell_1, codecell_2]`
-    #     would map {0: codecell_0, 1: codecell_2}
-    #     """
-    #     pass

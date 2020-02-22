@@ -8,9 +8,12 @@ from jupyter_cache.executors.base import JupyterExecutorAbstract
 
 
 class JupyterExecutorBasic(JupyterExecutorAbstract):
-    def run(self):
+    def run(self, uri_filter=None):
         executed_uris = []
         for nb_bundle in self.cache.iter_notebooks_to_exec():
+            if uri_filter is not None and nb_bundle.uri not in uri_filter:
+                self.logger.info("Skipping: {}".format(nb_bundle.uri))
+                continue
             self.logger.info("Executing: {}".format(nb_bundle.uri))
             try:
                 with tempfile.TemporaryDirectory() as tmpdirname:
