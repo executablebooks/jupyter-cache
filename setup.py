@@ -14,7 +14,7 @@ setup(
     license="MIT",
     packages=find_packages(),
     entry_points={
-        "console_scripts": [],
+        "console_scripts": ["jcache = jupyter_cache.cli.commands.cmd_main:jcache"],
         "jupyter_executors": [
             "basic = jupyter_cache.executors.basic:JupyterExecutorBasic"
         ],
@@ -33,7 +33,14 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
     python_requires=">=3.5",
-    install_requires=["gitpython", "nbformat", "nbdime", "nbconvert", "sqlalchemy"],
+    install_requires=[
+        "gitpython",
+        "nbformat",
+        "nbdime",
+        "nbconvert",
+        "sqlalchemy",
+        "click",
+    ],
     extras_require={
         "code_style": ["flake8<3.8.0,>=3.7.0", "black", "pre-commit==1.17.0"],
         "testing": ["coverage", "pytest>=3.6,<4", "pytest-cov", "pytest-regressions"],

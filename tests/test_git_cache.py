@@ -10,7 +10,7 @@ from jupyter_cache.base import NbValidityError
 NB_PATH = os.path.join(os.path.realpath(os.path.dirname(__file__)), "notebooks")
 
 
-def test_basic_workflow(tmp_path, data_regression):
+def test_basic_workflow(tmp_path):
     db = JupyterCacheGit(str(tmp_path))
     db.stage_notebook_file(path=os.path.join(NB_PATH, "basic.ipynb"), uri="basic.ipynb")
     db.stage_notebook_file(
@@ -102,7 +102,7 @@ def test_basic_workflow(tmp_path, data_regression):
     )
 
 
-def test_execution(tmp_path, data_regression):
+def test_execution(tmp_path):
     from jupyter_cache.executors import load_executor
 
     db = JupyterCacheGit(str(tmp_path))

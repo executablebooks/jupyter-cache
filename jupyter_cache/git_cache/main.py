@@ -329,7 +329,7 @@ class JupyterCacheGit(JupyterCacheAbstract):
                     {
                         k: v
                         for k, v in nb.metadata.items()
-                        if (k in compare_nb_meta) or compare_nb_meta is None
+                        if compare_nb_meta is None or (k in compare_nb_meta)
                     }
                 )
                 diff_cells = []
@@ -343,7 +343,7 @@ class JupyterCacheGit(JupyterCacheAbstract):
                             "metadata": {
                                 k: v
                                 for k, v in cell.metadata.items()
-                                if (k in compare_cell_meta) or compare_cell_meta is None
+                                if compare_cell_meta is None or (k in compare_cell_meta)
                             },
                             "execution_count": None,
                             "outputs": [],
