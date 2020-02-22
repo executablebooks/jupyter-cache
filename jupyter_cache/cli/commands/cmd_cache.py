@@ -13,7 +13,7 @@ from jupyter_cache.base import (  # noqa: F401
 @jcache.command("clear")
 @options.CACHE_PATH
 def clear_cache(cache_path):
-    """List staged notebook URI's in the cache."""
+    """Clear the cache completely."""
     db = JupyterCacheGit(cache_path)
     click.confirm("Are you sure you want to permanently clear the cache!?", abort=True)
     db.clear_cache()
