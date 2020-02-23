@@ -50,3 +50,8 @@ EXEC_ENTRYPOINT = click.option(
     default="basic",
     show_default=True,
 )
+
+
+PATH_LENGTH = click.option(
+    "-l", "--path-length", default=3, show_default=True, help="Maximum URI path."
+)

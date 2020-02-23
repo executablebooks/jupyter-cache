@@ -205,6 +205,7 @@ class NbStageRecord(OrmBase):
             except IntegrityError:
                 if raise_on_exists:
                     raise ValueError(f"uri already staged: {uri}")
+                return NbStageRecord.record_from_uri(uri, db)
             session.refresh(record)
             session.expunge(record)
         return record

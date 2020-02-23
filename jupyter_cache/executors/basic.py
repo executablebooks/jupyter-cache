@@ -24,7 +24,7 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
                 self.logger.error("Failed Execution: {}".format(uri), exc_info=True)
             else:
                 try:
-                    self.cache.commit_notebook_bundle(nb_bundle)
+                    self.cache.commit_notebook_bundle(nb_bundle, overwrite=True)
                     self.cache.discard_staged_notebook(uri)
                 except Exception:
                     self.logger.error("Failed Commit: {}".format(uri), exc_info=True)

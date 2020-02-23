@@ -163,6 +163,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
                 )
             rmtree(path.parent)
             record = NbCommitRecord.record_from_hashkey(hashkey, self.db)
+            # TODO record should be changed rather than deleted
             NbCommitRecord.remove_records([record.pk], self.db)
 
         record = NbCommitRecord.create_record(

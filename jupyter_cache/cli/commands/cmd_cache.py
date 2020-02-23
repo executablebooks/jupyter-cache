@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import click
 import tabulate
 
@@ -9,6 +11,13 @@ from jupyter_cache.base import (  # noqa: F401
     RetrievalError,
     NbValidityError,
 )
+
+
+def shorten_path(file_path, length):
+    """Split the path into separate parts,
+    select the last 'length' elements and join them again
+    """
+    return Path(*Path(file_path).parts[-length:])
 
 
 @jcache.command("clear")
@@ -31,10 +40,10 @@ def change_size(cache_path, size):
     click.secho("Limit changed!", fg="green")
 
 
-def format_commit_record(record, hashkeys):
+def format_commit_record(record, hashkeys, path_length):
     data = {
         "PK": record.pk,
-        "URI": record.uri,
+        "URI": shorten_path(record.uri, path_length),
         "Created": record.created.isoformat(" ", "minutes"),
         "Accessed": record.accessed.isoformat(" ", "minutes"),
         # "Description": record.description,
@@ -47,7 +56,8 @@ def format_commit_record(record, hashkeys):
 @jcache.command("list-commits")
 @options.CACHE_PATH
 @click.option("-h", "--hashkeys", is_flag=True, help="Whether to show hashkeys.")
-def list_commits(cache_path, hashkeys):
+@options.PATH_LENGTH
+def list_commits(cache_path, hashkeys, path_length):
     """List committed notebook URI's in the cache."""
     db = JupyterCacheBase(cache_path)
     records = db.list_commit_records()
@@ -56,7 +66,7 @@ def list_commits(cache_path, hashkeys):
     click.echo(
         tabulate.tabulate(
             [
-                format_commit_record(r, hashkeys)
+                format_commit_record(r, hashkeys, path_length)
                 for r in sorted(records, key=lambda r: r.accessed, reverse=True)
             ],
             headers="keys",
@@ -156,10 +166,10 @@ def unstage_nbs(cache_path, nbpaths):
     click.secho("Success!", fg="green")
 
 
-def format_staged_record(record, commit):
+def format_staged_record(record, commit, path_length):
     data = {
         "PK": record.pk,
-        "URI": record.uri,
+        "URI": shorten_path(record.uri, path_length),
         "Created": record.created.isoformat(" ", "minutes"),
     }
     if commit:
@@ -175,7 +185,8 @@ def format_staged_record(record, commit):
     show_default=True,
     help="Compare to committed notebooks (to find PK).",
 )
-def list_staged(cache_path, compare):
+@options.PATH_LENGTH
+def list_staged(cache_path, compare, path_length):
     """List notebooks staged for possible execution."""
     db = JupyterCacheBase(cache_path)
     records = db.list_staged_records()
@@ -186,5 +197,5 @@ def list_staged(cache_path, compare):
         commit = None
         if compare:
             commit = db.get_commit_record_of_staged(record.uri)
-        rows.append(format_staged_record(record, commit))
+        rows.append(format_staged_record(record, commit, path_length))
     click.echo(tabulate.tabulate(rows, headers="keys"))
