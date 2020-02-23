@@ -38,14 +38,13 @@ def test_basic_workflow(tmp_path):
     }
     assert cache.get_commit_codecell(pk, 0).source == "a=1\nprint(a)"
 
-    diff = cache.diff_nbfile_with_commit(
-        pk, os.path.join(NB_PATH, "basic_failing.ipynb"), as_str=True, use_color=False
-    )
+    path = os.path.join(NB_PATH, "basic_failing.ipynb")
+    diff = cache.diff_nbfile_with_commit(pk, path, as_str=True, use_color=False)
     assert diff == dedent(
-        """\
+        f"""\
         nbdiff
         --- committed pk=1
-        +++ other: /Users/cjs14/GitHub/sandbox/tests/notebooks/basic_failing.ipynb
+        +++ other: {path}
         ## inserted before nb/cells/1:
         +  code cell:
         +    source:
