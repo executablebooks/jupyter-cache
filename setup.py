@@ -34,13 +34,13 @@ setup(
     ],
     python_requires=">=3.5",
     install_requires=[
-        "gitpython",
         "nbformat",
         "nbdime",
         "nbconvert",
         "sqlalchemy",
         "click",
         "click-log",
+        "tabulate",
     ],
     extras_require={
         "code_style": ["flake8<3.8.0,>=3.7.0", "black", "pre-commit==1.17.0"],
