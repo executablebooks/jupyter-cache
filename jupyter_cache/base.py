@@ -172,7 +172,7 @@ class JupyterCacheAbstract(ABC):
         return self.match_commit_notebook(notebook)
 
     @abstractmethod
-    def merge_commit_into_match(
+    def merge_match_into_notebook(
         self,
         nb: nbf.NotebookNode,
         nb_meta=("kernelspec", "language_info"),
@@ -187,6 +187,20 @@ class JupyterCacheAbstract(ABC):
         :return: pk, input notebook with committed code cells and metadata merged.
         """
         pass
+
+    def merge_match_into_file(
+        self, path: str, nb_meta=("kernelspec", "language_info"), cell_meta=None
+    ) -> Tuple[int, nbf.NotebookNode]:
+        """Match to an executed notebook and return a merged version
+
+        :param nb: The input notebook
+        :param nb_meta: metadata keys to merge from the commit (all if None)
+        :param cell_meta: cell metadata keys to merge from the commit (all if None)
+        :raises KeyError: if no match is found
+        :return: pk, input notebook with committed code cells and metadata merged.
+        """
+        nb = nbf.read(path, NB_VERSION)
+        return self.merge_match_into_notebook(nb, nb_meta, cell_meta)
 
     @abstractmethod
     def diff_nbnode_with_commit(

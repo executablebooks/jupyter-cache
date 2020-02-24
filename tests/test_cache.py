@@ -89,13 +89,13 @@ def test_basic_workflow(tmp_path):
     assert cache.list_commit_records() == []
 
 
-def test_merge_commit_into_match(tmp_path):
+def test_merge_match_into_notebook(tmp_path):
     cache = JupyterCacheBase(str(tmp_path))
     cache.commit_notebook_file(
         path=os.path.join(NB_PATH, "basic.ipynb"), check_validity=False
     )
     nb = nbf.read(os.path.join(NB_PATH, "basic_unrun.ipynb"), 4)
-    pk, merged = cache.merge_commit_into_match(nb)
+    pk, merged = cache.merge_match_into_notebook(nb)
     assert merged.cells[1] == {
         "cell_type": "code",
         "execution_count": 2,

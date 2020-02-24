@@ -326,7 +326,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         commit_record = NbCommitRecord.record_from_hashkey(hashkey, self.db)
         return commit_record.pk
 
-    def merge_commit_into_match(
+    def merge_match_into_notebook(
         self,
         nb: nbf.NotebookNode,
         nb_meta=("kernelspec", "language_info"),
