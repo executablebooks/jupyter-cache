@@ -98,7 +98,7 @@ def test_diff_nbs(tmp_path):
     assert result.exception is None, result.output
     assert result.exit_code == 0, result.output
     print(result.output.splitlines()[2:])
-    assert result.output.splitlines()[2:] == [
+    assert result.output.splitlines()[1:] == [
         "--- committed pk=1",
         f"+++ other: {path2}",
         "## inserted before nb/cells/1:",

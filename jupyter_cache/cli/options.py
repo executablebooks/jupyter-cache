@@ -20,11 +20,33 @@ AUTOCOMPLETE = click.option(
 )
 
 
+def default_cache_path():
+    return os.environ.get("JUPYTERCACHE", os.path.join(os.getcwd(), ".jupyter_cache"))
+
+
+def callback_print_cache_path(ctx, param, value):
+    if value and not ctx.resilient_parsing:
+        click.secho("Cache path: ", fg="green", nl=False)
+        click.echo(default_cache_path())
+        ctx.exit()
+
+
+PRINT_CACHE_PATH = click.option(
+    "-p",
+    "--cache-path",
+    help="Print the current cache path and exit.",
+    is_flag=True,
+    expose_value=True,
+    is_eager=True,
+    callback=callback_print_cache_path,
+)
+
+
 def check_cache_exists(ctx, param, value):
-    click.secho("Cache path: ", fg="green", nl=False)
-    click.echo(value)
     if os.path.exists(value):
         return value
+    click.secho("Cache path: ", fg="green", nl=False)
+    click.echo(value)
     if not click.confirm("The cache does not yet exist, do you want to create it?"):
         click.secho("Aborted!", bold=True, fg="red")
         ctx.exit()
@@ -35,9 +57,7 @@ CACHE_PATH = click.option(
     "-p",
     "--cache-path",
     help="Path to cache.",
-    default=lambda: os.environ.get(
-        "JUPYTERCACHE", os.path.join(os.getcwd(), ".jupyter_cache")
-    ),
+    default=default_cache_path,
     show_default=".jupyter_cache",
     callback=check_cache_exists,
 )
