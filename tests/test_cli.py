@@ -16,6 +16,15 @@ def test_base():
     assert "jupyter-cache version" in result.output.strip(), result.output
 
 
+def test_clear_cache(tmp_path):
+    JupyterCacheBase(str(tmp_path))
+    runner = CliRunner()
+    result = runner.invoke(cmd_cache.clear_cache, ["-p", tmp_path], input="y")
+    assert result.exception is None, result.output
+    assert result.exit_code == 0, result.output
+    assert "Cache cleared!" in result.output.strip(), result.output
+
+
 def test_list_commits(tmp_path):
     db = JupyterCacheBase(str(tmp_path))
     db.commit_notebook_file(
@@ -28,6 +37,23 @@ def test_list_commits(tmp_path):
     assert result.exception is None, result.output
     assert result.exit_code == 0, result.output
     assert "basic.ipynb" in result.output.strip(), result.output
+
+
+def test_commit_with_artifact(tmp_path):
+    JupyterCacheBase(str(tmp_path))
+    nb_path = os.path.join(NB_PATH, "basic.ipynb")
+    a_path = os.path.join(NB_PATH, "artifact_folder", "artifact.txt")
+    runner = CliRunner()
+    result = runner.invoke(
+        cmd_cache.commit_nb, ["-p", tmp_path, "--no-validate", "-nb", nb_path, a_path]
+    )
+    assert result.exception is None, result.output
+    assert result.exit_code == 0, result.output
+    assert "basic.ipynb" in result.output.strip(), result.output
+    result = runner.invoke(cmd_cache.show_commit, ["-p", tmp_path, "1"])
+    assert result.exception is None, result.output
+    assert result.exit_code == 0, result.output
+    assert "- artifact_folder/artifact.txt" in result.output.strip(), result.output
 
 
 def test_commit_nbs(tmp_path):

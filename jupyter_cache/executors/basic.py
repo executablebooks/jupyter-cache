@@ -17,20 +17,23 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
                 continue
             self.logger.info("Executing: {}".format(uri))
             nb_bundle = self.cache.get_staged_notebook(uri)
-            try:
-                with tempfile.TemporaryDirectory() as tmpdirname:
-                    executenb(nb_bundle.nb, cwd=tmpdirname)
-            except Exception:
-                self.logger.error("Failed Execution: {}".format(uri), exc_info=True)
-            else:
+            with tempfile.TemporaryDirectory() as tmpdirname:
                 try:
-                    self.cache.commit_notebook_bundle(nb_bundle, overwrite=True)
-                    self.cache.discard_staged_notebook(uri)
+                    executenb(nb_bundle.nb, cwd=tmpdirname)
+                    # TODO gather artifacts and add to bundle
                 except Exception:
-                    self.logger.error("Failed Commit: {}".format(uri), exc_info=True)
+                    self.logger.error("Failed Execution: {}".format(uri), exc_info=True)
                 else:
-                    self.logger.info("Success: {}".format(uri))
-                    executed_uris.append(nb_bundle.uri)
+                    try:
+                        self.cache.commit_notebook_bundle(nb_bundle, overwrite=True)
+                        self.cache.discard_staged_notebook(uri)
+                    except Exception:
+                        self.logger.error(
+                            "Failed Commit: {}".format(uri), exc_info=True
+                        )
+                    else:
+                        self.logger.info("Success: {}".format(uri))
+                        executed_uris.append(nb_bundle.uri)
         # TODO what should the balance of responsibility be here?
         # Should the executor be adding to the cache,
         # or perhaps run just accepts the iter and returns NbBundles.

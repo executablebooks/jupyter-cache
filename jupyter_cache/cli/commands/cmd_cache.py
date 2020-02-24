@@ -17,6 +17,8 @@ def shorten_path(file_path, length):
     """Split the path into separate parts,
     select the last 'length' elements and join them again
     """
+    if length is None:
+        return Path(file_path)
     return Path(*Path(file_path).parts[-length:])
 
 
@@ -30,20 +32,20 @@ def clear_cache(cache_path):
     click.secho("Cache cleared!", fg="green")
 
 
-@jcache.command("change-size")
+@jcache.command("commit-limit")
 @options.CACHE_PATH
-@click.argument("size", metavar="COMMIT_LIMIT", type=int)
-def change_size(cache_path, size):
+@click.argument("limit", metavar="COMMIT_LIMIT", type=int)
+def change_commit_limit(cache_path, limit):
     """Change the commit limit of the cache (default: 1000)."""
     db = JupyterCacheBase(cache_path)
-    db.change_cache_size(size)
+    db.change_commit_limit(limit)
     click.secho("Limit changed!", fg="green")
 
 
 def format_commit_record(record, hashkeys, path_length):
     data = {
         "PK": record.pk,
-        "URI": shorten_path(record.uri, path_length),
+        "URI": str(shorten_path(record.uri, path_length)),
         "Created": record.created.isoformat(" ", "minutes"),
         "Accessed": record.accessed.isoformat(" ", "minutes"),
         # "Description": record.description,
@@ -58,11 +60,12 @@ def format_commit_record(record, hashkeys, path_length):
 @click.option("-h", "--hashkeys", is_flag=True, help="Whether to show hashkeys.")
 @options.PATH_LENGTH
 def list_commits(cache_path, hashkeys, path_length):
-    """List committed notebook URI's in the cache."""
+    """List committed notebook records in the cache."""
     db = JupyterCacheBase(cache_path)
     records = db.list_commit_records()
     if not records:
         click.secho("No Commited Notebooks", fg="blue")
+    # TODO optionally list number of artifacts
     click.echo(
         tabulate.tabulate(
             [
@@ -74,21 +77,65 @@ def list_commits(cache_path, hashkeys, path_length):
     )
 
 
+@jcache.command("show-commit")
+@options.CACHE_PATH
+@arguments.PK
+def show_commit(cache_path, pk):
+    """Show details of a committed notebook in the cache."""
+    import yaml
+
+    db = JupyterCacheBase(cache_path)
+    record = db.get_commit_record(pk)
+    data = format_commit_record(record, True, None)
+    click.echo(yaml.safe_dump(data, sort_keys=False), nl=False)
+    # TODO get artifacts list without loading notebook
+    bundle = db.get_commit_bundle(record.pk)
+    if not bundle.artifacts:
+        click.echo("")
+        return
+    click.echo(f"Artifacts:")
+    for path in bundle.artifacts.relative_paths:
+        click.echo(f"- {path}")
+
+
+@jcache.command("commit-nb")
+@arguments.ARTIFACT_PATHS
+@options.NB_PATH
+@options.CACHE_PATH
+@options.VALIDATE_NB
+@options.OVERWRITE_COMMIT
+def commit_nb(cache_path, artifact_paths, nbpath, validate, overwrite):
+    """Commit a notebook that has already been executed, with artifacts."""
+    db = JupyterCacheBase(cache_path)
+    click.echo("Committing: {}".format(nbpath))
+    try:
+        db.commit_notebook_file(
+            nbpath,
+            artifacts=artifact_paths,
+            check_validity=validate,
+            overwrite=overwrite,
+        )
+    except NbValidityError as error:
+        click.secho("Validity Error: ", fg="red", nl=False)
+        click.echo(str(error))
+        if click.confirm(
+            "The notebook may not have been executed, continue committing?"
+        ):
+            db.commit_notebook_file(
+                nbpath,
+                artifacts=artifact_paths,
+                check_validity=False,
+                overwrite=overwrite,
+            )
+
+    click.secho("Success!", fg="green")
+
+
 @jcache.command("commit-nbs")
 @arguments.NB_PATHS
 @options.CACHE_PATH
-@click.option(
-    "--validate/--no-validate",
-    default=True,
-    show_default=True,
-    help="Whether to validate that a notebook has been executed.",
-)
-@click.option(
-    "--overwrite/--no-overwrite",
-    default=True,
-    show_default=True,
-    help="Whether to overwrite an existing notebook with the same hash.",
-)
+@options.VALIDATE_NB
+@options.OVERWRITE_COMMIT
 def commit_nbs(cache_path, nbpaths, validate, overwrite):
     """Commit notebook(s) that have already been executed."""
     db = JupyterCacheBase(cache_path)
@@ -113,9 +160,12 @@ def commit_nbs(cache_path, nbpaths, validate, overwrite):
 @jcache.command("remove-commits")
 @arguments.PKS
 @options.CACHE_PATH
-def remove_commits(cache_path, pks):
+@options.REMOVE_ALL
+def remove_commits(cache_path, pks, remove_all):
     """Remove notebook commit(s) from the cache by Primary Key."""
     db = JupyterCacheBase(cache_path)
+    if remove_all:
+        pks = [r.pk for r in db.list_commit_records()]
     for pk in pks:
         # TODO deal with errors (print all at end? or option to ignore)
         click.echo("Removing PK = {}".format(pk))
@@ -156,11 +206,11 @@ def stage_nbs(cache_path, nbpaths):
 @jcache.command("unstage-nbs")
 @arguments.NB_PATHS
 @options.CACHE_PATH
-@click.option("-a", "--all", "unstage_all", is_flag=True, help="Unstage all notebooks.")
-def unstage_nbs(cache_path, nbpaths, unstage_all):
+@options.REMOVE_ALL
+def unstage_nbs(cache_path, nbpaths, remove_all):
     """Unstage notebook(s) for execution."""
     db = JupyterCacheBase(cache_path)
-    if unstage_all:
+    if remove_all:
         nbpaths = [record.uri for record in db.list_staged_records()]
     for path in nbpaths:
         # TODO deal with errors (print all at end? or option to ignore)

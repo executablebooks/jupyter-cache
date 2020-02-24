@@ -13,6 +13,13 @@ NB_PATHS = click.argument(
     type=click.Path(dir_okay=False, exists=True, readable=True, resolve_path=True),
 )
 
+ARTIFACT_PATHS = click.argument(
+    "artifact_paths",
+    metavar="ARTIFACT_PATHS",
+    nargs=-1,
+    type=click.Path(dir_okay=False, exists=True, readable=True, resolve_path=True),
+)
+
 PK = click.argument("pk", metavar="PK", type=int)
 
 PKS = click.argument("pks", metavar="PKs", nargs=-1, type=int)

@@ -4,7 +4,9 @@ API access to the cache should use this interface,
 with no assumptions about the backend storage/retrieval mechanisms.
 """
 from abc import ABC, abstractmethod
-from typing import NamedTuple, Optional
+import io
+from pathlib import Path
+from typing import Iterable, List, NamedTuple, Optional, Tuple
 
 import nbformat as nbf
 
@@ -30,20 +32,53 @@ class NbValidityError(Exception):
         super().__init__(message, *args, **kwargs)
 
 
+class ArtifactIteratorAbstract(ABC):
+    """Iterator for paths relative to a notebook,
+    that yield the relative path and open files (in bytes mode)
+
+    This is used to pass notebook artifacts, without having to read them all first.
+    """
+
+    @abstractmethod
+    def __init__(self, paths: List[str], in_folder, check_existence=True):
+        """Initiate ArtifactIterator
+
+        :param paths: list of paths
+        :param check_existence: check the paths exist
+        :param in_folder: The folder that all paths should be in (or subfolder).
+        :raises IOError: if check_existence and file does not exist
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def relative_paths(self):
+        pass
+
+    @abstractmethod
+    def __iter__(self) -> Iterable[Tuple[Path, io.BufferedReader]]:
+        pass
+
+
 class NbBundleIn(NamedTuple):
     """A container for notebooks and their associated data to commit."""
 
     nb: nbf.NotebookNode
     uri: str
-    # assets = None
+    # artifacts iterates (relative path to notebook, <bytes stream>)
+    # for all outputs of the executed notebook
+    artifacts: Optional[ArtifactIteratorAbstract] = None
 
 
 class NbBundleOut(NamedTuple):
     """A container for notebooks and their associated data that have been executed."""
 
     nb: nbf.NotebookNode
+    # commit is a dictionary of the commit record (uri, commit time, etc)
     commit: dict
-    # artifacts = None
+    # artifacts iterates (relative path to notebook, <bytes stream>)
+    # for all outputs of the executed notebook
+    artifacts: Optional[ArtifactIteratorAbstract] = None
 
 
 class JupyterCacheAbstract(ABC):
@@ -60,40 +95,46 @@ class JupyterCacheAbstract(ABC):
     ) -> int:
         """Commit an executed notebook, returning its primary key.
 
-        If check_validity, then check that the notebook has been executed correctly,
-        by asserting `execution_count`s are consecutive and start at 1
-
         Note: non-code source text (e.g. markdown) is not stored in the cache.
+
+        :param bundle: The notebook bundle
+        :param check_validity: check that the notebook has been executed correctly,
+            by asserting `execution_count`s are consecutive and start at 1.
+        :param overwrite: Allow overwrite of commit with matching hash
+        :return: The primary key of the commit
         """
         pass
 
+    @abstractmethod
     def commit_notebook_file(
         self,
         path: str,
         uri: Optional[str] = None,
+        artifacts: List[str] = (),
         check_validity: bool = True,
         overwrite: bool = False,
     ) -> int:
         """Commit an executed notebook, returning its primary key.
 
-        If check_validity, then check that the notebook has been executed correctly,
-        by asserting `execution_count`s are consecutive and start at 1.
-
         Note: non-code source text (e.g. markdown) is not stored in the cache.
+
+        :param path: path to the notebook
+        :param uri: alternative URI to store in the commit record (defaults to path)
+        :param artifacts: list of paths to outputs of the executed notebook.
+            Artifacts must be in the same folder as the notebook (or a sub-folder)
+        :param check_validity: check that the notebook has been executed correctly,
+            by asserting `execution_count`s are consecutive and start at 1.
+        :param overwrite: Allow overwrite of commit with matching hash
+        :return: The primary key of the commit
         """
-        notebook = nbf.read(path, NB_VERSION)
-        return self.commit_notebook_bundle(
-            NbBundleIn(notebook, uri or path),
-            check_validity=check_validity,
-            overwrite=overwrite,
-        )
+        pass
 
     @abstractmethod
     def list_commit_records(self) -> list:
         """Return a list of committed notebook records."""
         pass
 
-    def get_commit_record(self, pk: int) -> dict:
+    def get_commit_record(self, pk: int):
         """Return the record of a commit, by its primary key"""
         pass
 

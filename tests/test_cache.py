@@ -88,6 +88,39 @@ def test_basic_workflow(tmp_path):
     assert cache.list_commit_records() == []
 
 
+def test_artifacts(tmp_path):
+    cache = JupyterCacheBase(str(tmp_path))
+    with pytest.raises(IOError):
+        cache.commit_notebook_file(
+            path=os.path.join(NB_PATH, "basic.ipynb"),
+            uri="basic.ipynb",
+            artifacts=(os.path.join(NB_PATH),),
+            check_validity=False,
+        )
+    cache.commit_notebook_file(
+        path=os.path.join(NB_PATH, "basic.ipynb"),
+        uri="basic.ipynb",
+        artifacts=(os.path.join(NB_PATH, "artifact_folder", "artifact.txt"),),
+        check_validity=False,
+    )
+    hashkey = cache.get_commit_record(1).hashkey
+    assert {
+        str(p.relative_to(tmp_path)) for p in tmp_path.glob("**/*") if p.is_file()
+    } == {
+        "global.db",
+        f"executed/{hashkey}/base.ipynb",
+        f"executed/{hashkey}/artifacts/artifact_folder/artifact.txt",
+    }
+
+    bundle = cache.get_commit_bundle(1)
+    assert {str(p) for p in bundle.artifacts.relative_paths} == {
+        "artifact_folder/artifact.txt"
+    }
+
+    text = list(h.read().decode() for r, h in bundle.artifacts)[0]
+    assert text.rstrip() == "An artifact"
+
+
 def test_execution(tmp_path):
     from jupyter_cache.executors import load_executor
 

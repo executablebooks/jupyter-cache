@@ -2,8 +2,8 @@ import copy
 import io
 from pathlib import Path
 import hashlib
-from shutil import rmtree
-from typing import List
+import shutil
+from typing import Iterable, List, Optional, Tuple
 
 import nbdime
 import nbformat as nbf
@@ -17,12 +17,49 @@ from jupyter_cache.base import (  # noqa: F401
     RetrievalError,
     NbValidityError,
     NB_VERSION,
+    ArtifactIteratorAbstract,
 )
 
 from .db import create_db, NbCommitRecord, NbStageRecord, Setting
 
-CACHE_SIZE_KEY = "cache_size"
-DEFAULT_CACHE_SIZE = 1000
+COMMIT_LIMIT_KEY = "commit_limit"
+DEFAULT_COMMIT_LIMIT = 1000
+
+
+class ArtifactIterator(ArtifactIteratorAbstract):
+    """Iterate through the given paths and yield the open files (in bytes mode)
+
+    This is used to pass notebook artifacts, without having to read them all first.
+    """
+
+    def __init__(self, paths: List[str], in_folder, check_existence=True):
+        """Initiate ArtifactIterator
+
+        :param paths: list of paths
+        :param check_existence: check the paths exist
+        :param in_folder: The folder that all paths should be in (or subfolder).
+        :raises IOError: if check_existence and file does not exist
+        """
+        self.paths = [Path(p).absolute() for p in paths]
+        self.in_folder = Path(in_folder).absolute()
+        for path in self.paths:
+            if check_existence and not path.exists():
+                raise IOError(f"Path does not exist: {path}")
+            if check_existence and not path.is_file():
+                raise IOError(f"Path is not a file: {path}")
+            try:
+                path.relative_to(self.in_folder)
+            except ValueError:
+                raise IOError(f"Path '{path}' is not in folder '{in_folder}''")
+
+    @property
+    def relative_paths(self):
+        return [p.relative_to(self.in_folder) for p in self.paths]
+
+    def __iter__(self) -> Iterable[Tuple[Path, io.BufferedReader]]:
+        for path in self.paths:
+            with path.open("rb") as handle:
+                yield path.relative_to(self.in_folder), handle
 
 
 class JupyterCacheBase(JupyterCacheAbstract):
@@ -51,7 +88,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
 
     def clear_cache(self):
         """Clear the cache completely."""
-        rmtree(self.path)
+        shutil.rmtree(self.path)
         self._db = None
 
     def _get_notebook_path_commit(self, hashkey, raise_on_missing=False) -> Path:
@@ -61,20 +98,25 @@ class JupyterCacheBase(JupyterCacheAbstract):
             raise RetrievalError("hashkey not in cache: {}".format(hashkey))
         return path
 
-    def limit_cache_size(self):
-        """Ensure the cache is limited to the required size,
-        by deleting the oldest commits.
-        """
-        cache_size = Setting.get_value(CACHE_SIZE_KEY, self.db, DEFAULT_CACHE_SIZE)
+    def _get_artifact_path_commit(self, hashkey) -> Path:
+        """"Retrieve a relative path in the cache to a notebook, from its hash."""
+        path = self.path.joinpath(Path("executed", hashkey, "artifacts"))
+        return path
+
+    def truncate_commits(self):
+        """If the number of commits exceeds the set limit, delete the oldest."""
+        commit_limit = Setting.get_value(
+            COMMIT_LIMIT_KEY, self.db, DEFAULT_COMMIT_LIMIT
+        )
         # TODO you could have better control over this by e.g. tagging certain commits
         # that should not be deleted.
-        pks = NbCommitRecord.records_to_delete(cache_size, self.db)
+        pks = NbCommitRecord.records_to_delete(commit_limit, self.db)
         for pk in pks:
             self.remove_commit(pk)
 
-    def change_cache_size(self, size: int):
+    def change_commit_limit(self, size: int):
         assert isinstance(size, int) and size > 0
-        Setting.set_value(CACHE_SIZE_KEY, size, self.db)
+        Setting.set_value(COMMIT_LIMIT_KEY, size, self.db)
 
     def _create_hashable_nb(
         self,
@@ -166,6 +208,8 @@ class JupyterCacheBase(JupyterCacheAbstract):
         description="",
     ):
         """Commit an executed notebook."""
+        # TODO it would be ideal to have some 'rollback' mechanism on exception
+
         if check_validity:
             self._validate_nb_bundle(bundle)
         hashkey = self._hash_notebook(bundle.nb)
@@ -175,7 +219,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
                 raise CachingError(
                     "Notebook already exists in cache and overwrite=False."
                 )
-            rmtree(path.parent)
+            shutil.rmtree(path.parent)
             record = NbCommitRecord.record_from_hashkey(hashkey, self.db)
             # TODO record should be changed rather than deleted
             NbCommitRecord.remove_records([record.pk], self.db)
@@ -186,27 +230,73 @@ class JupyterCacheBase(JupyterCacheAbstract):
         path.parent.mkdir(parents=True)
         self._prepare_nb_for_commit(bundle.nb)
         path.write_text(nbf.writes(bundle.nb, NB_VERSION))
-        self.limit_cache_size()
+
+        # write artifacts
+        artifact_folder = self._get_artifact_path_commit(hashkey)
+        if artifact_folder.exists():
+            shutil.rmtree(artifact_folder)
+        for rel_path, handle in bundle.artifacts or []:
+            write_path = artifact_folder.joinpath(rel_path)
+            write_path.parent.mkdir(parents=True, exist_ok=True)
+            write_path.write_bytes(handle.read())
+
+        self.truncate_commits()
+
         return record.pk
+
+    def commit_notebook_file(
+        self,
+        path: str,
+        uri: Optional[str] = None,
+        artifacts: List[str] = (),
+        check_validity: bool = True,
+        overwrite: bool = False,
+    ) -> int:
+        """Commit an executed notebook, returning its primary key.
+
+        Note: non-code source text (e.g. markdown) is not stored in the cache.
+
+        :param path: path to the notebook
+        :param uri: alternative URI to store in the commit record (defaults to path)
+        :param artifacts: list of paths to outputs of the executed notebook.
+            Artifacts must be in the same folder as the notebook (or a sub-folder)
+        :param check_validity: check that the notebook has been executed correctly,
+            by asserting `execution_count`s are consecutive and start at 1.
+        :param overwrite: Allow overwrite of commit with matching hash
+        :return: The primary key of the commit
+        """
+        notebook = nbf.read(path, NB_VERSION)
+        return self.commit_notebook_bundle(
+            NbBundleIn(
+                notebook,
+                uri or path,
+                ArtifactIterator(artifacts, in_folder=Path(path).parent),
+            ),
+            check_validity=check_validity,
+            overwrite=overwrite,
+        )
 
     def list_commit_records(self) -> List[NbCommitRecord]:
         return NbCommitRecord.records_all(self.db)
 
-    def get_commit_record(self, pk: int) -> dict:
-        return NbCommitRecord.record_from_pk(pk, self.db).to_dict()
+    def get_commit_record(self, pk: int) -> NbCommitRecord:
+        return NbCommitRecord.record_from_pk(pk, self.db)
 
     def get_commit_bundle(self, pk: int) -> NbBundleOut:
         record = NbCommitRecord.record_from_pk(pk, self.db)
         NbCommitRecord.touch(pk, self.db)
         path = self._get_notebook_path_commit(record.hashkey)
+        artifact_folder = self._get_artifact_path_commit(record.hashkey)
         if not path.exists():
             raise KeyError(pk)
-        # TODO optionally include assets
-        # TODO cache notebook reads in memory (when retrieving from this cache,
-        # should check that the cache represents the last commit)
-        # this will be important when adding queries for specific cell outputs
+
         return NbBundleOut(
-            nbf.reads(path.read_text(), NB_VERSION), commit=record.to_dict()
+            nbf.reads(path.read_text(), NB_VERSION),
+            commit=record.to_dict(),
+            artifacts=ArtifactIterator(
+                [p for p in artifact_folder.glob("**/*") if p.is_file()],
+                in_folder=artifact_folder,
+            ),
         )
 
     def get_commit_codecell(self, pk: int, index: int) -> nbf.NotebookNode:
@@ -216,6 +306,9 @@ class JupyterCacheBase(JupyterCacheAbstract):
         `[codecell_0, textcell_1, codecell_2]`
         would map {0: codecell_0, 1: codecell_2}
         """
+        # TODO cache notebook reads in memory (when retrieving from this cache,
+        # should check that the cache represents the last commit)
+        # this would be helpful for speeding up this query
         nb_bundle = self.get_commit_bundle(pk)
         _code_index = 0
         for cell in nb_bundle.nb.cells:
@@ -231,7 +324,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         path = self._get_notebook_path_commit(record.hashkey)
         if not path.exists():
             raise KeyError(pk)
-        rmtree(path.parent)
+        shutil.rmtree(path.parent)
         NbCommitRecord.remove_records([pk], self.db)
 
     def match_commit_notebook(self, nb: nbf.NotebookNode):
@@ -276,7 +369,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         return NbStageRecord.records_all(self.db)
 
     def get_staged_notebook(self, uri: str) -> NbBundleIn:
-        """Return a single notebook from the cache."""
+        """Return a single staged notebook."""
         notebook = nbf.read(uri, NB_VERSION)
         return NbBundleIn(notebook, uri)
 

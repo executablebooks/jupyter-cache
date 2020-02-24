@@ -1,6 +1,6 @@
 {
     "files.exclude": {
-        "**/.git": false,
+        "**/.git": true,
         "**/.github": true,
         "**/.svn": true,
         "**/.hg": true,
@@ -15,4 +15,5 @@
     "python.linting.flake8Enabled": true,
     "python.linting.enabled": true,
     "python.pythonPath": "/anaconda/envs/mistune/bin/python",
+    "autoDocstring.customTemplatePath": "docstring.fmt.mustache"
 }

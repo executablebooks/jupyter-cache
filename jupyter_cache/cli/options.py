@@ -43,6 +43,15 @@ CACHE_PATH = click.option(
 )
 
 
+NB_PATH = click.option(
+    "-nb",
+    "--nbpath",
+    required=True,
+    help="The notebooks path.",
+    type=click.Path(dir_okay=False, exists=True, readable=True, resolve_path=True),
+)
+
+
 EXEC_ENTRYPOINT = click.option(
     "-e",
     "--entry-point",
@@ -54,4 +63,37 @@ EXEC_ENTRYPOINT = click.option(
 
 PATH_LENGTH = click.option(
     "-l", "--path-length", default=3, show_default=True, help="Maximum URI path."
+)
+
+
+VALIDATE_NB = click.option(
+    "--validate/--no-validate",
+    default=True,
+    show_default=True,
+    help="Whether to validate that a notebook has been executed.",
+)
+
+
+OVERWRITE_COMMIT = click.option(
+    "--overwrite/--no-overwrite",
+    default=True,
+    show_default=True,
+    help="Whether to overwrite an existing notebook with the same hash.",
+)
+
+
+def confirm_remove_all(ctx, param, remove_all):
+    if remove_all and not click.confirm("Are you sure you want to remove all?"):
+        click.secho("Aborted!", bold=True, fg="red")
+        ctx.exit()
+    return remove_all
+
+
+REMOVE_ALL = click.option(
+    "-a",
+    "--all",
+    "remove_all",
+    is_flag=True,
+    help="Remove all notebooks.",
+    callback=confirm_remove_all,
 )

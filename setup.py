@@ -32,7 +32,7 @@ setup(
         "Programming Language :: Python :: Implementation :: PyPy",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
-    python_requires=">=3.5",
+    python_requires=">=3.6",
     install_requires=[
         "nbformat",
         "nbdime",
@@ -41,6 +41,7 @@ setup(
         "click",
         "click-log",
         "tabulate",
+        "pyyaml",
     ],
     extras_require={
         "code_style": ["flake8<3.8.0,>=3.7.0", "black", "pre-commit==1.17.0"],
