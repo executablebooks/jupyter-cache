@@ -62,6 +62,8 @@ class JupyterCacheAbstract(ABC):
 
         If check_validity, then check that the notebook has been executed correctly,
         by asserting `execution_count`s are consecutive and start at 1
+
+        Note: non-code source text (e.g. markdown) is not stored in the cache.
         """
         pass
 
@@ -76,6 +78,8 @@ class JupyterCacheAbstract(ABC):
 
         If check_validity, then check that the notebook has been executed correctly,
         by asserting `execution_count`s are consecutive and start at 1.
+
+        Note: non-code source text (e.g. markdown) is not stored in the cache.
         """
         notebook = nbf.read(path, NB_VERSION)
         return self.commit_notebook_bundle(
@@ -122,11 +126,17 @@ class JupyterCacheAbstract(ABC):
     def diff_nbnode_with_commit(
         self, pk: int, nb: nbf.NotebookNode, uri: str = "", as_str=False, **kwargs
     ):
-        """Return a diff of a notebook to a committed one."""
+        """Return a diff of a notebook to a committed one.
+
+        Note: this will not diff markdown content, since it is not stored in the cache.
+        """
         pass
 
     def diff_nbfile_with_commit(self, pk: int, path: str, as_str=False, **kwargs):
-        """Return a diff of a notebook to a committed one."""
+        """Return a diff of a notebook to a committed one.
+
+        Note: this will not diff markdown content, since it is not stored in the cache.
+        """
         nb = nbf.read(path, NB_VERSION)
         return self.diff_nbnode_with_commit(pk, nb, uri=path, as_str=as_str, **kwargs)
 
@@ -142,7 +152,7 @@ class JupyterCacheAbstract(ABC):
 
     @abstractmethod
     def list_staged_records(self) -> list:
-        """list staged notebook uri's in the cache."""
+        """list staged notebook URI's in the cache."""
         pass
 
     @abstractmethod

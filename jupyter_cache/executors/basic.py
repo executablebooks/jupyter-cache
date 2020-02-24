@@ -34,4 +34,6 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
         # TODO what should the balance of responsibility be here?
         # Should the executor be adding to the cache,
         # or perhaps run just accepts the iter and returns NbBundles.
+        # TODO it would also be ideal to tag all notebooks
+        # that were executed at the same time.
         return executed_uris

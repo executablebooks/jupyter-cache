@@ -66,6 +66,8 @@ class JupyterCacheBase(JupyterCacheAbstract):
         by deleting the oldest commits.
         """
         cache_size = Setting.get_value(CACHE_SIZE_KEY, self.db, DEFAULT_CACHE_SIZE)
+        # TODO you could have better control over this by e.g. tagging certain commits
+        # that should not be deleted.
         pks = NbCommitRecord.records_to_delete(cache_size, self.db)
         for pk in pks:
             self.remove_commit(pk)
@@ -144,6 +146,18 @@ class JupyterCacheBase(JupyterCacheAbstract):
             # TODO check for output exceptions?
         # TODO assets
 
+    def _prepare_nb_for_commit(self, nb: nbf.NotebookNode, deepcopy=False):
+        """Prepare in-place, we remove non-code source text and metadata,
+        but leave the actual cell (so diffs refer to correct cell indices).
+        """
+        if deepcopy:
+            nb = copy.deepcopy(nb)
+        for cell in nb.cells:
+            if cell.cell_type != "code" and "source" in cell:
+                cell.source = ""
+                cell.metadata = nbf.NotebookNode()
+        return nb
+
     def commit_notebook_bundle(
         self,
         bundle: NbBundleIn,
@@ -170,6 +184,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
             uri=bundle.uri, hashkey=hashkey, db=self.db, description=description
         )
         path.parent.mkdir(parents=True)
+        self._prepare_nb_for_commit(bundle.nb)
         path.write_text(nbf.writes(bundle.nb, NB_VERSION))
         self.limit_cache_size()
         return record.pk
@@ -227,8 +242,12 @@ class JupyterCacheBase(JupyterCacheAbstract):
     def diff_nbnode_with_commit(
         self, pk: int, nb: nbf.NotebookNode, uri: str = "", as_str=False, **kwargs
     ):
-        """Return a diff of a notebook to a committed one."""
+        """Return a diff of a notebook to a committed one.
+
+        Note: this will not diff markdown content, since it is not stored in the cache.
+        """
         committed_nb = self.get_commit_bundle(pk).nb
+        nb = self._prepare_nb_for_commit(nb, deepcopy=True)
         diff = nbdime.diff_notebooks(committed_nb, nb)
         if not as_str:
             return diff
