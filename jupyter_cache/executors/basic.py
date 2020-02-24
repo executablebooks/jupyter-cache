@@ -1,3 +1,4 @@
+from pathlib import Path
 import tempfile
 
 from nbconvert.preprocessors.execute import executenb
@@ -5,6 +6,7 @@ from nbconvert.preprocessors.execute import executenb
 # from jupyter_client.kernelspec import get_kernel_spec, NoSuchKernel
 
 from jupyter_cache.executors.base import JupyterExecutorAbstract
+from jupyter_cache.cache.main import NbBundleIn, ArtifactIterator
 
 
 class JupyterExecutorBasic(JupyterExecutorAbstract):
@@ -24,8 +26,13 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
                 except Exception:
                     self.logger.error("Failed Execution: {}".format(uri), exc_info=True)
                 else:
+                    final_bundle = NbBundleIn(
+                        nb_bundle.nb,
+                        nb_bundle.uri,
+                        ArtifactIterator(Path(tmpdirname).glob("**/*"), tmpdirname),
+                    )
                     try:
-                        self.cache.commit_notebook_bundle(nb_bundle, overwrite=True)
+                        self.cache.commit_notebook_bundle(final_bundle, overwrite=True)
                         self.cache.discard_staged_notebook(uri)
                     except Exception:
                         self.logger.error(

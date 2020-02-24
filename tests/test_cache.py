@@ -147,9 +147,13 @@ def test_execution(tmp_path):
     db = JupyterCacheBase(str(tmp_path))
     db.stage_notebook_file(path=os.path.join(NB_PATH, "basic_unrun.ipynb"))
     db.stage_notebook_file(path=os.path.join(NB_PATH, "basic_failing.ipynb"))
+    db.stage_notebook_file(path=os.path.join(NB_PATH, "external_output.ipynb"))
     executor = load_executor("basic", db)
-    assert executor.run() == [os.path.join(NB_PATH, "basic_unrun.ipynb")]
-    assert db.list_commit_records()[0].pk == 1
+    assert executor.run() == [
+        os.path.join(NB_PATH, "basic_unrun.ipynb"),
+        os.path.join(NB_PATH, "external_output.ipynb"),
+    ]
+    assert len(db.list_commit_records()) == 2
     assert db.get_commit_bundle(1).nb.cells[0] == {
         "cell_type": "code",
         "execution_count": 1,
@@ -157,3 +161,7 @@ def test_execution(tmp_path):
         "outputs": [{"name": "stdout", "output_type": "stream", "text": "1\n"}],
         "source": "a=1\nprint(a)",
     }
+    with db.commit_artefacts_temppath(2) as path:
+        paths = [str(p.relative_to(path)) for p in path.glob("**/*") if p.is_file()]
+        assert paths == ["artifact.txt"]
+        assert path.joinpath("artifact.txt").read_text() == "hi"
