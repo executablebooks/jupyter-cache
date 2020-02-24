@@ -193,7 +193,7 @@ class JupyterCacheAbstract(ABC):
     ) -> Tuple[int, nbf.NotebookNode]:
         """Match to an executed notebook and return a merged version
 
-        :param nb: The input notebook
+        :param path: The input notebook path
         :param nb_meta: metadata keys to merge from the commit (all if None)
         :param cell_meta: cell metadata keys to merge from the commit (all if None)
         :raises KeyError: if no match is found
