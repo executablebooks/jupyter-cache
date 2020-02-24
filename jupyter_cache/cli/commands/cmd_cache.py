@@ -156,9 +156,12 @@ def stage_nbs(cache_path, nbpaths):
 @jcache.command("unstage-nbs")
 @arguments.NB_PATHS
 @options.CACHE_PATH
-def unstage_nbs(cache_path, nbpaths):
+@click.option("-a", "--all", "unstage_all", is_flag=True, help="Unstage all notebooks.")
+def unstage_nbs(cache_path, nbpaths, unstage_all):
     """Unstage notebook(s) for execution."""
     db = JupyterCacheBase(cache_path)
+    if unstage_all:
+        nbpaths = [record.uri for record in db.list_staged_records()]
     for path in nbpaths:
         # TODO deal with errors (print all at end? or option to ignore)
         click.echo("Unstaging: {}".format(path))
