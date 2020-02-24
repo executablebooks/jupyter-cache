@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 import copy
 import io
 from pathlib import Path
@@ -189,15 +190,11 @@ class JupyterCacheBase(JupyterCacheAbstract):
         # TODO assets
 
     def _prepare_nb_for_commit(self, nb: nbf.NotebookNode, deepcopy=False):
-        """Prepare in-place, we remove non-code source text and metadata,
-        but leave the actual cell (so diffs refer to correct cell indices).
+        """Prepare in-place, we remove non-code cells.
         """
         if deepcopy:
             nb = copy.deepcopy(nb)
-        for cell in nb.cells:
-            if cell.cell_type != "code" and "source" in cell:
-                cell.source = ""
-                cell.metadata = nbf.NotebookNode()
+        nb.cells = [cell for cell in nb.cells if cell.cell_type == "code"]
         return nb
 
     def commit_notebook_bundle(
@@ -299,25 +296,36 @@ class JupyterCacheBase(JupyterCacheAbstract):
             ),
         )
 
-    def get_commit_codecell(self, pk: int, index: int) -> nbf.NotebookNode:
-        """Return a code cell from a committed notebook.
+    @contextmanager
+    def commit_artefacts_temppath(self, pk: int) -> Path:
+        """Context manager to provide a temporary folder path to the notebook artifacts.
 
-        NOTE: the index **only** refers to the list of code cells, e.g.
-        `[codecell_0, textcell_1, codecell_2]`
-        would map {0: codecell_0, 1: codecell_2}
+        Note this path is only guaranteed to exist within the scope of the context,
+        and should only be used for read/copy operations::
+
+            with cache.commit_artefacts_temppath(1) as path:
+                shutil.copytree(path, destination)
         """
-        # TODO cache notebook reads in memory (when retrieving from this cache,
-        # should check that the cache represents the last commit)
-        # this would be helpful for speeding up this query
-        nb_bundle = self.get_commit_bundle(pk)
-        _code_index = 0
-        for cell in nb_bundle.nb.cells:
-            if cell.cell_type != "code":
-                continue
-            if _code_index == index:
-                return cell
-            _code_index += 1
-        raise RetrievalError(f"Notebook contains less than {index+1} code cell(s)")
+        record = NbCommitRecord.record_from_pk(pk, self.db)
+        yield self._get_artifact_path_commit(record.hashkey)
+
+    # removed until defined use case
+    # def get_commit_codecell(self, pk: int, index: int) -> nbf.NotebookNode:
+    #     """Return a code cell from a committed notebook.
+
+    #     NOTE: the index **only** refers to the list of code cells, e.g.
+    #     `[codecell_0, textcell_1, codecell_2]`
+    #     would map {0: codecell_0, 1: codecell_2}
+    #     """
+    #     nb_bundle = self.get_commit_bundle(pk)
+    #     _code_index = 0
+    #     for cell in nb_bundle.nb.cells:
+    #         if cell.cell_type != "code":
+    #             continue
+    #         if _code_index == index:
+    #             return cell
+    #         _code_index += 1
+    #     raise RetrievalError(f"Notebook contains less than {index+1} code cell(s)")
 
     def remove_commit(self, pk: int):
         record = NbCommitRecord.record_from_pk(pk, self.db)

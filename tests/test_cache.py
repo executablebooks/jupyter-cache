@@ -36,7 +36,7 @@ def test_basic_workflow(tmp_path):
         "accessed",
         "description",
     }
-    assert cache.get_commit_codecell(pk, 0).source == "a=1\nprint(a)"
+    # assert cache.get_commit_codecell(pk, 0).source == "a=1\nprint(a)"
 
     path = os.path.join(NB_PATH, "basic_failing.ipynb")
     diff = cache.diff_nbfile_with_commit(pk, path, as_str=True, use_color=False)
@@ -45,12 +45,12 @@ def test_basic_workflow(tmp_path):
         nbdiff
         --- committed pk=1
         +++ other: {path}
-        ## inserted before nb/cells/1:
+        ## inserted before nb/cells/0:
         +  code cell:
         +    source:
         +      raise Exception('oopie')
 
-        ## deleted nb/cells/1:
+        ## deleted nb/cells/0:
         -  code cell:
         -    execution_count: 2
         -    source:
@@ -120,6 +120,9 @@ def test_artifacts(tmp_path):
     text = list(h.read().decode() for r, h in bundle.artifacts)[0]
     assert text.rstrip() == "An artifact"
 
+    with cache.commit_artefacts_temppath(1) as path:
+        assert path.joinpath("artifact_folder").exists()
+
 
 def test_execution(tmp_path):
     from jupyter_cache.executors import load_executor
@@ -130,7 +133,7 @@ def test_execution(tmp_path):
     executor = load_executor("basic", db)
     assert executor.run() == [os.path.join(NB_PATH, "basic_unrun.ipynb")]
     assert db.list_commit_records()[0].pk == 1
-    assert db.get_commit_codecell(1, 0) == {
+    assert db.get_commit_bundle(1).nb.cells[0] == {
         "cell_type": "code",
         "execution_count": 1,
         "metadata": {},

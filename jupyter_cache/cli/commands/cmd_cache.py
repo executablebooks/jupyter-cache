@@ -88,13 +88,13 @@ def show_commit(cache_path, pk):
     record = db.get_commit_record(pk)
     data = format_commit_record(record, True, None)
     click.echo(yaml.safe_dump(data, sort_keys=False), nl=False)
-    # TODO get artifacts list without loading notebook
-    bundle = db.get_commit_bundle(record.pk)
-    if not bundle.artifacts:
+    with db.commit_artefacts_temppath(pk) as folder:
+        paths = [str(p.relative_to(folder)) for p in folder.glob("**/*") if p.is_file()]
+    if not paths:
         click.echo("")
         return
     click.echo(f"Artifacts:")
-    for path in bundle.artifacts.relative_paths:
+    for path in paths:
         click.echo(f"- {path}")
 
 
@@ -105,18 +105,16 @@ def show_commit(cache_path, pk):
 def cat_artifact(cache_path, pk, artifact_rpath):
     """Print the contents of a commit artefact."""
     db = JupyterCacheBase(cache_path)
-    record = db.get_commit_record(pk)
-    bundle = db.get_commit_bundle(record.pk)
-    if (
-        not bundle.artifacts
-        or Path(artifact_rpath) not in bundle.artifacts.relative_paths
-    ):
-        click.secho("Artifact does not exist", fg="red")
-        sys.exit(1)
-    for rpath, handle in bundle.artifacts:
-        if rpath == Path(artifact_rpath):
-            click.echo(handle.read().decode())
-            break
+    with db.commit_artefacts_temppath(pk) as path:
+        artifact_path = path.joinpath(artifact_rpath)
+        if not artifact_path.exists():
+            click.secho("Artifact does not exist", fg="red")
+            sys.exit(1)
+        if not artifact_path.is_file():
+            click.secho("Artifact is not a file", fg="red")
+            sys.exit(1)
+        text = artifact_path.read_text()
+    click.echo(text)
 
 
 def commit_file(db, nbpath, validate, overwrite, artifact_paths=()):
