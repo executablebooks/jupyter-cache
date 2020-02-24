@@ -98,15 +98,7 @@ def show_commit(cache_path, pk):
         click.echo(f"- {path}")
 
 
-@jcache.command("commit-nb")
-@arguments.ARTIFACT_PATHS
-@options.NB_PATH
-@options.CACHE_PATH
-@options.VALIDATE_NB
-@options.OVERWRITE_COMMIT
-def commit_nb(cache_path, artifact_paths, nbpath, validate, overwrite):
-    """Commit a notebook that has already been executed, with artifacts."""
-    db = JupyterCacheBase(cache_path)
+def commit_file(db, nbpath, validate, overwrite, artifact_paths=()):
     click.echo("Committing: {}".format(nbpath))
     try:
         db.commit_notebook_file(
@@ -121,14 +113,36 @@ def commit_nb(cache_path, artifact_paths, nbpath, validate, overwrite):
         if click.confirm(
             "The notebook may not have been executed, continue committing?"
         ):
-            db.commit_notebook_file(
-                nbpath,
-                artifacts=artifact_paths,
-                check_validity=False,
-                overwrite=overwrite,
-            )
+            try:
+                db.commit_notebook_file(
+                    nbpath,
+                    artifacts=artifact_paths,
+                    check_validity=False,
+                    overwrite=overwrite,
+                )
+            except IOError as error:
+                click.secho("Artifact Error: ", fg="red", nl=False)
+                click.echo(str(error))
+                return False
+    except IOError as error:
+        click.secho("Artifact Error: ", fg="red", nl=False)
+        click.echo(str(error))
+        return False
+    return True
 
-    click.secho("Success!", fg="green")
+
+@jcache.command("commit-nb")
+@arguments.ARTIFACT_PATHS
+@options.NB_PATH
+@options.CACHE_PATH
+@options.VALIDATE_NB
+@options.OVERWRITE_COMMIT
+def commit_nb(cache_path, artifact_paths, nbpath, validate, overwrite):
+    """Commit a notebook that has already been executed, with artifacts."""
+    db = JupyterCacheBase(cache_path)
+    success = commit_file(db, nbpath, validate, overwrite, artifact_paths)
+    if success:
+        click.secho("Success!", fg="green")
 
 
 @jcache.command("commit-nbs")
@@ -139,22 +153,13 @@ def commit_nb(cache_path, artifact_paths, nbpath, validate, overwrite):
 def commit_nbs(cache_path, nbpaths, validate, overwrite):
     """Commit notebook(s) that have already been executed."""
     db = JupyterCacheBase(cache_path)
-    for path in nbpaths:
+    success = True
+    for nbpath in nbpaths:
         # TODO deal with errors (print all at end? or option to ignore)
-        click.echo("Committing: {}".format(path))
-        try:
-            db.commit_notebook_file(path, check_validity=validate, overwrite=overwrite)
-        except NbValidityError as error:
-            click.secho("Validity Error: ", fg="red", nl=False)
-            click.echo(str(error))
-            if click.confirm(
-                "The notebook may not have been executed, continue committing?"
-            ):
-                db.commit_notebook_file(path, check_validity=False, overwrite=overwrite)
-            else:
-                continue
-
-    click.secho("Success!", fg="green")
+        if not commit_file(db, nbpath, validate, overwrite):
+            success = False
+    if success:
+        click.secho("Success!", fg="green")
 
 
 @jcache.command("remove-commits")
