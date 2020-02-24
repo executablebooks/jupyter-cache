@@ -158,7 +158,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
     def _hash_notebook(
         self,
         nb: nbf.NotebookNode,
-        compare_nb_meta=("kernelspec", "invalidated"),
+        compare_nb_meta=("kernelspec",),
         compare_cell_meta=None,
     ):
         """Create a hashkey for a notebook bundle."""
@@ -309,24 +309,6 @@ class JupyterCacheBase(JupyterCacheAbstract):
         record = NbCommitRecord.record_from_pk(pk, self.db)
         yield self._get_artifact_path_commit(record.hashkey)
 
-    # removed until defined use case
-    # def get_commit_codecell(self, pk: int, index: int) -> nbf.NotebookNode:
-    #     """Return a code cell from a committed notebook.
-
-    #     NOTE: the index **only** refers to the list of code cells, e.g.
-    #     `[codecell_0, textcell_1, codecell_2]`
-    #     would map {0: codecell_0, 1: codecell_2}
-    #     """
-    #     nb_bundle = self.get_commit_bundle(pk)
-    #     _code_index = 0
-    #     for cell in nb_bundle.nb.cells:
-    #         if cell.cell_type != "code":
-    #             continue
-    #         if _code_index == index:
-    #             return cell
-    #         _code_index += 1
-    #     raise RetrievalError(f"Notebook contains less than {index+1} code cell(s)")
-
     def remove_commit(self, pk: int):
         record = NbCommitRecord.record_from_pk(pk, self.db)
         path = self._get_notebook_path_commit(record.hashkey)
@@ -336,9 +318,52 @@ class JupyterCacheBase(JupyterCacheAbstract):
         NbCommitRecord.remove_records([pk], self.db)
 
     def match_commit_notebook(self, nb: nbf.NotebookNode):
+        """Match to an executed notebook, returning its primary key.
+
+        :raises KeyError: if no match is found
+        """
         hashkey = self._hash_notebook(nb)
         commit_record = NbCommitRecord.record_from_hashkey(hashkey, self.db)
         return commit_record.pk
+
+    def merge_commit_into_match(
+        self,
+        nb: nbf.NotebookNode,
+        nb_meta=("kernelspec", "language_info"),
+        cell_meta=None,
+    ) -> Tuple[int, nbf.NotebookNode]:
+        """Match to an executed notebook and return a merged version
+
+        :param nb: The input notebook
+        :param nb_meta: metadata keys to merge from the commit (all if None)
+        :param cell_meta: cell metadata keys to merge from the commit (all if None)
+        :raises KeyError: if no match is found
+        :return: pk, input notebook with committed code cells and metadata merged.
+        """
+        pk = self.match_commit_notebook(nb)
+        commit_nb = self.get_commit_bundle(pk).nb
+        nb = copy.deepcopy(nb)
+        if nb_meta is None:
+            nb.metadata = commit_nb.metadata
+        else:
+            for key in nb_meta:
+                nb.metadata[key] = commit_nb.metadata[key]
+        for idx in range(len(nb.cells)):
+            if nb.cells[idx].cell_type == "code":
+                commit_cell = commit_nb.cells.pop(0)
+                if cell_meta is not None:
+                    # update the input metadata with select commit metadata
+                    # then add the input metadata to the commit cell
+                    nb.cells[idx].metadata.update(
+                        {
+                            k: v
+                            for k, v in commit_cell.metadata.items()
+                            if k in cell_meta
+                        }
+                    )
+                    commit_cell.metadata = nb.cells[idx].metadata
+                nb.cells[idx] = commit_cell
+        return pk, nb
 
     def diff_nbnode_with_commit(
         self, pk: int, nb: nbf.NotebookNode, uri: str = "", as_str=False, **kwargs
@@ -401,3 +426,21 @@ class JupyterCacheBase(JupyterCacheAbstract):
             except KeyError:
                 records.append(record)
         return records
+
+    # removed until defined use case
+    # def get_commit_codecell(self, pk: int, index: int) -> nbf.NotebookNode:
+    #     """Return a code cell from a committed notebook.
+
+    #     NOTE: the index **only** refers to the list of code cells, e.g.
+    #     `[codecell_0, textcell_1, codecell_2]`
+    #     would map {0: codecell_0, 1: codecell_2}
+    #     """
+    #     nb_bundle = self.get_commit_bundle(pk)
+    #     _code_index = 0
+    #     for cell in nb_bundle.nb.cells:
+    #         if cell.cell_type != "code":
+    #             continue
+    #         if _code_index == index:
+    #             return cell
+    #         _code_index += 1
+    #     raise RetrievalError(f"Notebook contains less than {index+1} code cell(s)")

@@ -1,6 +1,7 @@
 import os
 from textwrap import dedent
 
+import nbformat as nbf
 import pytest
 
 from jupyter_cache.cache import JupyterCacheBase
@@ -86,6 +87,22 @@ def test_basic_workflow(tmp_path):
 
     cache.clear_cache()
     assert cache.list_commit_records() == []
+
+
+def test_merge_commit_into_match(tmp_path):
+    cache = JupyterCacheBase(str(tmp_path))
+    cache.commit_notebook_file(
+        path=os.path.join(NB_PATH, "basic.ipynb"), check_validity=False
+    )
+    nb = nbf.read(os.path.join(NB_PATH, "basic_unrun.ipynb"), 4)
+    pk, merged = cache.merge_commit_into_match(nb)
+    assert merged.cells[1] == {
+        "cell_type": "code",
+        "execution_count": 2,
+        "metadata": {},
+        "outputs": [{"name": "stdout", "output_type": "stream", "text": "1\n"}],
+        "source": "a=1\nprint(a)",
+    }
 
 
 def test_artifacts(tmp_path):

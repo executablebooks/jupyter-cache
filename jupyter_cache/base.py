@@ -155,32 +155,38 @@ class JupyterCacheAbstract(ABC):
         """
         pass
 
-    # removed until defined use case
-    # @abstractmethod
-    # def get_commit_codecell(self, pk: int, index: int) -> nbf.NotebookNode:
-    #     """Return a code cell from a committed notebook.
-
-    #     NOTE: the index **only** refers to the list of code cells, e.g.
-    #     `[codecell_0, textcell_1, codecell_2]`
-    #     would map {0: codecell_0, 1: codecell_2}
-    #     """
-    #     pass
-
     @abstractmethod
     def match_commit_notebook(self, nb: nbf.NotebookNode) -> int:
-        """Match an executed notebook, returning its primary key.
+        """Match to an executed notebook, returning its primary key.
 
-        Raises a `KeyError` if no match found.
+        :raises KeyError: if no match is found
         """
         pass
 
     def match_commit_file(self, path: str) -> int:
-        """Match an executed notebook, returning its primary key.
+        """Match to an executed notebook, returning its primary key.
 
-        Raises a `KeyError` if no match found.
+        :raises KeyError: if no match is found
         """
         notebook = nbf.read(path, NB_VERSION)
         return self.match_commit_notebook(notebook)
+
+    @abstractmethod
+    def merge_commit_into_match(
+        self,
+        nb: nbf.NotebookNode,
+        nb_meta=("kernelspec", "language_info"),
+        cell_meta=None,
+    ) -> Tuple[int, nbf.NotebookNode]:
+        """Match to an executed notebook and return a merged version
+
+        :param nb: The input notebook
+        :param nb_meta: metadata keys to merge from the commit (all if None)
+        :param cell_meta: cell metadata keys to merge from the commit (all if None)
+        :raises KeyError: if no match is found
+        :return: pk, input notebook with committed code cells and metadata merged.
+        """
+        pass
 
     @abstractmethod
     def diff_nbnode_with_commit(
@@ -224,3 +230,14 @@ class JupyterCacheAbstract(ABC):
     def list_nbs_to_exec(self) -> list:
         """List staged notebooks, whose hash is not present in the cache commits."""
         pass
+
+    # removed until defined use case
+    # @abstractmethod
+    # def get_commit_codecell(self, pk: int, index: int) -> nbf.NotebookNode:
+    #     """Return a code cell from a committed notebook.
+
+    #     NOTE: the index **only** refers to the list of code cells, e.g.
+    #     `[codecell_0, textcell_1, codecell_2]`
+    #     would map {0: codecell_0, 1: codecell_2}
+    #     """
+    #     pass
