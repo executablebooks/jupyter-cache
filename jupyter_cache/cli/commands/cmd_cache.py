@@ -1,7 +1,9 @@
 from pathlib import Path
+import sys
 
 import click
 import tabulate
+import yaml
 
 from jupyter_cache.cli.commands.cmd_main import jcache
 from jupyter_cache.cli import arguments, options
@@ -82,8 +84,6 @@ def list_commits(cache_path, hashkeys, path_length):
 @arguments.PK
 def show_commit(cache_path, pk):
     """Show details of a committed notebook in the cache."""
-    import yaml
-
     db = JupyterCacheBase(cache_path)
     record = db.get_commit_record(pk)
     data = format_commit_record(record, True, None)
@@ -96,6 +96,27 @@ def show_commit(cache_path, pk):
     click.echo(f"Artifacts:")
     for path in bundle.artifacts.relative_paths:
         click.echo(f"- {path}")
+
+
+@jcache.command("cat-artifact")
+@options.CACHE_PATH
+@arguments.PK
+@arguments.ARTIFACT_RPATH
+def cat_artifact(cache_path, pk, artifact_rpath):
+    """Print the contents of a commit artefact."""
+    db = JupyterCacheBase(cache_path)
+    record = db.get_commit_record(pk)
+    bundle = db.get_commit_bundle(record.pk)
+    if (
+        not bundle.artifacts
+        or Path(artifact_rpath) not in bundle.artifacts.relative_paths
+    ):
+        click.secho("Artifact does not exist", fg="red")
+        sys.exit(1)
+    for rpath, handle in bundle.artifacts:
+        if rpath == Path(artifact_rpath):
+            click.echo(handle.read().decode())
+            break
 
 
 def commit_file(db, nbpath, validate, overwrite, artifact_paths=()):
