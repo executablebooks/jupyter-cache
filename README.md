@@ -1,3 +1,5 @@
+[Install](#install) | [Example](#example-cli-usage) | [Contributing](#contributing)
+
 # jupyter-cache
 
 [![Build Status](https://travis-ci.org/ExecutableBookProject/jupyter-cache.svg?branch=master)](https://travis-ci.org/ExecutableBookProject/jupyter-cache)
@@ -209,8 +211,6 @@ $ jcache list-staged
    3  tests/notebooks/basic_unrun.ipynb      2020-02-23 20:48            5
    2  tests/notebooks/basic_failing.ipynb    2020-02-23 20:48            2
 ```
-
-
 
 ## Contributing
 
