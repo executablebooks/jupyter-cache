@@ -203,7 +203,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         check_validity: bool = True,
         overwrite: bool = False,
         description="",
-    ):
+    ) -> NbCommitRecord:
         """Commit an executed notebook."""
         # TODO it would be ideal to have some 'rollback' mechanism on exception
 
@@ -239,7 +239,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
 
         self.truncate_commits()
 
-        return record.pk
+        return record
 
     def commit_notebook_file(
         self,
@@ -248,7 +248,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         artifacts: List[str] = (),
         check_validity: bool = True,
         overwrite: bool = False,
-    ) -> int:
+    ) -> NbCommitRecord:
         """Commit an executed notebook, returning its primary key.
 
         Note: non-code source text (e.g. markdown) is not stored in the cache.
@@ -317,14 +317,14 @@ class JupyterCacheBase(JupyterCacheAbstract):
         shutil.rmtree(path.parent)
         NbCommitRecord.remove_records([pk], self.db)
 
-    def match_commit_notebook(self, nb: nbf.NotebookNode):
+    def match_commit_notebook(self, nb: nbf.NotebookNode) -> NbCommitRecord:
         """Match to an executed notebook, returning its primary key.
 
         :raises KeyError: if no match is found
         """
         hashkey = self._hash_notebook(nb)
         commit_record = NbCommitRecord.record_from_hashkey(hashkey, self.db)
-        return commit_record.pk
+        return commit_record
 
     def merge_match_into_notebook(
         self,
@@ -340,7 +340,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         :raises KeyError: if no match is found
         :return: pk, input notebook with committed code cells and metadata merged.
         """
-        pk = self.match_commit_notebook(nb)
+        pk = self.match_commit_notebook(nb).pk
         commit_nb = self.get_commit_bundle(pk).nb
         nb = copy.deepcopy(nb)
         if nb_meta is None:
@@ -386,9 +386,9 @@ class JupyterCacheBase(JupyterCacheAbstract):
         )
         return stream.getvalue()
 
-    def stage_notebook_file(self, path: str):
+    def stage_notebook_file(self, path: str) -> NbStageRecord:
         """Stage a single notebook for execution."""
-        NbStageRecord.create_record(
+        return NbStageRecord.create_record(
             str(Path(path).absolute()), self.db, raise_on_exists=False
         )
         # TODO physically copy to cache?
@@ -406,7 +406,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         notebook = nbf.read(uri, NB_VERSION)
         return NbBundleIn(notebook, uri)
 
-    def get_commit_record_of_staged(self, uri: str):
+    def get_commit_record_of_staged(self, uri: str) -> Optional[NbCommitRecord]:
         record = NbStageRecord.record_from_uri(uri, self.db)
         nb = self.get_staged_notebook(record.uri).nb
         hashkey = self._hash_notebook(nb)
@@ -415,7 +415,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         except KeyError:
             return None
 
-    def list_nbs_to_exec(self) -> List[dict]:
+    def list_nbs_to_exec(self) -> List[NbStageRecord]:
         """List staged notebooks, whose hash is not present in the cache commits."""
         records = []
         for record in self.list_staged_records():

@@ -21,7 +21,7 @@ def test_basic_workflow(tmp_path):
         check_validity=False,
     )
     assert cache.list_commit_records()[0].uri == "basic.ipynb"
-    pk = cache.match_commit_file(path=os.path.join(NB_PATH, "basic.ipynb"))
+    pk = cache.match_commit_file(path=os.path.join(NB_PATH, "basic.ipynb")).pk
     nb_bundle = cache.get_commit_bundle(pk)
     assert nb_bundle.nb.metadata["kernelspec"] == {
         "display_name": "Python 3",

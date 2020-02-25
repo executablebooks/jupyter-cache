@@ -6,9 +6,12 @@ with no assumptions about the backend storage/retrieval mechanisms.
 from abc import ABC, abstractmethod
 import io
 from pathlib import Path
-from typing import Iterable, List, NamedTuple, Optional, Tuple
+from typing import Iterable, List, NamedTuple, Optional, Tuple, Union
 
 import nbformat as nbf
+
+# TODO make these abstract
+from jupyter_cache.cache.db import NbCommitRecord, NbStageRecord
 
 NB_VERSION = 4
 
@@ -92,8 +95,8 @@ class JupyterCacheAbstract(ABC):
     @abstractmethod
     def commit_notebook_bundle(
         self, bundle: NbBundleIn, check_validity: bool = True, overwrite: bool = False
-    ) -> int:
-        """Commit an executed notebook, returning its primary key.
+    ) -> NbCommitRecord:
+        """Commit an executed notebook, returning its commit record.
 
         Note: non-code source text (e.g. markdown) is not stored in the cache.
 
@@ -113,8 +116,8 @@ class JupyterCacheAbstract(ABC):
         artifacts: List[str] = (),
         check_validity: bool = True,
         overwrite: bool = False,
-    ) -> int:
-        """Commit an executed notebook, returning its primary key.
+    ) -> NbCommitRecord:
+        """Commit an executed notebook, returning its commit record.
 
         Note: non-code source text (e.g. markdown) is not stored in the cache.
 
@@ -130,11 +133,11 @@ class JupyterCacheAbstract(ABC):
         pass
 
     @abstractmethod
-    def list_commit_records(self) -> list:
+    def list_commit_records(self) -> List[NbCommitRecord]:
         """Return a list of committed notebook records."""
         pass
 
-    def get_commit_record(self, pk: int):
+    def get_commit_record(self, pk: int) -> NbCommitRecord:
         """Return the record of a commit, by its primary key"""
         pass
 
@@ -156,14 +159,14 @@ class JupyterCacheAbstract(ABC):
         pass
 
     @abstractmethod
-    def match_commit_notebook(self, nb: nbf.NotebookNode) -> int:
+    def match_commit_notebook(self, nb: nbf.NotebookNode) -> NbCommitRecord:
         """Match to an executed notebook, returning its primary key.
 
         :raises KeyError: if no match is found
         """
         pass
 
-    def match_commit_file(self, path: str) -> int:
+    def match_commit_file(self, path: str) -> NbCommitRecord:
         """Match to an executed notebook, returning its primary key.
 
         :raises KeyError: if no match is found
@@ -205,14 +208,16 @@ class JupyterCacheAbstract(ABC):
     @abstractmethod
     def diff_nbnode_with_commit(
         self, pk: int, nb: nbf.NotebookNode, uri: str = "", as_str=False, **kwargs
-    ):
+    ) -> Union[str, dict]:
         """Return a diff of a notebook to a committed one.
 
         Note: this will not diff markdown content, since it is not stored in the cache.
         """
         pass
 
-    def diff_nbfile_with_commit(self, pk: int, path: str, as_str=False, **kwargs):
+    def diff_nbfile_with_commit(
+        self, pk: int, path: str, as_str=False, **kwargs
+    ) -> Union[str, dict]:
         """Return a diff of a notebook to a committed one.
 
         Note: this will not diff markdown content, since it is not stored in the cache.
@@ -221,7 +226,7 @@ class JupyterCacheAbstract(ABC):
         return self.diff_nbnode_with_commit(pk, nb, uri=path, as_str=as_str, **kwargs)
 
     @abstractmethod
-    def stage_notebook_file(self, uri: str):
+    def stage_notebook_file(self, uri: str) -> NbStageRecord:
         """Stage a single notebook for execution."""
         pass
 
@@ -231,7 +236,7 @@ class JupyterCacheAbstract(ABC):
         pass
 
     @abstractmethod
-    def list_staged_records(self) -> list:
+    def list_staged_records(self) -> List[NbStageRecord]:
         """list staged notebook URI's in the cache."""
         pass
 
@@ -241,7 +246,11 @@ class JupyterCacheAbstract(ABC):
         pass
 
     @abstractmethod
-    def list_nbs_to_exec(self) -> list:
+    def get_commit_record_of_staged(self, uri: str) -> Optional[NbCommitRecord]:
+        pass
+
+    @abstractmethod
+    def list_nbs_to_exec(self) -> List[NbStageRecord]:
         """List staged notebooks, whose hash is not present in the cache commits."""
         pass
 
