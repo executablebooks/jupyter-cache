@@ -1,4 +1,5 @@
 from pathlib import Path
+import time
 from typing import List, Union
 
 
@@ -29,3 +30,33 @@ def to_relative_paths(
             raise IOError(f"Path '{path}' is not in folder '{folder}''")
         rel_paths.append(rel_path)
     return rel_paths
+
+
+class Timer:
+    """Context manager for timing runtime."""
+
+    def __init__(self):
+        self._last_time = time.perf_counter()
+        self._split_time = 0
+
+    @property
+    def last_split(self):
+        return self._split_time
+
+    def reset(self):
+        """Reset timer."""
+        self._last_time = time.perf_counter()
+        self._split_time = 0
+
+    def split(self):
+        """Record a split time."""
+        self._split_time = time.perf_counter() - self._last_time
+
+    def __enter__(self):
+        """Reset timer."""
+        self.reset()
+        return self
+
+    def __exit__(self, *exc_info):
+        """Record a split time."""
+        self.split()

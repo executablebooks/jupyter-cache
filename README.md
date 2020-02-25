@@ -89,7 +89,7 @@ Success!
 Or to skip validation:
 
 ```console
-$ jcache commit-nbs --no-validate tests/notebooks/*
+$ jcache commit-nbs --no-validate tests/notebooks/*.ipynb
 Committing: /Users/cjs14/GitHub/sandbox/tests/notebooks/basic.ipynb
 Committing: /Users/cjs14/GitHub/sandbox/tests/notebooks/basic_failing.ipynb
 Committing: /Users/cjs14/GitHub/sandbox/tests/notebooks/basic_unrun.ipynb
@@ -183,7 +183,7 @@ i.e. no physical copying takes place until execution time.
 If you stage some notebooks for execution, then you can list them to see which have existing records in the cache (by hash) and which will require execution:
 
 ```console
-$ jcache stage-nbs tests/notebooks/*
+$ jcache stage-nbs tests/notebooks/*.ipynb
 Staging: /Users/cjs14/GitHub/sandbox/tests/notebooks/basic.ipynb
 Staging: /Users/cjs14/GitHub/sandbox/tests/notebooks/basic_failing.ipynb
 Staging: /Users/cjs14/GitHub/sandbox/tests/notebooks/basic_unrun.ipynb
@@ -213,7 +213,7 @@ Finished!
 ```
 
 Successfully executed notebooks will be committed to the cache,
-along with any 'artefacts' created by the execution, that are inside the notebook folder.
+along with any 'artefacts' created by the execution, that are inside the notebook folder, and data supplied by the executor.
 
 ```console
 $ jcache list-staged
@@ -223,6 +223,17 @@ $ jcache list-staged
    4  tests/notebooks/complex_outputs.ipynb  2020-02-23 20:48            4
    3  tests/notebooks/basic_unrun.ipynb      2020-02-23 20:48            6
    2  tests/notebooks/basic_failing.ipynb    2020-02-23 20:48            2
+```
+
+```console
+jcache show-commit 5
+PK: 1
+URI: /Users/cjs14/GitHub/jupyter-cache/tests/notebooks/basic.ipynb
+Created: 2020-02-25 19:21
+Accessed: 2020-02-25 19:21
+Hashkey: 818f3412b998fcf4fe9ca3cca11a3fc3
+Data:
+  execution_seconds: 1.4187269599999999
 ```
 
 Once executed you may leave staged notebooks, for later re-execution, or remove them:

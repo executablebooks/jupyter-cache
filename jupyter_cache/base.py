@@ -6,8 +6,10 @@ with no assumptions about the backend storage/retrieval mechanisms.
 from abc import ABC, abstractmethod
 import io
 from pathlib import Path
-from typing import Iterable, List, NamedTuple, Optional, Tuple, Union
+from typing import Iterable, List, Optional, Tuple, Union
 
+import attr
+from attr.validators import instance_of
 import nbformat as nbf
 
 # TODO make these abstract
@@ -50,20 +52,41 @@ class NbArtifactsAbstract(ABC):
         pass
 
 
-class NbBundleIn(NamedTuple):
+@attr.s(frozen=True, slots=True)
+class NbBundleIn:
     """A container for notebooks and their associated data to commit."""
 
-    nb: nbf.NotebookNode
-    uri: str
-    artifacts: Optional[NbArtifactsAbstract] = None
+    nb: nbf.NotebookNode = attr.ib(
+        validator=instance_of(nbf.NotebookNode), metadata={"help": "the notebook"}
+    )
+    uri: str = attr.ib(
+        validator=instance_of(str), metadata={"help": "the origin URI of the notebook"}
+    )
+    artifacts: Optional[NbArtifactsAbstract] = attr.ib(
+        kw_only=True,
+        default=None,
+        metadata={"help": "artifacts created during the notebook execution"},
+    )
+    data: dict = attr.ib(
+        kw_only=True,
+        factory=dict,
+        validator=instance_of(dict),
+        metadata={"help": "additional data related to the execution"},
+    )
 
 
-class NbBundleOut(NamedTuple):
+@attr.s(frozen=True, slots=True)
+class NbBundleOut:
     """A container for notebooks and their associated data that have been committed."""
 
-    nb: nbf.NotebookNode
-    commit: NbCommitRecord
-    artifacts: Optional[NbArtifactsAbstract] = None
+    nb: nbf.NotebookNode = attr.ib(
+        validator=instance_of(nbf.NotebookNode), metadata={"help": "the notebook"}
+    )
+    commit: NbCommitRecord = attr.ib(metadata={"help": "the commit record"})
+    artifacts: Optional[NbArtifactsAbstract] = attr.ib(
+        default=None,
+        metadata={"help": "artifacts created during the notebook execution"},
+    )
 
 
 class JupyterCacheAbstract(ABC):
@@ -96,6 +119,7 @@ class JupyterCacheAbstract(ABC):
         path: str,
         uri: Optional[str] = None,
         artifacts: List[str] = (),
+        data: Optional[dict] = None,
         check_validity: bool = True,
         overwrite: bool = False,
     ) -> NbCommitRecord:
@@ -107,6 +131,7 @@ class JupyterCacheAbstract(ABC):
         :param uri: alternative URI to store in the commit record (defaults to path)
         :param artifacts: list of paths to outputs of the executed notebook.
             Artifacts must be in the same folder as the notebook (or a sub-folder)
+        :param data: additional, JSONable, data about the commit
         :param check_validity: check that the notebook has been executed correctly,
             by asserting `execution_count`s are consecutive and start at 1.
         :param overwrite: Allow overwrite of commit with matching hash
@@ -160,7 +185,7 @@ class JupyterCacheAbstract(ABC):
     def merge_match_into_notebook(
         self,
         nb: nbf.NotebookNode,
-        nb_meta=("kernelspec", "language_info"),
+        nb_meta=("kernelspec", "language_info", "widgets"),
         cell_meta=None,
     ) -> Tuple[int, nbf.NotebookNode]:
         """Match to an executed notebook and return a merged version
@@ -174,7 +199,10 @@ class JupyterCacheAbstract(ABC):
         pass
 
     def merge_match_into_file(
-        self, path: str, nb_meta=("kernelspec", "language_info"), cell_meta=None
+        self,
+        path: str,
+        nb_meta=("kernelspec", "language_info", "widgets"),
+        cell_meta=None,
     ) -> Tuple[int, nbf.NotebookNode]:
         """Match to an executed notebook and return a merged version
 

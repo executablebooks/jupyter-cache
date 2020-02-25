@@ -2,6 +2,8 @@ language: python
 cache: pip
 matrix:
     include:
+      - python: 3.7
+        env: TEST_TYPE="pre-commit"
       # Not working with some of the annotation syntax
       # - python: 3.5
       #   env: TEST_TYPE="pytest"
@@ -9,8 +11,8 @@ matrix:
         env: TEST_TYPE="pytest"
       - python: 3.7
         env: TEST_TYPE="pytest"
-      - python: 3.7
-        env: TEST_TYPE="pre-commit"
+      - python: 3.8
+        env: TEST_TYPE="pytest"
 install:
   - pip install --upgrade pip wheel setuptools
   - |
