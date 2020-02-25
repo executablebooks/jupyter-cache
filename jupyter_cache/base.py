@@ -35,31 +35,18 @@ class NbValidityError(Exception):
         super().__init__(message, *args, **kwargs)
 
 
-class ArtifactIteratorAbstract(ABC):
-    """Iterator for paths relative to a notebook,
-    that yield the relative path and open files (in bytes mode)
-
-    This is used to pass notebook artifacts, without having to read them all first.
-    """
-
-    @abstractmethod
-    def __init__(self, paths: List[str], in_folder, check_existence=True):
-        """Initiate ArtifactIterator
-
-        :param paths: list of paths
-        :param check_existence: check the paths exist
-        :param in_folder: The folder that all paths should be in (or subfolder).
-        :raises IOError: if check_existence and file does not exist
-        """
-        pass
+class NbArtifactsAbstract(ABC):
+    """Container for artefacts of a notebook execution."""
 
     @property
     @abstractmethod
-    def relative_paths(self):
+    def relative_paths(self) -> List[Path]:
+        """Return the list of paths (relative to the notebook folder)."""
         pass
 
     @abstractmethod
     def __iter__(self) -> Iterable[Tuple[Path, io.BufferedReader]]:
+        """Yield the relative path and open files (in bytes mode)"""
         pass
 
 
@@ -70,7 +57,7 @@ class NbBundleIn(NamedTuple):
     uri: str
     # artifacts iterates (relative path to notebook, <bytes stream>)
     # for all outputs of the executed notebook
-    artifacts: Optional[ArtifactIteratorAbstract] = None
+    artifacts: Optional[NbArtifactsAbstract] = None
 
 
 class NbBundleOut(NamedTuple):
@@ -81,7 +68,7 @@ class NbBundleOut(NamedTuple):
     commit: dict
     # artifacts iterates (relative path to notebook, <bytes stream>)
     # for all outputs of the executed notebook
-    artifacts: Optional[ArtifactIteratorAbstract] = None
+    artifacts: Optional[NbArtifactsAbstract] = None
 
 
 class JupyterCacheAbstract(ABC):

@@ -18,7 +18,7 @@ from jupyter_cache.base import (  # noqa: F401
     RetrievalError,
     NbValidityError,
     NB_VERSION,
-    ArtifactIteratorAbstract,
+    NbArtifactsAbstract,
 )
 
 from .db import create_db, NbCommitRecord, NbStageRecord, Setting
@@ -27,14 +27,11 @@ COMMIT_LIMIT_KEY = "commit_limit"
 DEFAULT_COMMIT_LIMIT = 1000
 
 
-class ArtifactIterator(ArtifactIteratorAbstract):
-    """Iterate through the given paths and yield the open files (in bytes mode)
-
-    This is used to pass notebook artifacts, without having to read them all first.
-    """
+class NbArtifacts(NbArtifactsAbstract):
+    """Container for artefacts of a notebook execution."""
 
     def __init__(self, paths: List[str], in_folder, check_existence=True):
-        """Initiate ArtifactIterator
+        """Initiate NbArtifacts
 
         :param paths: list of paths
         :param check_existence: check the paths exist
@@ -54,10 +51,12 @@ class ArtifactIterator(ArtifactIteratorAbstract):
                 raise IOError(f"Path '{path}' is not in folder '{in_folder}''")
 
     @property
-    def relative_paths(self):
+    def relative_paths(self) -> List[Path]:
+        """Return the list of paths (relative to the notebook folder)."""
         return [p.relative_to(self.in_folder) for p in self.paths]
 
     def __iter__(self) -> Iterable[Tuple[Path, io.BufferedReader]]:
+        """Yield the relative path and open files (in bytes mode)"""
         for path in self.paths:
             with path.open("rb") as handle:
                 yield path.relative_to(self.in_folder), handle
@@ -267,7 +266,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
             NbBundleIn(
                 notebook,
                 uri or path,
-                ArtifactIterator(artifacts, in_folder=Path(path).parent),
+                NbArtifacts(artifacts, in_folder=Path(path).parent),
             ),
             check_validity=check_validity,
             overwrite=overwrite,
@@ -290,7 +289,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         return NbBundleOut(
             nbf.reads(path.read_text(), NB_VERSION),
             commit=record.to_dict(),
-            artifacts=ArtifactIterator(
+            artifacts=NbArtifacts(
                 [p for p in artifact_folder.glob("**/*") if p.is_file()],
                 in_folder=artifact_folder,
             ),

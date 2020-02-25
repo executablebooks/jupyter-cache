@@ -6,7 +6,7 @@ from nbconvert.preprocessors.execute import executenb
 # from jupyter_client.kernelspec import get_kernel_spec, NoSuchKernel
 
 from jupyter_cache.executors.base import JupyterExecutorAbstract
-from jupyter_cache.cache.main import NbBundleIn, ArtifactIterator
+from jupyter_cache.cache.main import NbBundleIn, NbArtifacts
 
 
 class JupyterExecutorBasic(JupyterExecutorAbstract):
@@ -29,7 +29,7 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
                     final_bundle = NbBundleIn(
                         nb_bundle.nb,
                         nb_bundle.uri,
-                        ArtifactIterator(Path(tmpdirname).glob("**/*"), tmpdirname),
+                        NbArtifacts(Path(tmpdirname).glob("**/*"), tmpdirname),
                     )
                     try:
                         self.cache.commit_notebook_bundle(final_bundle, overwrite=True)
