@@ -14,7 +14,7 @@ Some desired requirements (not yet all implemented):
 - Persistent
 - Separates out "edits to content" from "edits to code cells". Cell
   rearranges and code cell changes should require a re-execution. Content changes should not.
-- Allow parallel access to of notebooks (for execution)
+- Allow parallel access to notebooks (for execution)
 - Store execution statistics/reports
 - Store external assets: Notebooks being executed often require external assets: importing scripts/data/etc. These are prepared by the users.
 - Store execution artifacts: created during exeution
@@ -57,18 +57,22 @@ Options:
 Commands:
   cat-artifact    Print the contents of a commit artefact.
   clear           Clear the cache completely.
-  commit-limit    Change the commit limit of the cache (default: 1000).
-  commit-nb       Commit a notebook that has already been executed, with...
+  commit-limit    Change the commit limit of the cache.
+  commit-nb       Commit a notebook that has already been executed.
   commit-nbs      Commit notebook(s) that have already been executed.
   diff-nb         Print a diff of a notebook to one stored in the cache.
   execute         Execute outdated notebooks.
   list-commits    List committed notebook records in the cache.
   list-staged     List notebooks staged for possible execution.
-  remove-commits  Remove notebook commit(s) from the cache by Primary Key.
+  remove-commits  Remove notebook commit(s) from the cache.
   show-commit     Show details of a committed notebook in the cache.
+  show-staged     Show details of a staged notebook.
+  stage-nb        Commit a notebook, with possible assets.
   stage-nbs       Stage notebook(s) for execution.
   unstage-nbs     Unstage notebook(s) for execution.
 ```
+
+### Commit Executed Notebooks
 
 You can commit notebooks straight into the cache. When committing, a check will be made that the notebooks look to have been executed correctly, i.e. the cell execution counts go sequentially up from 1.
 
@@ -93,7 +97,9 @@ Committing: /Users/cjs14/GitHub/sandbox/tests/notebooks/complex_outputs.ipynb
 Success!
 ```
 
-Once you've committed some notebooks, you can look at the 'commit records' for what has been cached:
+Once you've committed some notebooks, you can look at the 'commit records' for what has been cached.
+
+Each notebook is hashed (code cells and kernel spec only), which is used to compare against 'staged' notebooks. Multiple hashes for the same URI can be added (the URI is just there for inspetion) and the size of the cache is limited (current default 1000) so that, at this size, the last accessed records begin to be deleted. You can remove cached records by the Primary Key (PK).
 
 ```console
 $ jcache list-commits --hashkeys
@@ -137,8 +143,6 @@ Committing: /Users/cjs14/GitHub/jupyter-cache/tests/notebooks/basic.ipynb
 Artifact Error: Path '/Users/cjs14/GitHub/jupyter-cache/tests/test_db.py' is not in folder '/Users/cjs14/GitHub/jupyter-cache/tests/notebooks''
 ```
 
-Each notebook is hashed (code cells and kernel spec only), which is used to compare against 'staged' notebooks. Multiple hashes for the same URI can be added (the URI is just there for inspetion) and the size of the cache is limited (current default 1000) so that, at this size, the last accessed records begin to be deleted. You can remove cached records by the Primary Key (PK).
-
 ```console
 $ jcache remove-commits 3
 Removing PK = 3
@@ -168,8 +172,13 @@ nbdiff
 ## deleted nb/cells/1:
 -  code cell:
 -    source:
--      raise Exception('oopie')
+-      raise Exception('oopsie!')
 ```
+
+### Staging Notebooks for execution
+
+Staged notebooks are recorded as pointers to their URI,
+i.e. no physical copying takes place until execution time.
 
 If you stage some notebooks for execution, then you can list them to see which have existing records in the cache (by hash) and which will require execution:
 
@@ -203,14 +212,50 @@ Success: /Users/cjs14/GitHub/sandbox/tests/notebooks/basic_unrun.ipynb
 Finished!
 ```
 
+Successfully executed notebooks will be committed to the cache,
+along with any 'artefacts' created by the execution, that are inside the notebook folder.
+
 ```console
 $ jcache list-staged
   PK  URI                                    Created             Commit Pk
 ----  -------------------------------------  ----------------  -----------
    5  tests/notebooks/basic.ipynb            2020-02-23 20:57            5
    4  tests/notebooks/complex_outputs.ipynb  2020-02-23 20:48            4
-   3  tests/notebooks/basic_unrun.ipynb      2020-02-23 20:48            5
+   3  tests/notebooks/basic_unrun.ipynb      2020-02-23 20:48            6
    2  tests/notebooks/basic_failing.ipynb    2020-02-23 20:48            2
+```
+
+Once executed you may leave staged notebooks, for later re-execution, or remove them:
+
+```console
+$ jcache unstage-nbs --all
+Are you sure you want to remove all? [y/N]: y
+Unstaging: /Users/cjs14/GitHub/jupyter-cache/tests/notebooks/basic.ipynb
+Success!
+```
+
+You can also stage notebooks with assets; external files that are required by the notebook during execution. As with artefacts,
+these files must be in the same folder as the notebook, or a sub-folder.
+
+```console
+$ jcache stage-nb -nb tests/notebooks/basic.ipynb tests/notebooks/artifact_folder/artifact.txt
+Success!
+```
+
+```console
+$ jcache list-staged
+  PK  URI                          Created             Assets
+----  ---------------------------  ----------------  --------
+   1  tests/notebooks/basic.ipynb  2020-02-25 10:01         1
+```
+
+```console
+$ jcache show-staged 1
+PK: 1
+URI: /Users/cjs14/GitHub/jupyter-cache/tests/notebooks/basic.ipynb
+Created: 2020-02-25 10:01
+Assets:
+- /Users/cjs14/GitHub/jupyter-cache/tests/notebooks/artifact_folder/artifact.txt
 ```
 
 ## Contributing

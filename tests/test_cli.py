@@ -54,6 +54,12 @@ def test_commit_with_artifact(tmp_path):
     assert result.exception is None, result.output
     assert result.exit_code == 0, result.output
     assert "- artifact_folder/artifact.txt" in result.output.strip(), result.output
+    result = runner.invoke(
+        cmd_cache.cat_artifact, ["-p", tmp_path, "1", "artifact_folder/artifact.txt"]
+    )
+    assert result.exception is None, result.output
+    assert result.exit_code == 0, result.output
+    assert "An artifact" in result.output.strip(), result.output
 
 
 def test_commit_nbs(tmp_path):
@@ -104,7 +110,7 @@ def test_diff_nbs(tmp_path):
         "## inserted before nb/cells/0:",
         "+  code cell:",
         "+    source:",
-        "+      raise Exception('oopie')",
+        "+      raise Exception('oopsie!')",
         "",
         "## deleted nb/cells/0:",
         "-  code cell:",
@@ -159,5 +165,18 @@ def test_list_staged(tmp_path):
     result = runner.invoke(cmd_cache.list_staged, ["-p", tmp_path])
     assert result.exception is None, result.output
     assert result.exit_code == 0, result.output
-    print(result.output.strip())
+    assert "basic.ipynb" in result.output.strip(), result.output
+
+
+def test_show_staged(tmp_path):
+    db = JupyterCacheBase(str(tmp_path))
+    db.commit_notebook_file(
+        path=os.path.join(NB_PATH, "basic.ipynb"), check_validity=False
+    )
+    db.stage_notebook_file(path=os.path.join(NB_PATH, "basic.ipynb"))
+
+    runner = CliRunner()
+    result = runner.invoke(cmd_cache.show_staged, ["-p", tmp_path, "1"])
+    assert result.exception is None, result.output
+    assert result.exit_code == 0, result.output
     assert "basic.ipynb" in result.output.strip(), result.output

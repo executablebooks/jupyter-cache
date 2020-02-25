@@ -6,9 +6,12 @@ with no assumptions about the backend storage/retrieval mechanisms.
 from abc import ABC, abstractmethod
 import io
 from pathlib import Path
-from typing import Iterable, List, NamedTuple, Optional, Tuple
+from typing import Iterable, List, NamedTuple, Optional, Tuple, Union
 
 import nbformat as nbf
+
+# TODO make these abstract
+from jupyter_cache.cache.db import NbCommitRecord, NbStageRecord
 
 NB_VERSION = 4
 
@@ -32,31 +35,18 @@ class NbValidityError(Exception):
         super().__init__(message, *args, **kwargs)
 
 
-class ArtifactIteratorAbstract(ABC):
-    """Iterator for paths relative to a notebook,
-    that yield the relative path and open files (in bytes mode)
-
-    This is used to pass notebook artifacts, without having to read them all first.
-    """
-
-    @abstractmethod
-    def __init__(self, paths: List[str], in_folder, check_existence=True):
-        """Initiate ArtifactIterator
-
-        :param paths: list of paths
-        :param check_existence: check the paths exist
-        :param in_folder: The folder that all paths should be in (or subfolder).
-        :raises IOError: if check_existence and file does not exist
-        """
-        pass
+class NbArtifactsAbstract(ABC):
+    """Container for artefacts of a notebook execution."""
 
     @property
     @abstractmethod
-    def relative_paths(self):
+    def relative_paths(self) -> List[Path]:
+        """Return the list of paths (relative to the notebook folder)."""
         pass
 
     @abstractmethod
     def __iter__(self) -> Iterable[Tuple[Path, io.BufferedReader]]:
+        """Yield the relative path and open files (in bytes mode)"""
         pass
 
 
@@ -65,20 +55,15 @@ class NbBundleIn(NamedTuple):
 
     nb: nbf.NotebookNode
     uri: str
-    # artifacts iterates (relative path to notebook, <bytes stream>)
-    # for all outputs of the executed notebook
-    artifacts: Optional[ArtifactIteratorAbstract] = None
+    artifacts: Optional[NbArtifactsAbstract] = None
 
 
 class NbBundleOut(NamedTuple):
-    """A container for notebooks and their associated data that have been executed."""
+    """A container for notebooks and their associated data that have been committed."""
 
     nb: nbf.NotebookNode
-    # commit is a dictionary of the commit record (uri, commit time, etc)
-    commit: dict
-    # artifacts iterates (relative path to notebook, <bytes stream>)
-    # for all outputs of the executed notebook
-    artifacts: Optional[ArtifactIteratorAbstract] = None
+    commit: NbCommitRecord
+    artifacts: Optional[NbArtifactsAbstract] = None
 
 
 class JupyterCacheAbstract(ABC):
@@ -92,8 +77,8 @@ class JupyterCacheAbstract(ABC):
     @abstractmethod
     def commit_notebook_bundle(
         self, bundle: NbBundleIn, check_validity: bool = True, overwrite: bool = False
-    ) -> int:
-        """Commit an executed notebook, returning its primary key.
+    ) -> NbCommitRecord:
+        """Commit an executed notebook, returning its commit record.
 
         Note: non-code source text (e.g. markdown) is not stored in the cache.
 
@@ -113,8 +98,8 @@ class JupyterCacheAbstract(ABC):
         artifacts: List[str] = (),
         check_validity: bool = True,
         overwrite: bool = False,
-    ) -> int:
-        """Commit an executed notebook, returning its primary key.
+    ) -> NbCommitRecord:
+        """Commit an executed notebook, returning its commit record.
 
         Note: non-code source text (e.g. markdown) is not stored in the cache.
 
@@ -130,11 +115,11 @@ class JupyterCacheAbstract(ABC):
         pass
 
     @abstractmethod
-    def list_commit_records(self) -> list:
+    def list_commit_records(self) -> List[NbCommitRecord]:
         """Return a list of committed notebook records."""
         pass
 
-    def get_commit_record(self, pk: int):
+    def get_commit_record(self, pk: int) -> NbCommitRecord:
         """Return the record of a commit, by its primary key"""
         pass
 
@@ -156,14 +141,14 @@ class JupyterCacheAbstract(ABC):
         pass
 
     @abstractmethod
-    def match_commit_notebook(self, nb: nbf.NotebookNode) -> int:
+    def match_commit_notebook(self, nb: nbf.NotebookNode) -> NbCommitRecord:
         """Match to an executed notebook, returning its primary key.
 
         :raises KeyError: if no match is found
         """
         pass
 
-    def match_commit_file(self, path: str) -> int:
+    def match_commit_file(self, path: str) -> NbCommitRecord:
         """Match to an executed notebook, returning its primary key.
 
         :raises KeyError: if no match is found
@@ -205,14 +190,16 @@ class JupyterCacheAbstract(ABC):
     @abstractmethod
     def diff_nbnode_with_commit(
         self, pk: int, nb: nbf.NotebookNode, uri: str = "", as_str=False, **kwargs
-    ):
+    ) -> Union[str, dict]:
         """Return a diff of a notebook to a committed one.
 
         Note: this will not diff markdown content, since it is not stored in the cache.
         """
         pass
 
-    def diff_nbfile_with_commit(self, pk: int, path: str, as_str=False, **kwargs):
+    def diff_nbfile_with_commit(
+        self, pk: int, path: str, as_str=False, **kwargs
+    ) -> Union[str, dict]:
         """Return a diff of a notebook to a committed one.
 
         Note: this will not diff markdown content, since it is not stored in the cache.
@@ -221,27 +208,43 @@ class JupyterCacheAbstract(ABC):
         return self.diff_nbnode_with_commit(pk, nb, uri=path, as_str=as_str, **kwargs)
 
     @abstractmethod
-    def stage_notebook_file(self, uri: str):
-        """Stage a single notebook for execution."""
+    def stage_notebook_file(self, uri: str, assets: List[str] = ()) -> NbStageRecord:
+        """Stage a single notebook for execution.
+
+        :param uri: The path to the file
+        :param assets: The path of files required by the notebook to run.
+        :raises ValueError: assets not within the same folder as the notebook URI.
+        """
         pass
 
     @abstractmethod
-    def discard_staged_notebook(self, uri: str):
+    def discard_staged_notebook(self, uri_or_pk: Union[int, str]):
         """Discard a staged notebook."""
         pass
 
     @abstractmethod
-    def list_staged_records(self) -> list:
+    def list_staged_records(self) -> List[NbStageRecord]:
         """list staged notebook URI's in the cache."""
         pass
 
     @abstractmethod
-    def get_staged_notebook(self, uri: str) -> NbBundleIn:
-        """Return a single staged notebook."""
+    def get_staged_record(self, uri_or_pk: Union[int, str]) -> NbStageRecord:
+        """Return the record of a staged notebook, by its primary key or URI."""
         pass
 
     @abstractmethod
-    def list_nbs_to_exec(self) -> list:
+    def get_staged_notebook(self, uri_or_pk: Union[int, str]) -> NbBundleIn:
+        """Return a single staged notebook, by its primary key or URI."""
+        pass
+
+    @abstractmethod
+    def get_commit_record_of_staged(
+        self, uri_or_pk: Union[int, str]
+    ) -> Optional[NbCommitRecord]:
+        pass
+
+    @abstractmethod
+    def list_nbs_to_exec(self) -> List[NbStageRecord]:
         """List staged notebooks, whose hash is not present in the cache commits."""
         pass
 

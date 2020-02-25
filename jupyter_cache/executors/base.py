@@ -5,6 +5,9 @@ from typing import List, Optional
 
 from jupyter_cache.base import JupyterCacheAbstract
 
+# TODO abstact
+from jupyter_cache.cache.db import NbCommitRecord
+
 ENTRY_POINT_GROUP = "jupyter_executors"
 
 base_logger = logging.getLogger(__name__)
@@ -30,7 +33,7 @@ class JupyterExecutorAbstract(ABC):
         return self._logger
 
     @abstractmethod
-    def run(self, uri_filter: Optional[List[str]] = None) -> List[str]:
+    def run(self, uri_filter: Optional[List[str]] = None) -> List[NbCommitRecord]:
         """Run execution, stage successfully executed notebooks and return their URIs
 
         Parameters

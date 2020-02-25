@@ -1,11 +1,12 @@
 from contextlib import contextmanager
 from datetime import datetime
 import os
+from pathlib import Path
 from typing import List
 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, DateTime, Integer, JSON, String
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker, Session, validates
 from sqlalchemy.engine import Engine, create_engine
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql.expression import desc
@@ -34,6 +35,8 @@ def session_context(engine: Engine):
 
 
 class Setting(OrmBase):
+    """A settings key/value pair representation."""
+
     __tablename__ = "settings"
 
     pk = Column(Integer(), primary_key=True)
@@ -75,6 +78,8 @@ class Setting(OrmBase):
 
 
 class NbCommitRecord(OrmBase):
+    """A record of an executed notebook commit."""
+
     __tablename__ = "nbcommit"
 
     pk = Column(Integer(), primary_key=True)
@@ -186,19 +191,47 @@ class NbCommitRecord(OrmBase):
 
 
 class NbStageRecord(OrmBase):
+    """A record of a notebook staged for execution."""
+
     __tablename__ = "nbstage"
 
     pk = Column(Integer(), primary_key=True)
     uri = Column(String(255), nullable=False, unique=True)
+    assets = Column(JSON(), nullable=False, default=list)
     created = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+    @validates("assets")
+    def validator_assets(self, key, value):
+        return self.validate_assets(value)
+
+    @staticmethod
+    def validate_assets(paths, uri=None):
+        """Validate asset paths are within same folder as the notebook URI"""
+        if not (
+            isinstance(paths, (list, tuple)) and all(isinstance(v, str) for v in paths)
+        ):
+            raise TypeError(f"assets must be interable of strings: {paths}")
+        if uri is None:
+            return list(paths)
+
+        uri_folder = Path(uri).parent
+        for path in paths:
+            try:
+                Path(path).relative_to(uri_folder)
+            except ValueError:
+                raise ValueError(f"Asset '{path}' is not in folder '{uri_folder}''")
+        return list(paths)
 
     def to_dict(self):
         return {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
 
     @staticmethod
-    def create_record(uri: str, db: Engine, raise_on_exists=True) -> "NbStageRecord":
+    def create_record(
+        uri: str, db: Engine, raise_on_exists=True, assets=()
+    ) -> "NbStageRecord":
+        assets = NbStageRecord.validate_assets(assets, uri)
         with session_context(db) as session:  # type: Session
-            record = NbStageRecord(uri=uri)
+            record = NbStageRecord(uri=uri, assets=assets)
             session.add(record)
             try:
                 session.commit()
@@ -210,7 +243,14 @@ class NbStageRecord(OrmBase):
             session.expunge(record)
         return record
 
-    def remove_uris(uris: List[int], db: Engine):
+    def remove_pks(pks: List[int], db: Engine):
+        with session_context(db) as session:  # type: Session
+            session.query(NbStageRecord).filter(NbStageRecord.pk.in_(pks)).delete(
+                synchronize_session=False
+            )
+            session.commit()
+
+    def remove_uris(uris: List[str], db: Engine):
         with session_context(db) as session:  # type: Session
             session.query(NbStageRecord).filter(NbStageRecord.uri.in_(uris)).delete(
                 synchronize_session=False

@@ -21,14 +21,14 @@ def test_basic_workflow(tmp_path):
         check_validity=False,
     )
     assert cache.list_commit_records()[0].uri == "basic.ipynb"
-    pk = cache.match_commit_file(path=os.path.join(NB_PATH, "basic.ipynb"))
+    pk = cache.match_commit_file(path=os.path.join(NB_PATH, "basic.ipynb")).pk
     nb_bundle = cache.get_commit_bundle(pk)
     assert nb_bundle.nb.metadata["kernelspec"] == {
         "display_name": "Python 3",
         "language": "python",
         "name": "python3",
     }
-    assert set(nb_bundle.commit.keys()) == {
+    assert set(nb_bundle.commit.to_dict().keys()) == {
         "pk",
         "hashkey",
         "uri",
@@ -49,7 +49,7 @@ def test_basic_workflow(tmp_path):
         ## inserted before nb/cells/0:
         +  code cell:
         +    source:
-        +      raise Exception('oopie')
+        +      raise Exception('oopsie!')
 
         ## deleted nb/cells/0:
         -  code cell:
@@ -74,7 +74,12 @@ def test_basic_workflow(tmp_path):
         uri="basic.ipynb",
         check_validity=False,
     )
-    cache.stage_notebook_file(os.path.join(NB_PATH, "basic.ipynb"))
+    with pytest.raises(ValueError):
+        cache.stage_notebook_file(os.path.join(NB_PATH, "basic.ipynb"), assets=[""])
+    cache.stage_notebook_file(
+        os.path.join(NB_PATH, "basic.ipynb"),
+        assets=[os.path.join(NB_PATH, "basic.ipynb")],
+    )
     assert [r.pk for r in cache.list_staged_records()] == [1]
     assert [r.pk for r in cache.list_nbs_to_exec()] == []
 
@@ -147,9 +152,12 @@ def test_execution(tmp_path):
     db = JupyterCacheBase(str(tmp_path))
     db.stage_notebook_file(path=os.path.join(NB_PATH, "basic_unrun.ipynb"))
     db.stage_notebook_file(path=os.path.join(NB_PATH, "basic_failing.ipynb"))
-    db.stage_notebook_file(path=os.path.join(NB_PATH, "external_output.ipynb"))
+    db.stage_notebook_file(
+        path=os.path.join(NB_PATH, "external_output.ipynb"),
+        assets=(os.path.join(NB_PATH, "basic.ipynb"),),
+    )
     executor = load_executor("basic", db)
-    assert executor.run() == [
+    assert [r.uri for r in executor.run()] == [
         os.path.join(NB_PATH, "basic_unrun.ipynb"),
         os.path.join(NB_PATH, "external_output.ipynb"),
     ]

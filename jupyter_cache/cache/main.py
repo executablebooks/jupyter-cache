@@ -4,7 +4,7 @@ import io
 from pathlib import Path
 import hashlib
 import shutil
-from typing import Iterable, List, Optional, Tuple
+from typing import Iterable, List, Optional, Tuple, Union
 
 import nbdime
 import nbformat as nbf
@@ -18,23 +18,20 @@ from jupyter_cache.base import (  # noqa: F401
     RetrievalError,
     NbValidityError,
     NB_VERSION,
-    ArtifactIteratorAbstract,
+    NbArtifactsAbstract,
 )
-
+from jupyter_cache.utils import to_relative_paths
 from .db import create_db, NbCommitRecord, NbStageRecord, Setting
 
 COMMIT_LIMIT_KEY = "commit_limit"
 DEFAULT_COMMIT_LIMIT = 1000
 
 
-class ArtifactIterator(ArtifactIteratorAbstract):
-    """Iterate through the given paths and yield the open files (in bytes mode)
-
-    This is used to pass notebook artifacts, without having to read them all first.
-    """
+class NbArtifacts(NbArtifactsAbstract):
+    """Container for artefacts of a notebook execution."""
 
     def __init__(self, paths: List[str], in_folder, check_existence=True):
-        """Initiate ArtifactIterator
+        """Initiate NbArtifacts
 
         :param paths: list of paths
         :param check_existence: check the paths exist
@@ -43,21 +40,15 @@ class ArtifactIterator(ArtifactIteratorAbstract):
         """
         self.paths = [Path(p).absolute() for p in paths]
         self.in_folder = Path(in_folder).absolute()
-        for path in self.paths:
-            if check_existence and not path.exists():
-                raise IOError(f"Path does not exist: {path}")
-            if check_existence and not path.is_file():
-                raise IOError(f"Path is not a file: {path}")
-            try:
-                path.relative_to(self.in_folder)
-            except ValueError:
-                raise IOError(f"Path '{path}' is not in folder '{in_folder}''")
+        to_relative_paths(self.paths, self.in_folder, check_existence=check_existence)
 
     @property
-    def relative_paths(self):
-        return [p.relative_to(self.in_folder) for p in self.paths]
+    def relative_paths(self) -> List[Path]:
+        """Return the list of paths (relative to the notebook folder)."""
+        return to_relative_paths(self.paths, self.in_folder)
 
     def __iter__(self) -> Iterable[Tuple[Path, io.BufferedReader]]:
+        """Yield the relative path and open files (in bytes mode)"""
         for path in self.paths:
             with path.open("rb") as handle:
                 yield path.relative_to(self.in_folder), handle
@@ -203,7 +194,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         check_validity: bool = True,
         overwrite: bool = False,
         description="",
-    ):
+    ) -> NbCommitRecord:
         """Commit an executed notebook."""
         # TODO it would be ideal to have some 'rollback' mechanism on exception
 
@@ -239,7 +230,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
 
         self.truncate_commits()
 
-        return record.pk
+        return record
 
     def commit_notebook_file(
         self,
@@ -248,7 +239,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         artifacts: List[str] = (),
         check_validity: bool = True,
         overwrite: bool = False,
-    ) -> int:
+    ) -> NbCommitRecord:
         """Commit an executed notebook, returning its primary key.
 
         Note: non-code source text (e.g. markdown) is not stored in the cache.
@@ -267,7 +258,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
             NbBundleIn(
                 notebook,
                 uri or path,
-                ArtifactIterator(artifacts, in_folder=Path(path).parent),
+                NbArtifacts(artifacts, in_folder=Path(path).parent),
             ),
             check_validity=check_validity,
             overwrite=overwrite,
@@ -289,8 +280,8 @@ class JupyterCacheBase(JupyterCacheAbstract):
 
         return NbBundleOut(
             nbf.reads(path.read_text(), NB_VERSION),
-            commit=record.to_dict(),
-            artifacts=ArtifactIterator(
+            commit=record,
+            artifacts=NbArtifacts(
                 [p for p in artifact_folder.glob("**/*") if p.is_file()],
                 in_folder=artifact_folder,
             ),
@@ -317,14 +308,14 @@ class JupyterCacheBase(JupyterCacheAbstract):
         shutil.rmtree(path.parent)
         NbCommitRecord.remove_records([pk], self.db)
 
-    def match_commit_notebook(self, nb: nbf.NotebookNode):
+    def match_commit_notebook(self, nb: nbf.NotebookNode) -> NbCommitRecord:
         """Match to an executed notebook, returning its primary key.
 
         :raises KeyError: if no match is found
         """
         hashkey = self._hash_notebook(nb)
         commit_record = NbCommitRecord.record_from_hashkey(hashkey, self.db)
-        return commit_record.pk
+        return commit_record
 
     def merge_match_into_notebook(
         self,
@@ -340,7 +331,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         :raises KeyError: if no match is found
         :return: pk, input notebook with committed code cells and metadata merged.
         """
-        pk = self.match_commit_notebook(nb)
+        pk = self.match_commit_notebook(nb).pk
         commit_nb = self.get_commit_bundle(pk).nb
         nb = copy.deepcopy(nb)
         if nb_meta is None:
@@ -386,28 +377,50 @@ class JupyterCacheBase(JupyterCacheAbstract):
         )
         return stream.getvalue()
 
-    def stage_notebook_file(self, path: str):
-        """Stage a single notebook for execution."""
-        NbStageRecord.create_record(
-            str(Path(path).absolute()), self.db, raise_on_exists=False
+    def stage_notebook_file(self, path: str, assets=()) -> NbStageRecord:
+        """Stage a single notebook for execution.
+
+        :param uri: The path to the file
+        :param assets: The path of files required by the notebook to run.
+            These must be within the same folder as the notebook.
+        """
+        return NbStageRecord.create_record(
+            str(Path(path).absolute()), self.db, raise_on_exists=False, assets=assets
         )
         # TODO physically copy to cache?
         # TODO assets
 
-    def discard_staged_notebook(self, uri: str):
-        """Discard a staged notebook."""
-        NbStageRecord.remove_uris([uri], self.db)
-
     def list_staged_records(self) -> List[NbStageRecord]:
         return NbStageRecord.records_all(self.db)
 
-    def get_staged_notebook(self, uri: str) -> NbBundleIn:
-        """Return a single staged notebook."""
-        notebook = nbf.read(uri, NB_VERSION)
-        return NbBundleIn(notebook, uri)
+    def get_staged_record(self, uri_or_pk: Union[int, str]) -> NbStageRecord:
+        if isinstance(uri_or_pk, int):
+            record = NbStageRecord.record_from_pk(uri_or_pk, self.db)
+        else:
+            record = NbStageRecord.record_from_uri(uri_or_pk, self.db)
+        return record
 
-    def get_commit_record_of_staged(self, uri: str):
-        record = NbStageRecord.record_from_uri(uri, self.db)
+    def discard_staged_notebook(self, uri_or_pk: Union[int, str]):
+        """Discard a staged notebook."""
+        if isinstance(uri_or_pk, int):
+            NbStageRecord.remove_pks([uri_or_pk], self.db)
+        else:
+            NbStageRecord.remove_uris([uri_or_pk], self.db)
+
+    def get_staged_notebook(self, uri_or_pk: Union[int, str]) -> NbBundleIn:
+        """Return a single staged notebook."""
+        if isinstance(uri_or_pk, int):
+            uri_or_pk = NbStageRecord.record_from_pk(uri_or_pk, self.db).uri
+        notebook = nbf.read(uri_or_pk, NB_VERSION)
+        return NbBundleIn(notebook, uri_or_pk)
+
+    def get_commit_record_of_staged(
+        self, uri_or_pk: Union[int, str]
+    ) -> Optional[NbCommitRecord]:
+        if isinstance(uri_or_pk, int):
+            record = NbStageRecord.record_from_pk(uri_or_pk, self.db)
+        else:
+            record = NbStageRecord.record_from_uri(uri_or_pk, self.db)
         nb = self.get_staged_notebook(record.uri).nb
         hashkey = self._hash_notebook(nb)
         try:
@@ -415,7 +428,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         except KeyError:
             return None
 
-    def list_nbs_to_exec(self) -> List[dict]:
+    def list_nbs_to_exec(self) -> List[NbStageRecord]:
         """List staged notebooks, whose hash is not present in the cache commits."""
         records = []
         for record in self.list_staged_records():
