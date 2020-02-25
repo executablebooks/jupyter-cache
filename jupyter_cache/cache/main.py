@@ -20,7 +20,7 @@ from jupyter_cache.base import (  # noqa: F401
     NB_VERSION,
     NbArtifactsAbstract,
 )
-
+from jupyter_cache.utils import to_relative_paths
 from .db import create_db, NbCommitRecord, NbStageRecord, Setting
 
 COMMIT_LIMIT_KEY = "commit_limit"
@@ -40,20 +40,12 @@ class NbArtifacts(NbArtifactsAbstract):
         """
         self.paths = [Path(p).absolute() for p in paths]
         self.in_folder = Path(in_folder).absolute()
-        for path in self.paths:
-            if check_existence and not path.exists():
-                raise IOError(f"Path does not exist: {path}")
-            if check_existence and not path.is_file():
-                raise IOError(f"Path is not a file: {path}")
-            try:
-                path.relative_to(self.in_folder)
-            except ValueError:
-                raise IOError(f"Path '{path}' is not in folder '{in_folder}''")
+        to_relative_paths(self.paths, self.in_folder, check_existence=check_existence)
 
     @property
     def relative_paths(self) -> List[Path]:
         """Return the list of paths (relative to the notebook folder)."""
-        return [p.relative_to(self.in_folder) for p in self.paths]
+        return to_relative_paths(self.paths, self.in_folder)
 
     def __iter__(self) -> Iterable[Tuple[Path, io.BufferedReader]]:
         """Yield the relative path and open files (in bytes mode)"""

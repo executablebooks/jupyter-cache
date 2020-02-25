@@ -152,7 +152,10 @@ def test_execution(tmp_path):
     db = JupyterCacheBase(str(tmp_path))
     db.stage_notebook_file(path=os.path.join(NB_PATH, "basic_unrun.ipynb"))
     db.stage_notebook_file(path=os.path.join(NB_PATH, "basic_failing.ipynb"))
-    db.stage_notebook_file(path=os.path.join(NB_PATH, "external_output.ipynb"))
+    db.stage_notebook_file(
+        path=os.path.join(NB_PATH, "external_output.ipynb"),
+        assets=(os.path.join(NB_PATH, "basic.ipynb"),),
+    )
     executor = load_executor("basic", db)
     assert [r.uri for r in executor.run()] == [
         os.path.join(NB_PATH, "basic_unrun.ipynb"),
