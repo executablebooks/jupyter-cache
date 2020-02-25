@@ -72,6 +72,8 @@ Commands:
   unstage-nbs     Unstage notebook(s) for execution.
 ```
 
+### Commit Executed Notebooks
+
 You can commit notebooks straight into the cache. When committing, a check will be made that the notebooks look to have been executed correctly, i.e. the cell execution counts go sequentially up from 1.
 
 ```console
@@ -95,7 +97,9 @@ Committing: /Users/cjs14/GitHub/sandbox/tests/notebooks/complex_outputs.ipynb
 Success!
 ```
 
-Once you've committed some notebooks, you can look at the 'commit records' for what has been cached:
+Once you've committed some notebooks, you can look at the 'commit records' for what has been cached.
+
+Each notebook is hashed (code cells and kernel spec only), which is used to compare against 'staged' notebooks. Multiple hashes for the same URI can be added (the URI is just there for inspetion) and the size of the cache is limited (current default 1000) so that, at this size, the last accessed records begin to be deleted. You can remove cached records by the Primary Key (PK).
 
 ```console
 $ jcache list-commits --hashkeys
@@ -139,8 +143,6 @@ Committing: /Users/cjs14/GitHub/jupyter-cache/tests/notebooks/basic.ipynb
 Artifact Error: Path '/Users/cjs14/GitHub/jupyter-cache/tests/test_db.py' is not in folder '/Users/cjs14/GitHub/jupyter-cache/tests/notebooks''
 ```
 
-Each notebook is hashed (code cells and kernel spec only), which is used to compare against 'staged' notebooks. Multiple hashes for the same URI can be added (the URI is just there for inspetion) and the size of the cache is limited (current default 1000) so that, at this size, the last accessed records begin to be deleted. You can remove cached records by the Primary Key (PK).
-
 ```console
 $ jcache remove-commits 3
 Removing PK = 3
@@ -173,6 +175,11 @@ nbdiff
 -      raise Exception('oopsie!')
 ```
 
+### Staging Notebooks for execution
+
+Staged notebooks are recorded as pointers to their URI,
+i.e. no physical copying takes place until execution time.
+
 If you stage some notebooks for execution, then you can list them to see which have existing records in the cache (by hash) and which will require execution:
 
 ```console
@@ -193,9 +200,6 @@ $ jcache list-staged
    2  tests/notebooks/basic_failing.ipynb    2020-02-23 20:48            2
    1  tests/notebooks/basic.ipynb            2020-02-23 20:48
 ```
-
-Note: staged notebooks are just recorded as pointers to their URI,
-i.e. no physical copying takes place until execution time.
 
 You can then run a basic execution of the required notebooks:
 
@@ -219,6 +223,39 @@ $ jcache list-staged
    4  tests/notebooks/complex_outputs.ipynb  2020-02-23 20:48            4
    3  tests/notebooks/basic_unrun.ipynb      2020-02-23 20:48            6
    2  tests/notebooks/basic_failing.ipynb    2020-02-23 20:48            2
+```
+
+Once executed you may leave staged notebooks, for later re-execution, or remove them:
+
+```console
+$ jcache unstage-nbs --all
+Are you sure you want to remove all? [y/N]: y
+Unstaging: /Users/cjs14/GitHub/jupyter-cache/tests/notebooks/basic.ipynb
+Success!
+```
+
+You can also stage notebooks with assets; external files that are required by the notebook during execution. As with artefacts,
+these files must be in the same folder as the notebook, or a sub-folder.
+
+```console
+$ jcache stage-nb -nb tests/notebooks/basic.ipynb tests/notebooks/artifact_folder/artifact.txt
+Success!
+```
+
+```console
+$ jcache list-staged
+  PK  URI                          Created             Assets
+----  ---------------------------  ----------------  --------
+   1  tests/notebooks/basic.ipynb  2020-02-25 10:01         1
+```
+
+```console
+$ jcache show-staged 1
+PK: 1
+URI: /Users/cjs14/GitHub/jupyter-cache/tests/notebooks/basic.ipynb
+Created: 2020-02-25 10:01
+Assets:
+- /Users/cjs14/GitHub/jupyter-cache/tests/notebooks/artifact_folder/artifact.txt
 ```
 
 ## Contributing
