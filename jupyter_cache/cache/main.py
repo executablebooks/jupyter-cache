@@ -288,7 +288,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
 
         return NbBundleOut(
             nbf.reads(path.read_text(), NB_VERSION),
-            commit=record.to_dict(),
+            commit=record,
             artifacts=NbArtifacts(
                 [p for p in artifact_folder.glob("**/*") if p.is_file()],
                 in_folder=artifact_folder,

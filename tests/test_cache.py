@@ -28,7 +28,7 @@ def test_basic_workflow(tmp_path):
         "language": "python",
         "name": "python3",
     }
-    assert set(nb_bundle.commit.keys()) == {
+    assert set(nb_bundle.commit.to_dict().keys()) == {
         "pk",
         "hashkey",
         "uri",

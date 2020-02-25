@@ -55,19 +55,14 @@ class NbBundleIn(NamedTuple):
 
     nb: nbf.NotebookNode
     uri: str
-    # artifacts iterates (relative path to notebook, <bytes stream>)
-    # for all outputs of the executed notebook
     artifacts: Optional[NbArtifactsAbstract] = None
 
 
 class NbBundleOut(NamedTuple):
-    """A container for notebooks and their associated data that have been executed."""
+    """A container for notebooks and their associated data that have been committed."""
 
     nb: nbf.NotebookNode
-    # commit is a dictionary of the commit record (uri, commit time, etc)
-    commit: dict
-    # artifacts iterates (relative path to notebook, <bytes stream>)
-    # for all outputs of the executed notebook
+    commit: NbCommitRecord
     artifacts: Optional[NbArtifactsAbstract] = None
 
 
