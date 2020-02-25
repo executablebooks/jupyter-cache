@@ -38,7 +38,7 @@ def clear_cache(cache_path):
 @options.CACHE_PATH
 @click.argument("limit", metavar="COMMIT_LIMIT", type=int)
 def change_commit_limit(cache_path, limit):
-    """Change the commit limit of the cache (default: 1000)."""
+    """Change the commit limit of the cache."""
     db = JupyterCacheBase(cache_path)
     db.change_commit_limit(limit)
     click.secho("Limit changed!", fg="green")
@@ -157,7 +157,7 @@ def commit_file(db, nbpath, validate, overwrite, artifact_paths=()):
 @options.VALIDATE_NB
 @options.OVERWRITE_COMMIT
 def commit_nb(cache_path, artifact_paths, nbpath, validate, overwrite):
-    """Commit a notebook that has already been executed, with artifacts."""
+    """Commit a notebook that has already been executed."""
     db = JupyterCacheBase(cache_path)
     success = commit_file(db, nbpath, validate, overwrite, artifact_paths)
     if success:
@@ -186,7 +186,7 @@ def commit_nbs(cache_path, nbpaths, validate, overwrite):
 @options.CACHE_PATH
 @options.REMOVE_ALL
 def remove_commits(cache_path, pks, remove_all):
-    """Remove notebook commit(s) from the cache by Primary Key."""
+    """Remove notebook commit(s) from the cache."""
     db = JupyterCacheBase(cache_path)
     if remove_all:
         pks = [r.pk for r in db.list_commit_records()]

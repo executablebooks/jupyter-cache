@@ -57,15 +57,17 @@ Options:
 Commands:
   cat-artifact    Print the contents of a commit artefact.
   clear           Clear the cache completely.
-  commit-limit    Change the commit limit of the cache (default: 1000).
-  commit-nb       Commit a notebook that has already been executed, with...
+  commit-limit    Change the commit limit of the cache.
+  commit-nb       Commit a notebook that has already been executed.
   commit-nbs      Commit notebook(s) that have already been executed.
   diff-nb         Print a diff of a notebook to one stored in the cache.
   execute         Execute outdated notebooks.
   list-commits    List committed notebook records in the cache.
   list-staged     List notebooks staged for possible execution.
-  remove-commits  Remove notebook commit(s) from the cache by Primary Key.
+  remove-commits  Remove notebook commit(s) from the cache.
   show-commit     Show details of a committed notebook in the cache.
+  show-staged     Show details of a staged notebook.
+  stage-nb        Commit a notebook, with possible assets.
   stage-nbs       Stage notebook(s) for execution.
   unstage-nbs     Unstage notebook(s) for execution.
 ```
