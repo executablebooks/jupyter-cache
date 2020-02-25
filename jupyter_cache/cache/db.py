@@ -34,6 +34,8 @@ def session_context(engine: Engine):
 
 
 class Setting(OrmBase):
+    """A settings key/value pair representation."""
+
     __tablename__ = "settings"
 
     pk = Column(Integer(), primary_key=True)
@@ -75,6 +77,8 @@ class Setting(OrmBase):
 
 
 class NbCommitRecord(OrmBase):
+    """A record of an executed notebook commit."""
+
     __tablename__ = "nbcommit"
 
     pk = Column(Integer(), primary_key=True)
@@ -186,6 +190,8 @@ class NbCommitRecord(OrmBase):
 
 
 class NbStageRecord(OrmBase):
+    """A record of a notebook staged for execution."""
+
     __tablename__ = "nbstage"
 
     pk = Column(Integer(), primary_key=True)
