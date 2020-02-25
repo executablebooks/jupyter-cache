@@ -14,8 +14,10 @@ setup(
     license="MIT",
     packages=find_packages(),
     entry_points={
-        "console_scripts": [],
-        # "jupyter_executors": ["default = jupyter_sphinx.executor:run_execution"],
+        "console_scripts": ["jcache = jupyter_cache.cli.commands.cmd_main:jcache"],
+        "jupyter_executors": [
+            "basic = jupyter_cache.executors.basic:JupyterExecutorBasic"
+        ],
     },
     classifiers=[
         "Development Status :: 3 - Alpha",
@@ -30,17 +32,20 @@ setup(
         "Programming Language :: Python :: Implementation :: PyPy",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
-    python_requires=">=3.5",
-    install_requires=["nbformat", "tinydb", "sqlalchemy"],
+    python_requires=">=3.6",
+    install_requires=[
+        "nbformat",
+        "nbdime",
+        "nbconvert",
+        "sqlalchemy",
+        "click",
+        "click-log",
+        "tabulate",
+        "pyyaml",
+    ],
     extras_require={
         "code_style": ["flake8<3.8.0,>=3.7.0", "black", "pre-commit==1.17.0"],
-        "testing": [
-            "coverage",
-            "pytest>=3.6,<4",
-            "pytest-cov",
-            "pytest-regressions",
-            "beautifulsoup4",
-        ],
+        "testing": ["coverage", "pytest>=3.6,<4", "pytest-cov", "pytest-regressions"],
     },
     zip_safe=True,
 )
