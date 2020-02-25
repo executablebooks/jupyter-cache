@@ -49,7 +49,7 @@ def test_basic_workflow(tmp_path):
         ## inserted before nb/cells/0:
         +  code cell:
         +    source:
-        +      raise Exception('oopie')
+        +      raise Exception('oopsie!')
 
         ## deleted nb/cells/0:
         -  code cell:

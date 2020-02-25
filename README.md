@@ -168,7 +168,7 @@ nbdiff
 ## deleted nb/cells/1:
 -  code cell:
 -    source:
--      raise Exception('oopie')
+-      raise Exception('oopsie!')
 ```
 
 If you stage some notebooks for execution, then you can list them to see which have existing records in the cache (by hash) and which will require execution:

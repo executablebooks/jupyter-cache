@@ -104,7 +104,7 @@ def test_diff_nbs(tmp_path):
         "## inserted before nb/cells/0:",
         "+  code cell:",
         "+    source:",
-        "+      raise Exception('oopie')",
+        "+      raise Exception('oopsie!')",
         "",
         "## deleted nb/cells/0:",
         "-  code cell:",
