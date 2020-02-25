@@ -90,12 +90,15 @@ def show_commit(cache_path, pk):
     click.echo(yaml.safe_dump(data, sort_keys=False), nl=False)
     with db.commit_artefacts_temppath(pk) as folder:
         paths = [str(p.relative_to(folder)) for p in folder.glob("**/*") if p.is_file()]
-    if not paths:
+    if not (paths or record.data):
         click.echo("")
         return
-    click.echo(f"Artifacts:")
-    for path in paths:
-        click.echo(f"- {path}")
+    if paths:
+        click.echo(f"Artifacts:")
+        for path in paths:
+            click.echo(f"- {path}")
+    if record.data:
+        click.echo(yaml.safe_dump({"Data": record.data}))
 
 
 @jcache.command("cat-artifact")

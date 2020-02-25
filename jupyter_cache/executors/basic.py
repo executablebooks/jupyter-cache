@@ -8,7 +8,7 @@ from nbconvert.preprocessors.execute import executenb
 
 from jupyter_cache.executors.base import JupyterExecutorAbstract
 from jupyter_cache.cache.main import NbBundleIn, NbArtifacts
-from jupyter_cache.utils import to_relative_paths
+from jupyter_cache.utils import to_relative_paths, Timer
 
 
 def copy_assets(record, folder):
@@ -40,16 +40,18 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
                 except Exception as err:
                     self.logger.error("Assets Error: {}".format(err), exc_info=True)
                     continue
+                timer = Timer()
                 try:
-                    executenb(nb_bundle.nb, cwd=tmpdirname)
+                    with timer:
+                        executenb(nb_bundle.nb, cwd=tmpdirname)
                 except Exception:
                     self.logger.error("Failed Execution: {}".format(uri), exc_info=True)
                     continue
                 final_bundle = NbBundleIn(
                     nb_bundle.nb,
                     nb_bundle.uri,
-                    # TODO retrieve assets that have changed mtime?
-                    NbArtifacts(
+                    # TODO retrieve assets that have changed file mtime?
+                    artifacts=NbArtifacts(
                         [
                             p
                             for p in Path(tmpdirname).glob("**/*")
@@ -57,6 +59,7 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
                         ],
                         tmpdirname,
                     ),
+                    data={"execution_seconds": timer.last_split},
                 )
                 try:
                     self.cache.commit_notebook_bundle(final_bundle, overwrite=True)

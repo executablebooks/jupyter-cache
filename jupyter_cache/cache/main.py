@@ -209,11 +209,15 @@ class JupyterCacheBase(JupyterCacheAbstract):
                 )
             shutil.rmtree(path.parent)
             record = NbCommitRecord.record_from_hashkey(hashkey, self.db)
-            # TODO record should be changed rather than deleted
+            # TODO record should be changed rather than deleted?
             NbCommitRecord.remove_records([record.pk], self.db)
 
         record = NbCommitRecord.create_record(
-            uri=bundle.uri, hashkey=hashkey, db=self.db, description=description
+            uri=bundle.uri,
+            hashkey=hashkey,
+            db=self.db,
+            data=bundle.data,
+            description=description,
         )
         path.parent.mkdir(parents=True)
         self._prepare_nb_for_commit(bundle.nb)
@@ -237,6 +241,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         path: str,
         uri: Optional[str] = None,
         artifacts: List[str] = (),
+        data: Optional[dict] = None,
         check_validity: bool = True,
         overwrite: bool = False,
     ) -> NbCommitRecord:
@@ -248,6 +253,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         :param uri: alternative URI to store in the commit record (defaults to path)
         :param artifacts: list of paths to outputs of the executed notebook.
             Artifacts must be in the same folder as the notebook (or a sub-folder)
+        :param data: additional, JSONable, data about the commit
         :param check_validity: check that the notebook has been executed correctly,
             by asserting `execution_count`s are consecutive and start at 1.
         :param overwrite: Allow overwrite of commit with matching hash
@@ -258,7 +264,8 @@ class JupyterCacheBase(JupyterCacheAbstract):
             NbBundleIn(
                 notebook,
                 uri or path,
-                NbArtifacts(artifacts, in_folder=Path(path).parent),
+                artifacts=NbArtifacts(artifacts, in_folder=Path(path).parent),
+                data=data or {},
             ),
             check_validity=check_validity,
             overwrite=overwrite,
@@ -320,7 +327,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
     def merge_match_into_notebook(
         self,
         nb: nbf.NotebookNode,
-        nb_meta=("kernelspec", "language_info"),
+        nb_meta=("kernelspec", "language_info", "widgets"),
         cell_meta=None,
     ) -> Tuple[int, nbf.NotebookNode]:
         """Match to an executed notebook and return a merged version
@@ -338,7 +345,8 @@ class JupyterCacheBase(JupyterCacheAbstract):
             nb.metadata = commit_nb.metadata
         else:
             for key in nb_meta:
-                nb.metadata[key] = commit_nb.metadata[key]
+                if key in commit_nb:
+                    nb.metadata[key] = commit_nb.metadata[key]
         for idx in range(len(nb.cells)):
             if nb.cells[idx].cell_type == "code":
                 commit_cell = commit_nb.cells.pop(0)

@@ -33,7 +33,7 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
     python_requires=">=3.6",
-    install_requires=["nbformat", "nbdime", "nbconvert", "sqlalchemy"],
+    install_requires=["attrs", "nbformat", "nbdime", "nbconvert", "sqlalchemy"],
     extras_require={
         "cli": ["click", "click-log", "tabulate", "pyyaml"],
         "code_style": ["flake8<3.8.0,>=3.7.0", "black", "pre-commit==1.17.0"],

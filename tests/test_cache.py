@@ -162,13 +162,15 @@ def test_execution(tmp_path):
         os.path.join(NB_PATH, "external_output.ipynb"),
     ]
     assert len(db.list_commit_records()) == 2
-    assert db.get_commit_bundle(1).nb.cells[0] == {
+    bundle = db.get_commit_bundle(1)
+    assert bundle.nb.cells[0] == {
         "cell_type": "code",
         "execution_count": 1,
         "metadata": {},
         "outputs": [{"name": "stdout", "output_type": "stream", "text": "1\n"}],
         "source": "a=1\nprint(a)",
     }
+    assert "execution_seconds" in bundle.commit.data
     with db.commit_artefacts_temppath(2) as path:
         paths = [str(p.relative_to(path)) for p in path.glob("**/*") if p.is_file()]
         assert paths == ["artifact.txt"]
