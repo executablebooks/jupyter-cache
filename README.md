@@ -14,7 +14,7 @@ Some desired requirements (not yet all implemented):
 - Persistent
 - Separates out "edits to content" from "edits to code cells". Cell
   rearranges and code cell changes should require a re-execution. Content changes should not.
-- Allow parallel access to of notebooks (for execution)
+- Allow parallel access to notebooks (for execution)
 - Store execution statistics/reports
 - Store external assets: Notebooks being executed often require external assets: importing scripts/data/etc. These are prepared by the users.
 - Store execution artifacts: created during exeution
@@ -192,6 +192,9 @@ $ jcache list-staged
    1  tests/notebooks/basic.ipynb            2020-02-23 20:48
 ```
 
+Note: staged notebooks are just recorded as pointers to their URI,
+i.e. no physical copying takes place until execution time.
+
 You can then run a basic execution of the required notebooks:
 
 ```console
@@ -203,13 +206,16 @@ Success: /Users/cjs14/GitHub/sandbox/tests/notebooks/basic_unrun.ipynb
 Finished!
 ```
 
+Successfully executed notebooks will be committed to the cache,
+along with any 'artefacts' created by the execution, that are inside the notebook folder.
+
 ```console
 $ jcache list-staged
   PK  URI                                    Created             Commit Pk
 ----  -------------------------------------  ----------------  -----------
    5  tests/notebooks/basic.ipynb            2020-02-23 20:57            5
    4  tests/notebooks/complex_outputs.ipynb  2020-02-23 20:48            4
-   3  tests/notebooks/basic_unrun.ipynb      2020-02-23 20:48            5
+   3  tests/notebooks/basic_unrun.ipynb      2020-02-23 20:48            6
    2  tests/notebooks/basic_failing.ipynb    2020-02-23 20:48            2
 ```
 
