@@ -3,6 +3,7 @@
 # jupyter-cache
 
 [![Build Status](https://travis-ci.org/ExecutableBookProject/jupyter-cache.svg?branch=master)](https://travis-ci.org/ExecutableBookProject/jupyter-cache)
+[![Coverage Status](https://coveralls.io/repos/github/ExecutableBookProject/jupyter-cache/badge.svg?branch=master)](https://coveralls.io/github/ExecutableBookProject/jupyter-cache?branch=master)
 
 A defined interface for working with a cache of jupyter notebooks.
 
