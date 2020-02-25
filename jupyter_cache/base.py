@@ -208,12 +208,17 @@ class JupyterCacheAbstract(ABC):
         return self.diff_nbnode_with_commit(pk, nb, uri=path, as_str=as_str, **kwargs)
 
     @abstractmethod
-    def stage_notebook_file(self, uri: str) -> NbStageRecord:
-        """Stage a single notebook for execution."""
+    def stage_notebook_file(self, uri: str, assets: List[str] = ()) -> NbStageRecord:
+        """Stage a single notebook for execution.
+
+        :param uri: The path to the file
+        :param assets: The path of files required by the notebook to run.
+        :raises ValueError: assets not within the same folder as the notebook URI.
+        """
         pass
 
     @abstractmethod
-    def discard_staged_notebook(self, uri: str):
+    def discard_staged_notebook(self, uri_or_pk: Union[int, str]):
         """Discard a staged notebook."""
         pass
 
@@ -223,12 +228,19 @@ class JupyterCacheAbstract(ABC):
         pass
 
     @abstractmethod
-    def get_staged_notebook(self, uri: str) -> NbBundleIn:
-        """Return a single staged notebook."""
+    def get_staged_record(self, uri_or_pk: Union[int, str]) -> NbStageRecord:
+        """Return the record of a staged notebook, by its primary key or URI."""
         pass
 
     @abstractmethod
-    def get_commit_record_of_staged(self, uri: str) -> Optional[NbCommitRecord]:
+    def get_staged_notebook(self, uri_or_pk: Union[int, str]) -> NbBundleIn:
+        """Return a single staged notebook, by its primary key or URI."""
+        pass
+
+    @abstractmethod
+    def get_commit_record_of_staged(
+        self, uri_or_pk: Union[int, str]
+    ) -> Optional[NbCommitRecord]:
         pass
 
     @abstractmethod

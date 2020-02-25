@@ -227,6 +227,17 @@ def stage_nbs(cache_path, nbpaths):
     click.secho("Success!", fg="green")
 
 
+@jcache.command("stage-nb")
+@arguments.ASSET_PATHS
+@options.NB_PATH
+@options.CACHE_PATH
+def stage_nb(cache_path, nbpath, asset_paths):
+    """Commit a notebook, with possible assets."""
+    db = JupyterCacheBase(cache_path)
+    db.stage_notebook_file(nbpath, asset_paths)
+    click.secho("Success!", fg="green")
+
+
 @jcache.command("unstage-nbs")
 @arguments.NB_PATHS
 @options.CACHE_PATH
@@ -243,12 +254,14 @@ def unstage_nbs(cache_path, nbpaths, remove_all):
     click.secho("Success!", fg="green")
 
 
-def format_staged_record(record, commit, path_length):
+def format_staged_record(record, commit, path_length, assets=True):
     data = {
         "PK": record.pk,
-        "URI": shorten_path(record.uri, path_length),
+        "URI": str(shorten_path(record.uri, path_length)),
         "Created": record.created.isoformat(" ", "minutes"),
     }
+    if assets:
+        data["Assets"] = len(record.assets)
     if commit:
         data["Commit Pk"] = commit.pk
     return data
@@ -276,3 +289,21 @@ def list_staged(cache_path, compare, path_length):
             commit = db.get_commit_record_of_staged(record.uri)
         rows.append(format_staged_record(record, commit, path_length))
     click.echo(tabulate.tabulate(rows, headers="keys"))
+
+
+@jcache.command("show-staged")
+@options.CACHE_PATH
+@arguments.PK
+def show_staged(cache_path, pk):
+    """Show details of a staged notebook."""
+    db = JupyterCacheBase(cache_path)
+    record = db.get_staged_record(pk)
+    commit = db.get_commit_record_of_staged(record.uri)
+    data = format_staged_record(record, commit, None, assets=False)
+    click.echo(yaml.safe_dump(data, sort_keys=False), nl=False)
+    if not record.assets:
+        click.echo("")
+        return
+    click.echo(f"Assets:")
+    for path in record.assets:
+        click.echo(f"- {path}")

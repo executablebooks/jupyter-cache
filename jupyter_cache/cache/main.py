@@ -4,7 +4,7 @@ import io
 from pathlib import Path
 import hashlib
 import shutil
-from typing import Iterable, List, Optional, Tuple
+from typing import Iterable, List, Optional, Tuple, Union
 
 import nbdime
 import nbformat as nbf
@@ -385,28 +385,50 @@ class JupyterCacheBase(JupyterCacheAbstract):
         )
         return stream.getvalue()
 
-    def stage_notebook_file(self, path: str) -> NbStageRecord:
-        """Stage a single notebook for execution."""
+    def stage_notebook_file(self, path: str, assets=()) -> NbStageRecord:
+        """Stage a single notebook for execution.
+
+        :param uri: The path to the file
+        :param assets: The path of files required by the notebook to run.
+            These must be within the same folder as the notebook.
+        """
         return NbStageRecord.create_record(
-            str(Path(path).absolute()), self.db, raise_on_exists=False
+            str(Path(path).absolute()), self.db, raise_on_exists=False, assets=assets
         )
         # TODO physically copy to cache?
         # TODO assets
 
-    def discard_staged_notebook(self, uri: str):
-        """Discard a staged notebook."""
-        NbStageRecord.remove_uris([uri], self.db)
-
     def list_staged_records(self) -> List[NbStageRecord]:
         return NbStageRecord.records_all(self.db)
 
-    def get_staged_notebook(self, uri: str) -> NbBundleIn:
-        """Return a single staged notebook."""
-        notebook = nbf.read(uri, NB_VERSION)
-        return NbBundleIn(notebook, uri)
+    def get_staged_record(self, uri_or_pk: Union[int, str]) -> NbStageRecord:
+        if isinstance(uri_or_pk, int):
+            record = NbStageRecord.record_from_pk(uri_or_pk, self.db)
+        else:
+            record = NbStageRecord.record_from_uri(uri_or_pk, self.db)
+        return record
 
-    def get_commit_record_of_staged(self, uri: str) -> Optional[NbCommitRecord]:
-        record = NbStageRecord.record_from_uri(uri, self.db)
+    def discard_staged_notebook(self, uri_or_pk: Union[int, str]):
+        """Discard a staged notebook."""
+        if isinstance(uri_or_pk, int):
+            NbStageRecord.remove_pks([uri_or_pk], self.db)
+        else:
+            NbStageRecord.remove_uris([uri_or_pk], self.db)
+
+    def get_staged_notebook(self, uri_or_pk: Union[int, str]) -> NbBundleIn:
+        """Return a single staged notebook."""
+        if isinstance(uri_or_pk, int):
+            uri_or_pk = NbStageRecord.record_from_pk(uri_or_pk, self.db).uri
+        notebook = nbf.read(uri_or_pk, NB_VERSION)
+        return NbBundleIn(notebook, uri_or_pk)
+
+    def get_commit_record_of_staged(
+        self, uri_or_pk: Union[int, str]
+    ) -> Optional[NbCommitRecord]:
+        if isinstance(uri_or_pk, int):
+            record = NbStageRecord.record_from_pk(uri_or_pk, self.db)
+        else:
+            record = NbStageRecord.record_from_uri(uri_or_pk, self.db)
         nb = self.get_staged_notebook(record.uri).nb
         hashkey = self._hash_notebook(nb)
         try:

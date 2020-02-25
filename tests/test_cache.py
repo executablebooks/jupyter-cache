@@ -74,7 +74,12 @@ def test_basic_workflow(tmp_path):
         uri="basic.ipynb",
         check_validity=False,
     )
-    cache.stage_notebook_file(os.path.join(NB_PATH, "basic.ipynb"))
+    with pytest.raises(ValueError):
+        cache.stage_notebook_file(os.path.join(NB_PATH, "basic.ipynb"), assets=[""])
+    cache.stage_notebook_file(
+        os.path.join(NB_PATH, "basic.ipynb"),
+        assets=[os.path.join(NB_PATH, "basic.ipynb")],
+    )
     assert [r.pk for r in cache.list_staged_records()] == [1]
     assert [r.pk for r in cache.list_nbs_to_exec()] == []
 
@@ -149,7 +154,7 @@ def test_execution(tmp_path):
     db.stage_notebook_file(path=os.path.join(NB_PATH, "basic_failing.ipynb"))
     db.stage_notebook_file(path=os.path.join(NB_PATH, "external_output.ipynb"))
     executor = load_executor("basic", db)
-    assert executor.run() == [
+    assert [r.uri for r in executor.run()] == [
         os.path.join(NB_PATH, "basic_unrun.ipynb"),
         os.path.join(NB_PATH, "external_output.ipynb"),
     ]
