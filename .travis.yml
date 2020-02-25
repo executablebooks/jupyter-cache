@@ -15,11 +15,11 @@ install:
   - pip install --upgrade pip wheel setuptools
   - |
       if [[ "$TEST_TYPE" == "pre-commit" ]]; then
-        pip install -e .[code_style]
+        pip install -e .[cli,code_style]
       fi
   - |
       if [[ "$TEST_TYPE" == "pytest" ]]; then
-        pip install -e .[testing]
+        pip install -e .[cli,testing]
         pip install coveralls
       fi
 script:

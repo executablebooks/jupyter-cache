@@ -23,7 +23,7 @@ Some desired requirements (not yet all implemented):
 ## Install
 
 ```bash
-pip install -e "git+https://github.com/ExecutableBookProject/jupyter-cache.git#egg=jupyter-cache[sphinx]"
+pip install -e "git+https://github.com/ExecutableBookProject/jupyter-cache.git#egg=jupyter-cache[cli]"
 ```
 
 For development:
@@ -32,7 +32,7 @@ For development:
 git clone https://github.com/ExecutableBookProject/jupyter-cache
 cd jupyter-cache
 git checkout develop
-pip install -e .[code_style,testing]
+pip install -e .[cli,code_style,testing]
 ```
 
 ## Example API usage
