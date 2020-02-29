@@ -146,6 +146,9 @@ def test_artifacts(tmp_path):
         assert path.joinpath("artifact_folder").exists()
 
 
+# jupyter_client/session.py:371: DeprecationWarning:
+# Session._key_changed is deprecated in traitlets: use @observe and @unobserve instead
+@pytest.mark.filterwarnings("ignore")
 def test_execution(tmp_path):
     from jupyter_cache.executors import load_executor
 
