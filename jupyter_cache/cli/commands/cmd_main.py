@@ -8,8 +8,8 @@ from jupyter_cache.cli import options
     None, "-v", "--version", message="jupyter-cache version %(version)s"
 )
 @options.PRINT_CACHE_PATH
-# @options.AUTOCOMPLETE  # doesn't allow file path autocompletion
-def jcache(cache_path):
+@options.AUTOCOMPLETE
+def jcache(*args):
     """The command line interface of jupyter-cache."""
 
 
