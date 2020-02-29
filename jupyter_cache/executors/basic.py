@@ -57,11 +57,15 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
     multi/async processed.
     """
 
-    def run_and_cache(self):
+    def run_and_cache(self, filter_uris=None, filter_pks=None):
         """This function interfaces with the cache, deferring execution to `execute`."""
 
         # Get the notebook tha require re-execution
         stage_records = self.cache.list_staged_unexecuted()
+        if filter_uris is not None:
+            stage_records = [r for r in stage_records if r.uri in filter_uris]
+        if filter_pks is not None:
+            stage_records = [r for r in stage_records if r.pk in filter_pks]
 
         # remove any tracebacks from previous executions
         NbStageRecord.remove_tracebacks([r.pk for r in stage_records], self.cache.db)
@@ -89,6 +93,7 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
         for bundle_or_exc in self.execute(_iterator()):
             if isinstance(bundle_or_exc, ExecutionError):
                 self.logger.error(bundle_or_exc.uri, exc_info=bundle_or_exc.exc)
+                result["errored"].append(bundle_or_exc.uri)
                 continue
             elif bundle_or_exc.traceback is not None:
                 # The notebook raised an exception during execution
