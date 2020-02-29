@@ -105,7 +105,9 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
                 continue
             try:
                 # cache a successfully executed notebook
-                self.cache.cache_notebook_bundle(bundle_or_exc, overwrite=True)
+                self.cache.cache_notebook_bundle(
+                    bundle_or_exc, check_validity=False, overwrite=True
+                )
             except Exception:
                 self.logger.error(
                     "Failed Caching: {}".format(bundle_or_exc.uri), exc_info=True
