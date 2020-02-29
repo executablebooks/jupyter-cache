@@ -31,7 +31,7 @@ def stage_nbs(cache_path, nbpaths):
 @options.NB_PATH
 @options.CACHE_PATH
 def stage_nb(cache_path, nbpath, asset_paths):
-    """Stage a notebook, with possible assets."""
+    """Stage a notebook, with possible asset files."""
     db = get_cache(cache_path)
     db.stage_notebook_file(nbpath, asset_paths)
     click.secho("Success!", fg="green")
