@@ -33,6 +33,7 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
     python_requires=">=3.6",
+    # note: nbdime could be made an extra
     install_requires=["attrs", "nbformat", "nbdime", "nbconvert", "sqlalchemy"],
     extras_require={
         "cli": ["click", "click-log", "tabulate", "pyyaml"],

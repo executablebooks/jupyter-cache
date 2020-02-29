@@ -74,5 +74,10 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
         # Should the executor be adding to the cache,
         # or perhaps run just accepts the iter and returns NbBundles.
         # TODO it would also be ideal to tag all notebooks
-        # that were executed at the same time.
+        # that were executed at the same time (just part of `data` or separate column?).
+        # TODO maybe the status of success/failure could be stored on
+        # the stage record (commit_status=Enum('OK', 'FAILED', 'MISSING'))
+        # also failed notebooks could be stored in the cache, which would be
+        # accessed by stage pk (and would be deleted when removing the stage record)
+        # see: https://python.quantecon.org/status.html
         return succeeded

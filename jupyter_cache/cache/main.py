@@ -6,9 +6,7 @@ import hashlib
 import shutil
 from typing import Iterable, List, Optional, Tuple, Union
 
-import nbdime
 import nbformat as nbf
-from nbdime.prettyprint import pretty_print_diff, PrettyPrintConfig
 
 from jupyter_cache.base import (  # noqa: F401
     JupyterCacheAbstract,
@@ -371,6 +369,9 @@ class JupyterCacheBase(JupyterCacheAbstract):
 
         Note: this will not diff markdown content, since it is not stored in the cache.
         """
+        import nbdime
+        from nbdime.prettyprint import pretty_print_diff, PrettyPrintConfig
+
         committed_nb = self.get_commit_bundle(pk).nb
         nb = self._prepare_nb_for_commit(nb, deepcopy=True)
         diff = nbdime.diff_notebooks(committed_nb, nb)
