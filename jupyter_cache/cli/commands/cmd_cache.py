@@ -138,7 +138,7 @@ def cache_file(db, nbpath, validate, overwrite, artifact_paths=()):
 @options.VALIDATE_NB
 @options.OVERWRITE_CACHED
 def cache_nb(cache_path, artifact_paths, nbpath, validate, overwrite):
-    """Cache a notebook that has already been executed."""
+    """Cache a notebook, with possible artefact files."""
     db = get_cache(cache_path)
     success = cache_file(db, nbpath, validate, overwrite, artifact_paths)
     if success:
