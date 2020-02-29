@@ -1,1 +1,1 @@
-from .main import JupyterCacheBase, DEFAULT_COMMIT_LIMIT  # noqa: F401
+from .main import JupyterCacheBase, DEFAULT_CACHE_LIMIT  # noqa: F401

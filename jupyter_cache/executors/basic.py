@@ -62,9 +62,9 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
                     data={"execution_seconds": timer.last_split},
                 )
                 try:
-                    self.cache.commit_notebook_bundle(final_bundle, overwrite=True)
+                    self.cache.cache_notebook_bundle(final_bundle, overwrite=True)
                 except Exception:
-                    self.logger.error("Failed Commit: {}".format(uri), exc_info=True)
+                    self.logger.error("Failed Caching: {}".format(uri), exc_info=True)
                     continue
 
                 self.logger.info("Success: {}".format(uri))
@@ -76,7 +76,7 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
         # TODO it would also be ideal to tag all notebooks
         # that were executed at the same time (just part of `data` or separate column?).
         # TODO maybe the status of success/failure could be stored on
-        # the stage record (commit_status=Enum('OK', 'FAILED', 'MISSING'))
+        # the stage record (cache_status=Enum('OK', 'FAILED', 'MISSING'))
         # also failed notebooks could be stored in the cache, which would be
         # accessed by stage pk (and would be deleted when removing the stage record)
         # see: https://python.quantecon.org/status.html

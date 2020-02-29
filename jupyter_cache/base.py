@@ -13,7 +13,7 @@ from attr.validators import instance_of
 import nbformat as nbf
 
 # TODO make these abstract
-from jupyter_cache.cache.db import NbCommitRecord, NbStageRecord
+from jupyter_cache.cache.db import NbCacheRecord, NbStageRecord
 
 NB_VERSION = 4
 
@@ -27,7 +27,7 @@ class RetrievalError(Exception):
 
 
 class NbValidityError(Exception):
-    """Signals a notebook may not be valid to commit.
+    """Signals a notebook may not be valid to cache.
 
     For example, because it has not yet been executed.
     """
@@ -54,7 +54,7 @@ class NbArtifactsAbstract(ABC):
 
 @attr.s(frozen=True, slots=True)
 class NbBundleIn:
-    """A container for notebooks and their associated data to commit."""
+    """A container for notebooks and their associated data to cache."""
 
     nb: nbf.NotebookNode = attr.ib(
         validator=instance_of(nbf.NotebookNode), metadata={"help": "the notebook"}
@@ -77,12 +77,12 @@ class NbBundleIn:
 
 @attr.s(frozen=True, slots=True)
 class NbBundleOut:
-    """A container for notebooks and their associated data that have been committed."""
+    """A container for notebooks and their associated data that have been cached."""
 
     nb: nbf.NotebookNode = attr.ib(
         validator=instance_of(nbf.NotebookNode), metadata={"help": "the notebook"}
     )
-    commit: NbCommitRecord = attr.ib(metadata={"help": "the commit record"})
+    record: NbCacheRecord = attr.ib(metadata={"help": "the cache record"})
     artifacts: Optional[NbArtifactsAbstract] = attr.ib(
         default=None,
         metadata={"help": "artifacts created during the notebook execution"},
@@ -98,23 +98,23 @@ class JupyterCacheAbstract(ABC):
         pass
 
     @abstractmethod
-    def commit_notebook_bundle(
+    def cache_notebook_bundle(
         self, bundle: NbBundleIn, check_validity: bool = True, overwrite: bool = False
-    ) -> NbCommitRecord:
-        """Commit an executed notebook, returning its commit record.
+    ) -> NbCacheRecord:
+        """Commit an executed notebook, returning its cache record.
 
         Note: non-code source text (e.g. markdown) is not stored in the cache.
 
         :param bundle: The notebook bundle
         :param check_validity: check that the notebook has been executed correctly,
             by asserting `execution_count`s are consecutive and start at 1.
-        :param overwrite: Allow overwrite of commit with matching hash
-        :return: The primary key of the commit
+        :param overwrite: Allow overwrite of cache with matching hash
+        :return: The primary key of the cache
         """
         pass
 
     @abstractmethod
-    def commit_notebook_file(
+    def cache_notebook_file(
         self,
         path: str,
         uri: Optional[str] = None,
@@ -122,64 +122,64 @@ class JupyterCacheAbstract(ABC):
         data: Optional[dict] = None,
         check_validity: bool = True,
         overwrite: bool = False,
-    ) -> NbCommitRecord:
-        """Commit an executed notebook, returning its commit record.
+    ) -> NbCacheRecord:
+        """Commit an executed notebook, returning its cache record.
 
         Note: non-code source text (e.g. markdown) is not stored in the cache.
 
         :param path: path to the notebook
-        :param uri: alternative URI to store in the commit record (defaults to path)
+        :param uri: alternative URI to store in the cache record (defaults to path)
         :param artifacts: list of paths to outputs of the executed notebook.
             Artifacts must be in the same folder as the notebook (or a sub-folder)
-        :param data: additional, JSONable, data about the commit
+        :param data: additional, JSONable, data about the cache
         :param check_validity: check that the notebook has been executed correctly,
             by asserting `execution_count`s are consecutive and start at 1.
-        :param overwrite: Allow overwrite of commit with matching hash
-        :return: The primary key of the commit
+        :param overwrite: Allow overwrite of cache with matching hash
+        :return: The primary key of the cache
         """
         pass
 
     @abstractmethod
-    def list_commit_records(self) -> List[NbCommitRecord]:
-        """Return a list of committed notebook records."""
+    def list_cache_records(self) -> List[NbCacheRecord]:
+        """Return a list of cached notebook records."""
         pass
 
-    def get_commit_record(self, pk: int) -> NbCommitRecord:
-        """Return the record of a commit, by its primary key"""
+    def get_cache_record(self, pk: int) -> NbCacheRecord:
+        """Return the record of a cache, by its primary key"""
         pass
 
     @abstractmethod
-    def get_commit_bundle(self, pk: int) -> NbBundleOut:
+    def get_cache_bundle(self, pk: int) -> NbBundleOut:
         """Return an executed notebook bundle, by its primary key"""
         pass
 
     @abstractmethod
-    def commit_artefacts_temppath(self, pk: int) -> Path:
+    def cache_artefacts_temppath(self, pk: int) -> Path:
         """Context manager to provide a temporary folder path to the notebook artifacts.
 
         Note this path is only guaranteed to exist within the scope of the context,
         and should only be used for read/copy operations::
 
-            with cache.commit_artefacts_temppath(1) as path:
+            with cache.cache_artefacts_temppath(1) as path:
                 shutil.copytree(path, destination)
         """
         pass
 
     @abstractmethod
-    def match_commit_notebook(self, nb: nbf.NotebookNode) -> NbCommitRecord:
+    def match_cache_notebook(self, nb: nbf.NotebookNode) -> NbCacheRecord:
         """Match to an executed notebook, returning its primary key.
 
         :raises KeyError: if no match is found
         """
         pass
 
-    def match_commit_file(self, path: str) -> NbCommitRecord:
+    def match_cache_file(self, path: str) -> NbCacheRecord:
         """Match to an executed notebook, returning its primary key.
 
         :raises KeyError: if no match is found
         """
         notebook = nbf.read(path, NB_VERSION)
-        return self.match_commit_notebook(notebook)
+        return self.match_cache_notebook(notebook)
 
     @abstractmethod
     def merge_match_into_notebook(
@@ -191,10 +191,10 @@ class JupyterCacheAbstract(ABC):
         """Match to an executed notebook and return a merged version
 
         :param nb: The input notebook
-        :param nb_meta: metadata keys to merge from the commit (all if None)
-        :param cell_meta: cell metadata keys to merge from the commit (all if None)
+        :param nb_meta: metadata keys to merge from the cache (all if None)
+        :param cell_meta: cell metadata keys to merge from the cache (all if None)
         :raises KeyError: if no match is found
-        :return: pk, input notebook with committed code cells and metadata merged.
+        :return: pk, input notebook with cached code cells and metadata merged.
         """
         pass
 
@@ -207,33 +207,33 @@ class JupyterCacheAbstract(ABC):
         """Match to an executed notebook and return a merged version
 
         :param path: The input notebook path
-        :param nb_meta: metadata keys to merge from the commit (all if None)
-        :param cell_meta: cell metadata keys to merge from the commit (all if None)
+        :param nb_meta: metadata keys to merge from the cache (all if None)
+        :param cell_meta: cell metadata keys to merge from the cache (all if None)
         :raises KeyError: if no match is found
-        :return: pk, input notebook with committed code cells and metadata merged.
+        :return: pk, input notebook with cached code cells and metadata merged.
         """
         nb = nbf.read(path, NB_VERSION)
         return self.merge_match_into_notebook(nb, nb_meta, cell_meta)
 
     @abstractmethod
-    def diff_nbnode_with_commit(
+    def diff_nbnode_with_cache(
         self, pk: int, nb: nbf.NotebookNode, uri: str = "", as_str=False, **kwargs
     ) -> Union[str, dict]:
-        """Return a diff of a notebook to a committed one.
+        """Return a diff of a notebook to a cached one.
 
         Note: this will not diff markdown content, since it is not stored in the cache.
         """
         pass
 
-    def diff_nbfile_with_commit(
+    def diff_nbfile_with_cache(
         self, pk: int, path: str, as_str=False, **kwargs
     ) -> Union[str, dict]:
-        """Return a diff of a notebook to a committed one.
+        """Return a diff of a notebook to a cached one.
 
         Note: this will not diff markdown content, since it is not stored in the cache.
         """
         nb = nbf.read(path, NB_VERSION)
-        return self.diff_nbnode_with_commit(pk, nb, uri=path, as_str=as_str, **kwargs)
+        return self.diff_nbnode_with_cache(pk, nb, uri=path, as_str=as_str, **kwargs)
 
     @abstractmethod
     def stage_notebook_file(self, uri: str, assets: List[str] = ()) -> NbStageRecord:
@@ -266,20 +266,20 @@ class JupyterCacheAbstract(ABC):
         pass
 
     @abstractmethod
-    def get_commit_record_of_staged(
+    def get_cache_record_of_staged(
         self, uri_or_pk: Union[int, str]
-    ) -> Optional[NbCommitRecord]:
+    ) -> Optional[NbCacheRecord]:
         pass
 
     @abstractmethod
     def list_nbs_to_exec(self) -> List[NbStageRecord]:
-        """List staged notebooks, whose hash is not present in the cache commits."""
+        """List staged notebooks, whose hash is not present in the cache."""
         pass
 
     # removed until defined use case
     # @abstractmethod
-    # def get_commit_codecell(self, pk: int, index: int) -> nbf.NotebookNode:
-    #     """Return a code cell from a committed notebook.
+    # def get_cache_codecell(self, pk: int, index: int) -> nbf.NotebookNode:
+    #     """Return a code cell from a cached notebook.
 
     #     NOTE: the index **only** refers to the list of code cells, e.g.
     #     `[codecell_0, textcell_1, codecell_2]`
