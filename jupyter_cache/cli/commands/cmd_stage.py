@@ -1,18 +1,10 @@
 import sys
 
 import click
-import tabulate
-import yaml
 
 from jupyter_cache.cli.commands.cmd_main import jcache
 from jupyter_cache.cli import arguments, options
-from jupyter_cache.cli.utils import shorten_path
-from jupyter_cache.cache import JupyterCacheBase
-from jupyter_cache.base import (  # noqa: F401
-    CachingError,
-    RetrievalError,
-    NbValidityError,
-)
+from jupyter_cache.cli.utils import shorten_path, get_cache
 
 
 @jcache.group("stage")
@@ -26,7 +18,7 @@ def cmnd_stage():
 @options.CACHE_PATH
 def stage_nbs(cache_path, nbpaths):
     """Stage notebook(s) for execution."""
-    db = JupyterCacheBase(cache_path)
+    db = get_cache(cache_path)
     for path in nbpaths:
         # TODO deal with errors (print all at end? or option to ignore)
         click.echo("Staging: {}".format(path))
@@ -40,7 +32,7 @@ def stage_nbs(cache_path, nbpaths):
 @options.CACHE_PATH
 def stage_nb(cache_path, nbpath, asset_paths):
     """Stage a notebook, with possible assets."""
-    db = JupyterCacheBase(cache_path)
+    db = get_cache(cache_path)
     db.stage_notebook_file(nbpath, asset_paths)
     click.secho("Success!", fg="green")
 
@@ -51,7 +43,7 @@ def stage_nb(cache_path, nbpath, asset_paths):
 @options.REMOVE_ALL
 def unstage_nbs_uri(cache_path, nbpaths, remove_all):
     """Un-stage notebook(s), by URI."""
-    db = JupyterCacheBase(cache_path)
+    db = get_cache(cache_path)
     if remove_all:
         nbpaths = [record.uri for record in db.list_staged_records()]
     for path in nbpaths:
@@ -67,7 +59,7 @@ def unstage_nbs_uri(cache_path, nbpaths, remove_all):
 @options.REMOVE_ALL
 def unstage_nbs_id(cache_path, pks, remove_all):
     """Un-stage notebook(s), by ID."""
-    db = JupyterCacheBase(cache_path)
+    db = get_cache(cache_path)
     if remove_all:
         pks = [record.pk for record in db.list_staged_records()]
     for pk in pks:
@@ -101,7 +93,9 @@ def format_staged_record(record, cache_record, path_length, assets=True):
 @options.PATH_LENGTH
 def list_staged(cache_path, compare, path_length):
     """List notebooks staged for possible execution."""
-    db = JupyterCacheBase(cache_path)
+    import tabulate
+
+    db = get_cache(cache_path)
     records = db.list_staged_records()
     if not records:
         click.secho("No Staged Notebooks", fg="blue")
@@ -119,7 +113,9 @@ def list_staged(cache_path, compare, path_length):
 @arguments.PK
 def show_staged(cache_path, pk):
     """Show details of a staged notebook."""
-    db = JupyterCacheBase(cache_path)
+    import yaml
+
+    db = get_cache(cache_path)
     try:
         record = db.get_staged_record(pk)
     except KeyError:

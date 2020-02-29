@@ -9,7 +9,7 @@ from jupyter_cache.cli import options
 )
 @options.PRINT_CACHE_PATH
 @options.AUTOCOMPLETE
-def jcache(*args):
+def jcache(*args, **kwargs):
     """The command line interface of jupyter-cache."""
 
 
@@ -17,7 +17,7 @@ def jcache(*args):
 @options.CACHE_PATH
 def clear_cache(cache_path):
     """Clear the cache completely."""
-    from jupyter_cache.cache import JupyterCacheBase
+    from jupyter_cache.cache.main import JupyterCacheBase
 
     db = JupyterCacheBase(cache_path)
     click.confirm("Are you sure you want to permanently clear the cache!?", abort=True)

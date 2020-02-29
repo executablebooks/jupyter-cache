@@ -1,18 +1,10 @@
 import sys
 
 import click
-import tabulate
-import yaml
 
 from jupyter_cache.cli.commands.cmd_main import jcache
 from jupyter_cache.cli import arguments, options
-from jupyter_cache.cli.utils import shorten_path
-from jupyter_cache.cache import JupyterCacheBase
-from jupyter_cache.base import (  # noqa: F401
-    CachingError,
-    RetrievalError,
-    NbValidityError,
-)
+from jupyter_cache.cli.utils import shorten_path, get_cache
 
 
 @jcache.group("cache")
@@ -40,7 +32,9 @@ def format_cache_record(record, hashkeys, path_length):
 @options.PATH_LENGTH
 def list_caches(cache_path, hashkeys, path_length):
     """List cached notebook records in the cache."""
-    db = JupyterCacheBase(cache_path)
+    import tabulate
+
+    db = get_cache(cache_path)
     records = db.list_cache_records()
     if not records:
         click.secho("No Cached Notebooks", fg="blue")
@@ -61,7 +55,9 @@ def list_caches(cache_path, hashkeys, path_length):
 @arguments.PK
 def show_cache(cache_path, pk):
     """Show details of a cached notebook in the cache."""
-    db = JupyterCacheBase(cache_path)
+    import yaml
+
+    db = get_cache(cache_path)
     try:
         record = db.get_cache_record(pk)
     except KeyError:
@@ -88,7 +84,7 @@ def show_cache(cache_path, pk):
 @arguments.ARTIFACT_RPATH
 def cat_artifact(cache_path, pk, artifact_rpath):
     """Print the contents of a cached artefact."""
-    db = JupyterCacheBase(cache_path)
+    db = get_cache(cache_path)
     with db.cache_artefacts_temppath(pk) as path:
         artifact_path = path.joinpath(artifact_rpath)
         if not artifact_path.exists():
@@ -102,6 +98,9 @@ def cat_artifact(cache_path, pk, artifact_rpath):
 
 
 def cache_file(db, nbpath, validate, overwrite, artifact_paths=()):
+
+    from jupyter_cache.base import NbValidityError
+
     click.echo("Caching: {}".format(nbpath))
     try:
         db.cache_notebook_file(
@@ -140,7 +139,7 @@ def cache_file(db, nbpath, validate, overwrite, artifact_paths=()):
 @options.OVERWRITE_CACHED
 def cache_nb(cache_path, artifact_paths, nbpath, validate, overwrite):
     """Cache a notebook that has already been executed."""
-    db = JupyterCacheBase(cache_path)
+    db = get_cache(cache_path)
     success = cache_file(db, nbpath, validate, overwrite, artifact_paths)
     if success:
         click.secho("Success!", fg="green")
@@ -153,7 +152,7 @@ def cache_nb(cache_path, artifact_paths, nbpath, validate, overwrite):
 @options.OVERWRITE_CACHED
 def cache_nbs(cache_path, nbpaths, validate, overwrite):
     """Cache notebook(s) that have already been executed."""
-    db = JupyterCacheBase(cache_path)
+    db = get_cache(cache_path)
     success = True
     for nbpath in nbpaths:
         # TODO deal with errors (print all at end? or option to ignore)
@@ -169,7 +168,9 @@ def cache_nbs(cache_path, nbpaths, validate, overwrite):
 @options.REMOVE_ALL
 def remove_caches(cache_path, pks, remove_all):
     """Remove notebooks stored in the cache."""
-    db = JupyterCacheBase(cache_path)
+    from jupyter_cache.base import CachingError
+
+    db = get_cache(cache_path)
     if remove_all:
         pks = [r.pk for r in db.list_cache_records()]
     for pk in pks:
@@ -191,6 +192,6 @@ def remove_caches(cache_path, pks, remove_all):
 @options.CACHE_PATH
 def diff_nb(cache_path, pk, nbpath):
     """Print a diff of a notebook to one stored in the cache."""
-    db = JupyterCacheBase(cache_path)
+    db = get_cache(cache_path)
     click.echo(db.diff_nbfile_with_cache(pk, nbpath, as_str=True))
     click.secho("Success!", fg="green")
