@@ -44,31 +44,38 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
     def run(self):
         """This function interfaces with the cache, deferring execution to _execute."""
         NbStageRecord.remove_tracebacks(self.cache.db)
+        # TODO check that staged notebook exists
         iterator = iter(
             (r, self.cache.get_staged_notebook(r.pk))
             for r in self.cache.list_nbs_to_exec()
         )
         result = {"succeeded": [], "excepted": [], "errored": []}
         for exc_bundle in self._execute(iterator):
-            if exc_bundle is None:
-                # TODO deal with bundles that return None
-                continue
-            if exc_bundle.traceback is not None:
-                # TODO store excepted bundles
-                result["excepted"].append(exc_bundle.uri)
-                NbStageRecord.set_traceback(
-                    exc_bundle.uri, exc_bundle.traceback, self.cache.db
-                )
-                continue
             try:
-                self.cache.cache_notebook_bundle(exc_bundle, overwrite=True)
+                if exc_bundle is None:
+                    # TODO deal with bundles that return None
+                    continue
+                if exc_bundle.traceback is not None:
+                    # TODO store excepted bundles
+                    result["excepted"].append(exc_bundle.uri)
+                    NbStageRecord.set_traceback(
+                        exc_bundle.uri, exc_bundle.traceback, self.cache.db
+                    )
+                    continue
+                try:
+                    self.cache.cache_notebook_bundle(exc_bundle, overwrite=True)
+                except Exception:
+                    self.logger.error(
+                        "Failed Caching: {}".format(exc_bundle.uri), exc_info=True
+                    )
+                    result["errored"].append(exc_bundle.uri)
+                else:
+                    result["succeeded"].append(exc_bundle.uri)
             except Exception:
                 self.logger.error(
                     "Failed Caching: {}".format(exc_bundle.uri), exc_info=True
                 )
                 result["errored"].append(exc_bundle.uri)
-            else:
-                result["succeeded"].append(exc_bundle.uri)
 
         # TODO it would also be ideal to tag all notebooks
         # that were executed at the same time (just part of `data` or separate column?).
