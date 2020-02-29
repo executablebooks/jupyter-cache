@@ -429,7 +429,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         except KeyError:
             return None
 
-    def list_nbs_to_exec(self) -> List[NbStageRecord]:
+    def list_staged_unexecuted(self) -> List[NbStageRecord]:
         """List staged notebooks, whose hash is not present in the cached notebooks."""
         records = []
         for record in self.list_staged_records():

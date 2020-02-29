@@ -26,6 +26,6 @@ def execute_nbs(cache_path, entry_point):
     except ImportError as error:
         logger.error(str(error))
         return 1
-    result = executor.run()
+    result = executor.run_and_cache()
     click.secho("Finished!", fg="green")
     click.echo(yaml.safe_dump(result, sort_keys=False))
