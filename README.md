@@ -82,7 +82,7 @@ Options:
 
 Commands:
   add-many      Cache notebook(s) that have already been executed.
-  add-one       Cache a notebook that has already been executed.
+  add-one       Cache a notebook, with possible artefact files.
   cat-artifact  Print the contents of a cached artefact.
   diff-nb       Print a diff of a notebook to one stored in the cache.
   list          List cached notebook records in the cache.
@@ -212,7 +212,7 @@ Options:
 
 Commands:
   add-many     Stage notebook(s) for execution.
-  add-one      Stage a notebook, with possible assets.
+  add-one      Stage a notebook, with possible asset files.
   list         List notebooks staged for possible execution.
   remove-ids   Un-stage notebook(s), by ID.
   remove-uris  Un-stage notebook(s), by URI.
