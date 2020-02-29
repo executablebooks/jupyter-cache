@@ -111,7 +111,13 @@ def list_staged(cache_path, compare, path_length):
 @cmnd_stage.command("show")
 @options.CACHE_PATH
 @arguments.PK
-def show_staged(cache_path, pk):
+@click.option(
+    "--tb/--no-tb",
+    default=True,
+    show_default=True,
+    help="Show traceback, if last execution failed.",
+)
+def show_staged(cache_path, pk, tb):
     """Show details of a staged notebook."""
     import yaml
 
@@ -123,10 +129,12 @@ def show_staged(cache_path, pk):
         sys.exit(1)
     cache_record = db.get_cache_record_of_staged(record.uri)
     data = format_staged_record(record, cache_record, None, assets=False)
-    click.echo(yaml.safe_dump(data, sort_keys=False), nl=False)
-    if not record.assets:
-        click.echo("")
-        return
-    click.echo(f"Assets:")
-    for path in record.assets:
-        click.echo(f"- {path}")
+    click.echo(yaml.safe_dump(data, sort_keys=False).rstrip())
+    if record.assets:
+        click.echo(f"Assets:")
+        for path in record.assets:
+            click.echo(f"- {path}")
+    if record.traceback:
+        click.secho(f"Failed Last Execution!", fg="red")
+        if tb:
+            click.echo(record.traceback)

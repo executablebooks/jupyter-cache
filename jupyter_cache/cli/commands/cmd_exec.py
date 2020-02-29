@@ -17,6 +17,7 @@ click_log.basic_config(logger)
 @options.CACHE_PATH
 def execute_nbs(cache_path, entry_point):
     """Execute staged notebooks that are outdated."""
+    import yaml
     from jupyter_cache.executors import load_executor
 
     db = get_cache(cache_path)
@@ -25,5 +26,6 @@ def execute_nbs(cache_path, entry_point):
     except ImportError as error:
         logger.error(str(error))
         return 1
-    executor.run()
+    result = executor.run()
     click.secho("Finished!", fg="green")
+    click.echo(yaml.safe_dump(result, sort_keys=False))
