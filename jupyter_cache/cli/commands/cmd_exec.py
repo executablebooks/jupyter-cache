@@ -4,7 +4,7 @@ import click
 import click_log
 
 from jupyter_cache.cli.commands.cmd_main import jcache
-from jupyter_cache.cli import options
+from jupyter_cache.cli import arguments, options
 from jupyter_cache.cli.utils import get_cache
 
 logger = logging.getLogger(__name__)
@@ -15,8 +15,9 @@ click_log.basic_config(logger)
 @click_log.simple_verbosity_option(logger)
 @options.EXEC_ENTRYPOINT
 @options.CACHE_PATH
-def execute_nbs(cache_path, entry_point):
-    """Execute staged notebooks that are outdated."""
+@arguments.PKS
+def execute_nbs(cache_path, entry_point, pks):
+    """Execute staged notebooks that are outdated (or filtered by IDS)."""
     import yaml
     from jupyter_cache.executors import load_executor
 
@@ -26,6 +27,6 @@ def execute_nbs(cache_path, entry_point):
     except ImportError as error:
         logger.error(str(error))
         return 1
-    result = executor.run_and_cache()
+    result = executor.run_and_cache(filter_pks=pks or None)
     click.secho("Finished!", fg="green")
     click.echo(yaml.safe_dump(result, sort_keys=False))
