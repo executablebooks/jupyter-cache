@@ -284,7 +284,7 @@ class NbStageRecord(OrmBase):
         """Remove all tracebacks."""
         with session_context(db) as session:  # type: Session
             session.query(NbStageRecord).filter(NbStageRecord.pk.in_(pks)).update(
-                {NbStageRecord.traceback: None}
+                {NbStageRecord.traceback: None}, synchronize_session=False
             )
             session.commit()
 
