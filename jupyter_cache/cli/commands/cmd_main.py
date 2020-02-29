@@ -11,3 +11,15 @@ from jupyter_cache.cli import options
 # @options.AUTOCOMPLETE  # doesn't allow file path autocompletion
 def jcache(cache_path):
     """The command line interface of jupyter-cache."""
+
+
+@jcache.command("clear")
+@options.CACHE_PATH
+def clear_cache(cache_path):
+    """Clear the cache completely."""
+    from jupyter_cache.cache import JupyterCacheBase
+
+    db = JupyterCacheBase(cache_path)
+    click.confirm("Are you sure you want to permanently clear the cache!?", abort=True)
+    db.clear_cache()
+    click.secho("Cache cleared!", fg="green")
