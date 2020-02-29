@@ -94,7 +94,7 @@ VALIDATE_NB = click.option(
 )
 
 
-OVERWRITE_COMMIT = click.option(
+OVERWRITE_CACHED = click.option(
     "--overwrite/--no-overwrite",
     default=True,
     show_default=True,

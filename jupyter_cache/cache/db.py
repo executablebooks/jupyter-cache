@@ -77,10 +77,10 @@ class Setting(OrmBase):
         return {k: v for k, v in results}
 
 
-class NbCommitRecord(OrmBase):
-    """A record of an executed notebook commit."""
+class NbCacheRecord(OrmBase):
+    """A record of an executed notebook cache."""
 
-    __tablename__ = "nbcommit"
+    __tablename__ = "nbcache"
 
     pk = Column(Integer(), primary_key=True)
     hashkey = Column(String(255), nullable=False, unique=True)
@@ -96,9 +96,9 @@ class NbCommitRecord(OrmBase):
         return {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
 
     @staticmethod
-    def create_record(uri: str, hashkey: str, db: Engine, **kwargs) -> "NbCommitRecord":
+    def create_record(uri: str, hashkey: str, db: Engine, **kwargs) -> "NbCacheRecord":
         with session_context(db) as session:  # type: Session
-            record = NbCommitRecord(hashkey=hashkey, uri=uri, **kwargs)
+            record = NbCacheRecord(hashkey=hashkey, uri=uri, **kwargs)
             session.add(record)
             try:
                 session.commit()
@@ -110,16 +110,16 @@ class NbCommitRecord(OrmBase):
 
     def remove_records(pks: List[int], db: Engine):
         with session_context(db) as session:  # type: Session
-            session.query(NbCommitRecord).filter(NbCommitRecord.pk.in_(pks)).delete(
+            session.query(NbCacheRecord).filter(NbCacheRecord.pk.in_(pks)).delete(
                 synchronize_session=False
             )
             session.commit()
 
     @staticmethod
-    def record_from_hashkey(hashkey: str, db: Engine) -> "NbCommitRecord":
+    def record_from_hashkey(hashkey: str, db: Engine) -> "NbCacheRecord":
         with session_context(db) as session:  # type: Session
             result = (
-                session.query(NbCommitRecord).filter_by(hashkey=hashkey).one_or_none()
+                session.query(NbCacheRecord).filter_by(hashkey=hashkey).one_or_none()
             )
             if result is None:
                 raise KeyError(hashkey)
@@ -127,9 +127,9 @@ class NbCommitRecord(OrmBase):
         return result
 
     @staticmethod
-    def record_from_pk(pk: int, db: Engine) -> "NbCommitRecord":
+    def record_from_pk(pk: int, db: Engine) -> "NbCacheRecord":
         with session_context(db) as session:  # type: Session
-            result = session.query(NbCommitRecord).filter_by(pk=pk).one_or_none()
+            result = session.query(NbCacheRecord).filter_by(pk=pk).one_or_none()
             if result is None:
                 raise KeyError(pk)
             session.expunge(result)
@@ -138,7 +138,7 @@ class NbCommitRecord(OrmBase):
     def touch(pk, db: Engine):
         """Touch a record, to change its last accessed time."""
         with session_context(db) as session:  # type: Session
-            record = session.query(NbCommitRecord).filter_by(pk=pk).one_or_none()
+            record = session.query(NbCacheRecord).filter_by(pk=pk).one_or_none()
             if record is None:
                 raise KeyError(pk)
             record.accessed = datetime.utcnow()
@@ -149,7 +149,7 @@ class NbCommitRecord(OrmBase):
         """Touch a record, to change its last accessed time."""
         with session_context(db) as session:  # type: Session
             record = (
-                session.query(NbCommitRecord).filter_by(hashkey=hashkey).one_or_none()
+                session.query(NbCacheRecord).filter_by(hashkey=hashkey).one_or_none()
             )
             if record is None:
                 raise KeyError(hashkey)
@@ -158,16 +158,16 @@ class NbCommitRecord(OrmBase):
             session.commit()
 
     @staticmethod
-    def records_from_uri(uri: str, db: Engine) -> "NbCommitRecord":
+    def records_from_uri(uri: str, db: Engine) -> "NbCacheRecord":
         with session_context(db) as session:  # type: Session
-            results = session.query(NbCommitRecord).filter_by(uri=uri).all()
+            results = session.query(NbCacheRecord).filter_by(uri=uri).all()
             session.expunge_all()
         return results
 
     @staticmethod
-    def records_all(db: Engine) -> "NbCommitRecord":
+    def records_all(db: Engine) -> "NbCacheRecord":
         with session_context(db) as session:  # type: Session
-            results = session.query(NbCommitRecord).all()
+            results = session.query(NbCacheRecord).all()
             session.expunge_all()
         return results
 
@@ -176,15 +176,15 @@ class NbCommitRecord(OrmBase):
         with session_context(db) as session:  # type: Session
             pks_to_keep = [
                 pk
-                for pk, in session.query(NbCommitRecord.pk)
+                for pk, in session.query(NbCacheRecord.pk)
                 .order_by(desc("accessed"))
                 .limit(keep)
                 .all()
             ]
             pks_to_delete = [
                 pk
-                for pk, in session.query(NbCommitRecord.pk)
-                .filter(NbCommitRecord.pk.notin_(pks_to_keep))
+                for pk, in session.query(NbCacheRecord.pk)
+                .filter(NbCacheRecord.pk.notin_(pks_to_keep))
                 .all()
             ]
         return pks_to_delete

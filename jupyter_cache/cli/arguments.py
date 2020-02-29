@@ -31,6 +31,6 @@ ASSET_PATHS = click.argument(
 )
 
 
-PK = click.argument("pk", metavar="PK", type=int)
+PK = click.argument("pk", metavar="ID", type=int)
 
-PKS = click.argument("pks", metavar="PKs", nargs=-1, type=int)
+PKS = click.argument("pks", metavar="IDs", nargs=-1, type=int)

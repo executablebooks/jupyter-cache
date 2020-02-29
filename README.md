@@ -55,72 +55,72 @@ Options:
   -h, --help        Show this message and exit.
 
 Commands:
-  cat-artifact    Print the contents of a commit artefact.
-  clear           Clear the cache completely.
-  commit-limit    Change the commit limit of the cache.
-  commit-nb       Commit a notebook that has already been executed.
-  commit-nbs      Commit notebook(s) that have already been executed.
-  diff-nb         Print a diff of a notebook to one stored in the cache.
-  execute         Execute outdated notebooks.
-  list-commits    List committed notebook records in the cache.
-  list-staged     List notebooks staged for possible execution.
-  remove-commits  Remove notebook commit(s) from the cache.
-  show-commit     Show details of a committed notebook in the cache.
-  show-staged     Show details of a staged notebook.
-  stage-nb        Commit a notebook, with possible assets.
-  stage-nbs       Stage notebook(s) for execution.
-  unstage-nbs     Unstage notebook(s) for execution.
+  cache-limit    Change the maximum number of notebooks stored in the cache.
+  cache-nb       Cache a notebook that has already been executed.
+  cache-nbs      Cache notebook(s) that have already been executed.
+  cat-artifact   Print the contents of a cached artefact.
+  clear          Clear the cache completely.
+  diff-nb        Print a diff of a notebook to one stored in the cache.
+  execute        Execute outdated notebooks.
+  list-cached    List cached notebook records in the cache.
+  list-staged    List notebooks staged for possible execution.
+  remove-cached  Remove notebooks stored in the cache.
+  show-cached    Show details of a cached notebook in the cache.
+  show-staged    Show details of a staged notebook.
+  stage-nb       Cache a notebook, with possible assets.
+  stage-nbs      Stage notebook(s) for execution.
+  unstage-nbs    Unstage notebook(s) for execution.
 ```
 
-### Commit Executed Notebooks
+### Caching Executed Notebooks
 
-You can commit notebooks straight into the cache. When committing, a check will be made that the notebooks look to have been executed correctly, i.e. the cell execution counts go sequentially up from 1.
+You can cache notebooks straight into the cache. When caching, a check will be made that the notebooks look to have been executed correctly, i.e. the cell execution counts go sequentially up from 1.
 
 ```console
-$ jcache commit-nbs tests/notebooks/basic.ipynb
+$ jcache cache-nbs tests/notebooks/basic.ipynb
 Cache path: /Users/cjs14/GitHub/sandbox/.jupyter_cache
 The cache does not yet exist, do you want to create it? [y/N]: y
-Committing: /Users/cjs14/GitHub/sandbox/tests/notebooks/basic.ipynb
+Caching: /Users/cjs14/GitHub/sandbox/tests/notebooks/basic.ipynb
 Validity Error: Expected cell 1 to have execution_count 1 not 2
-The notebook may not have been executed, continue committing? [y/N]: y
+The notebook may not have been executed, continue caching? [y/N]: y
 Success!
 ```
 
 Or to skip validation:
 
 ```console
-$ jcache commit-nbs --no-validate tests/notebooks/*.ipynb
-Committing: /Users/cjs14/GitHub/sandbox/tests/notebooks/basic.ipynb
-Committing: /Users/cjs14/GitHub/sandbox/tests/notebooks/basic_failing.ipynb
-Committing: /Users/cjs14/GitHub/sandbox/tests/notebooks/basic_unrun.ipynb
-Committing: /Users/cjs14/GitHub/sandbox/tests/notebooks/complex_outputs.ipynb
+$ jcache cache-nbs --no-validate tests/notebooks/*.ipynb
+Caching: /Users/cjs14/GitHub/sandbox/tests/notebooks/basic.ipynb
+Caching: /Users/cjs14/GitHub/sandbox/tests/notebooks/basic_failing.ipynb
+Caching: /Users/cjs14/GitHub/sandbox/tests/notebooks/basic_unrun.ipynb
+Caching: /Users/cjs14/GitHub/sandbox/tests/notebooks/complex_outputs.ipynb
 Success!
 ```
 
-Once you've committed some notebooks, you can look at the 'commit records' for what has been cached.
+Once you've cached some notebooks, you can look at the 'cache records' for what has been cached.
 
-Each notebook is hashed (code cells and kernel spec only), which is used to compare against 'staged' notebooks. Multiple hashes for the same URI can be added (the URI is just there for inspetion) and the size of the cache is limited (current default 1000) so that, at this size, the last accessed records begin to be deleted. You can remove cached records by the Primary Key (PK).
+Each notebook is hashed (code cells and kernel spec only), which is used to compare against 'staged' notebooks. Multiple hashes for the same URI can be added (the URI is just there for inspetion) and the size of the cache is limited (current default 1000) so that, at this size, the last accessed records begin to be deleted. You can remove cached records by their ID.
 
 ```console
-$ jcache list-commits --hashkeys
-  PK  URI                    Created           Accessed          Hashkey
+$ jcache list-cached --hashkeys
+  ID  URI                    Created           Accessed          Hashkey
 ----  ---------------------  ----------------  ----------------  --------------------------------
    4  complex_outputs.ipynb  2020-02-23 20:33  2020-02-23 20:33  800c4a057730a55a384cfe579e3850aa
    3  basic_unrun.ipynb      2020-02-23 20:33  2020-02-23 20:33  818f3412b998fcf4fe9ca3cca11a3fc3
    2  basic_failing.ipynb    2020-02-23 20:33  2020-02-23 20:33  72859c2bf1e12f35f30ef131f0bef320
 ```
 
-You can also commit with artefacts (external outputs of the notebook execution).
+You can also cache notebooks with artefacts (external outputs of the notebook execution).
 
 ```console
-$ jcache commit-nb -nb tests/notebooks/basic.ipynb tests/notebooks/artifact_folder/artifact.txt
-Committing: /Users/cjs14/GitHub/jupyter-cache/tests/notebooks/basic.ipynb
+$ jcache cache-nb -nb tests/notebooks/basic.ipynb tests/notebooks/artifact_folder/artifact.txt
+Caching: /Users/cjs14/GitHub/jupyter-cache/tests/notebooks/basic.ipynb
 Success!
 ```
 
 ```console
-$ jcache show-commit 1
-PK: 1
+$ jcache show-cached 1
+ID: 1
 URI: /Users/cjs14/GitHub/jupyter-cache/tests/notebooks/basic.ipynb
 Created: 2020-02-24 14:58
 Accessed: 2020-02-24 14:58
@@ -138,23 +138,23 @@ An artifact
 These must be 'upstream' of the notebook folder:
 
 ```console
-$ jcache commit-nb -nb tests/notebooks/basic.ipynb tests/test_db.py
-Committing: /Users/cjs14/GitHub/jupyter-cache/tests/notebooks/basic.ipynb
+$ jcache cache-nb -nb tests/notebooks/basic.ipynb tests/test_db.py
+Caching: /Users/cjs14/GitHub/jupyter-cache/tests/notebooks/basic.ipynb
 Artifact Error: Path '/Users/cjs14/GitHub/jupyter-cache/tests/test_db.py' is not in folder '/Users/cjs14/GitHub/jupyter-cache/tests/notebooks''
 ```
 
 ```console
-$ jcache remove-commits 3
-Removing PK = 3
+$ jcache remove-cached 3
+Removing Cache ID = 3
 Success!
 ```
 
-You can also diff any of the commit records with any (external) notebook:
+You can also diff any of the cached notebooks with any (external) notebook:
 
 ```console
 $ jcache diff-nb 2 tests/notebooks/basic.ipynb
 nbdiff
---- committed pk=2
+--- cached pk=2
 +++ other: /Users/cjs14/GitHub/sandbox/tests/notebooks/basic.ipynb
 ## inserted before nb/cells/1:
 +  code cell:
@@ -193,7 +193,7 @@ Success!
 
 ```console
 $ jcache list-staged
-  PK  URI                                    Created             Commit Pk
+  ID  URI                                    Created              Cache ID
 ----  -------------------------------------  ----------------  -----------
    4  tests/notebooks/complex_outputs.ipynb  2020-02-23 20:48            4
    3  tests/notebooks/basic_unrun.ipynb      2020-02-23 20:48
@@ -212,12 +212,12 @@ Success: /Users/cjs14/GitHub/sandbox/tests/notebooks/basic_unrun.ipynb
 Finished!
 ```
 
-Successfully executed notebooks will be committed to the cache,
+Successfully executed notebooks will be cached to the cache,
 along with any 'artefacts' created by the execution, that are inside the notebook folder, and data supplied by the executor.
 
 ```console
 $ jcache list-staged
-  PK  URI                                    Created             Commit Pk
+  ID  URI                                    Created             Commit ID
 ----  -------------------------------------  ----------------  -----------
    5  tests/notebooks/basic.ipynb            2020-02-23 20:57            5
    4  tests/notebooks/complex_outputs.ipynb  2020-02-23 20:48            4
@@ -226,8 +226,8 @@ $ jcache list-staged
 ```
 
 ```console
-jcache show-commit 5
-PK: 1
+jcache show-cached 5
+ID: 1
 URI: /Users/cjs14/GitHub/jupyter-cache/tests/notebooks/basic.ipynb
 Created: 2020-02-25 19:21
 Accessed: 2020-02-25 19:21
@@ -255,14 +255,14 @@ Success!
 
 ```console
 $ jcache list-staged
-  PK  URI                          Created             Assets
+  ID  URI                          Created             Assets
 ----  ---------------------------  ----------------  --------
    1  tests/notebooks/basic.ipynb  2020-02-25 10:01         1
 ```
 
 ```console
 $ jcache show-staged 1
-PK: 1
+ID: 1
 URI: /Users/cjs14/GitHub/jupyter-cache/tests/notebooks/basic.ipynb
 Created: 2020-02-25 10:01
 Assets:

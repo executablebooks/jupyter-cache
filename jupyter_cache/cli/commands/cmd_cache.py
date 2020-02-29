@@ -34,19 +34,19 @@ def clear_cache(cache_path):
     click.secho("Cache cleared!", fg="green")
 
 
-@jcache.command("commit-limit")
+@jcache.command("cache-limit")
 @options.CACHE_PATH
-@click.argument("limit", metavar="COMMIT_LIMIT", type=int)
-def change_commit_limit(cache_path, limit):
-    """Change the commit limit of the cache."""
+@click.argument("limit", metavar="CACHE_LIMIT", type=int)
+def change_cache_limit(cache_path, limit):
+    """Change the maximum number of notebooks stored in the cache."""
     db = JupyterCacheBase(cache_path)
-    db.change_commit_limit(limit)
-    click.secho("Limit changed!", fg="green")
+    db.change_cache_limit(limit)
+    click.secho("Cache limit changed!", fg="green")
 
 
-def format_commit_record(record, hashkeys, path_length):
+def format_cache_record(record, hashkeys, path_length):
     data = {
-        "PK": record.pk,
+        "ID": record.pk,
         "URI": str(shorten_path(record.uri, path_length)),
         "Created": record.created.isoformat(" ", "minutes"),
         "Accessed": record.accessed.isoformat(" ", "minutes"),
@@ -57,21 +57,21 @@ def format_commit_record(record, hashkeys, path_length):
     return data
 
 
-@jcache.command("list-commits")
+@jcache.command("list-cached")
 @options.CACHE_PATH
 @click.option("-h", "--hashkeys", is_flag=True, help="Whether to show hashkeys.")
 @options.PATH_LENGTH
-def list_commits(cache_path, hashkeys, path_length):
-    """List committed notebook records in the cache."""
+def list_caches(cache_path, hashkeys, path_length):
+    """List cached notebook records in the cache."""
     db = JupyterCacheBase(cache_path)
-    records = db.list_commit_records()
+    records = db.list_cache_records()
     if not records:
-        click.secho("No Commited Notebooks", fg="blue")
+        click.secho("No Cached Notebooks", fg="blue")
     # TODO optionally list number of artifacts
     click.echo(
         tabulate.tabulate(
             [
-                format_commit_record(r, hashkeys, path_length)
+                format_cache_record(r, hashkeys, path_length)
                 for r in sorted(records, key=lambda r: r.accessed, reverse=True)
             ],
             headers="keys",
@@ -79,16 +79,16 @@ def list_commits(cache_path, hashkeys, path_length):
     )
 
 
-@jcache.command("show-commit")
+@jcache.command("show-cached")
 @options.CACHE_PATH
 @arguments.PK
-def show_commit(cache_path, pk):
-    """Show details of a committed notebook in the cache."""
+def show_cache(cache_path, pk):
+    """Show details of a cached notebook in the cache."""
     db = JupyterCacheBase(cache_path)
-    record = db.get_commit_record(pk)
-    data = format_commit_record(record, True, None)
+    record = db.get_cache_record(pk)
+    data = format_cache_record(record, True, None)
     click.echo(yaml.safe_dump(data, sort_keys=False), nl=False)
-    with db.commit_artefacts_temppath(pk) as folder:
+    with db.cache_artefacts_temppath(pk) as folder:
         paths = [str(p.relative_to(folder)) for p in folder.glob("**/*") if p.is_file()]
     if not (paths or record.data):
         click.echo("")
@@ -106,9 +106,9 @@ def show_commit(cache_path, pk):
 @arguments.PK
 @arguments.ARTIFACT_RPATH
 def cat_artifact(cache_path, pk, artifact_rpath):
-    """Print the contents of a commit artefact."""
+    """Print the contents of a cached artefact."""
     db = JupyterCacheBase(cache_path)
-    with db.commit_artefacts_temppath(pk) as path:
+    with db.cache_artefacts_temppath(pk) as path:
         artifact_path = path.joinpath(artifact_rpath)
         if not artifact_path.exists():
             click.secho("Artifact does not exist", fg="red")
@@ -120,10 +120,10 @@ def cat_artifact(cache_path, pk, artifact_rpath):
     click.echo(text)
 
 
-def commit_file(db, nbpath, validate, overwrite, artifact_paths=()):
-    click.echo("Committing: {}".format(nbpath))
+def cache_file(db, nbpath, validate, overwrite, artifact_paths=()):
+    click.echo("Caching: {}".format(nbpath))
     try:
-        db.commit_notebook_file(
+        db.cache_notebook_file(
             nbpath,
             artifacts=artifact_paths,
             check_validity=validate,
@@ -132,11 +132,9 @@ def commit_file(db, nbpath, validate, overwrite, artifact_paths=()):
     except NbValidityError as error:
         click.secho("Validity Error: ", fg="red", nl=False)
         click.echo(str(error))
-        if click.confirm(
-            "The notebook may not have been executed, continue committing?"
-        ):
+        if click.confirm("The notebook may not have been executed, continue caching?"):
             try:
-                db.commit_notebook_file(
+                db.cache_notebook_file(
                     nbpath,
                     artifacts=artifact_paths,
                     check_validity=False,
@@ -153,51 +151,51 @@ def commit_file(db, nbpath, validate, overwrite, artifact_paths=()):
     return True
 
 
-@jcache.command("commit-nb")
+@jcache.command("cache-nb")
 @arguments.ARTIFACT_PATHS
 @options.NB_PATH
 @options.CACHE_PATH
 @options.VALIDATE_NB
-@options.OVERWRITE_COMMIT
-def commit_nb(cache_path, artifact_paths, nbpath, validate, overwrite):
-    """Commit a notebook that has already been executed."""
+@options.OVERWRITE_CACHED
+def cache_nb(cache_path, artifact_paths, nbpath, validate, overwrite):
+    """Cache a notebook that has already been executed."""
     db = JupyterCacheBase(cache_path)
-    success = commit_file(db, nbpath, validate, overwrite, artifact_paths)
+    success = cache_file(db, nbpath, validate, overwrite, artifact_paths)
     if success:
         click.secho("Success!", fg="green")
 
 
-@jcache.command("commit-nbs")
+@jcache.command("cache-nbs")
 @arguments.NB_PATHS
 @options.CACHE_PATH
 @options.VALIDATE_NB
-@options.OVERWRITE_COMMIT
-def commit_nbs(cache_path, nbpaths, validate, overwrite):
-    """Commit notebook(s) that have already been executed."""
+@options.OVERWRITE_CACHED
+def cache_nbs(cache_path, nbpaths, validate, overwrite):
+    """Cache notebook(s) that have already been executed."""
     db = JupyterCacheBase(cache_path)
     success = True
     for nbpath in nbpaths:
         # TODO deal with errors (print all at end? or option to ignore)
-        if not commit_file(db, nbpath, validate, overwrite):
+        if not cache_file(db, nbpath, validate, overwrite):
             success = False
     if success:
         click.secho("Success!", fg="green")
 
 
-@jcache.command("remove-commits")
+@jcache.command("remove-cached")
 @arguments.PKS
 @options.CACHE_PATH
 @options.REMOVE_ALL
-def remove_commits(cache_path, pks, remove_all):
-    """Remove notebook commit(s) from the cache."""
+def remove_caches(cache_path, pks, remove_all):
+    """Remove notebooks stored in the cache."""
     db = JupyterCacheBase(cache_path)
     if remove_all:
-        pks = [r.pk for r in db.list_commit_records()]
+        pks = [r.pk for r in db.list_cache_records()]
     for pk in pks:
         # TODO deal with errors (print all at end? or option to ignore)
-        click.echo("Removing PK = {}".format(pk))
+        click.echo("Removing Cache ID = {}".format(pk))
         try:
-            db.remove_commit(pk)
+            db.remove_cache(pk)
         except KeyError:
             click.secho("Does not exist", fg="red")
         except CachingError as err:
@@ -213,7 +211,7 @@ def remove_commits(cache_path, pks, remove_all):
 def diff_nb(cache_path, pk, nbpath):
     """Print a diff of a notebook to one stored in the cache."""
     db = JupyterCacheBase(cache_path)
-    click.echo(db.diff_nbfile_with_commit(pk, nbpath, as_str=True))
+    click.echo(db.diff_nbfile_with_cache(pk, nbpath, as_str=True))
     click.secho("Success!", fg="green")
 
 
@@ -235,7 +233,7 @@ def stage_nbs(cache_path, nbpaths):
 @options.NB_PATH
 @options.CACHE_PATH
 def stage_nb(cache_path, nbpath, asset_paths):
-    """Commit a notebook, with possible assets."""
+    """Cache a notebook, with possible assets."""
     db = JupyterCacheBase(cache_path)
     db.stage_notebook_file(nbpath, asset_paths)
     click.secho("Success!", fg="green")
@@ -257,16 +255,16 @@ def unstage_nbs(cache_path, nbpaths, remove_all):
     click.secho("Success!", fg="green")
 
 
-def format_staged_record(record, commit, path_length, assets=True):
+def format_staged_record(record, cache_record, path_length, assets=True):
     data = {
-        "PK": record.pk,
+        "ID": record.pk,
         "URI": str(shorten_path(record.uri, path_length)),
         "Created": record.created.isoformat(" ", "minutes"),
     }
     if assets:
         data["Assets"] = len(record.assets)
-    if commit:
-        data["Commit Pk"] = commit.pk
+    if cache_record:
+        data["Cache ID"] = cache_record.pk
     return data
 
 
@@ -276,7 +274,7 @@ def format_staged_record(record, commit, path_length, assets=True):
     "--compare/--no-compare",
     default=True,
     show_default=True,
-    help="Compare to committed notebooks (to find PK).",
+    help="Compare to cached notebooks (to find cache ID).",
 )
 @options.PATH_LENGTH
 def list_staged(cache_path, compare, path_length):
@@ -287,10 +285,10 @@ def list_staged(cache_path, compare, path_length):
         click.secho("No Staged Notebooks", fg="blue")
     rows = []
     for record in sorted(records, key=lambda r: r.created, reverse=True):
-        commit = None
+        cache_record = None
         if compare:
-            commit = db.get_commit_record_of_staged(record.uri)
-        rows.append(format_staged_record(record, commit, path_length))
+            cache_record = db.get_cache_record_of_staged(record.uri)
+        rows.append(format_staged_record(record, cache_record, path_length))
     click.echo(tabulate.tabulate(rows, headers="keys"))
 
 
@@ -301,8 +299,8 @@ def show_staged(cache_path, pk):
     """Show details of a staged notebook."""
     db = JupyterCacheBase(cache_path)
     record = db.get_staged_record(pk)
-    commit = db.get_commit_record_of_staged(record.uri)
-    data = format_staged_record(record, commit, None, assets=False)
+    cache_record = db.get_cache_record_of_staged(record.uri)
+    data = format_staged_record(record, cache_record, None, assets=False)
     click.echo(yaml.safe_dump(data, sort_keys=False), nl=False)
     if not record.assets:
         click.echo("")
