@@ -72,9 +72,10 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
 
         # TODO it would also be ideal to tag all notebooks
         # that were executed at the same time (just part of `data` or separate column?).
-        # TODO maybe the status of success/failure could be stored on
+        # TODO maybe the status of success/failure could be explicitly stored on
         # the stage record (cache_status=Enum('OK', 'FAILED', 'MISSING'))
-        # also failed notebooks could be stored in the cache, which would be
+        # although now traceback is so this is an implicit sign of failure,
+        # TODO failed notebooks could be stored in the cache, which would be
         # accessed by stage pk (and would be deleted when removing the stage record)
         # see: https://python.quantecon.org/status.html
 
