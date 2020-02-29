@@ -50,9 +50,10 @@ Usage: jcache [OPTIONS] COMMAND [ARGS]...
   The command line interface of jupyter-cache.
 
 Options:
-  -v, --version     Show the version and exit.
-  -p, --cache-path  Print the current cache path and exit.
-  -h, --help        Show this message and exit.
+  -v, --version       Show the version and exit.
+  -p, --cache-path    Print the current cache path and exit.
+  -a, --autocomplete  Print the terminal autocompletion command and exit.
+  -h, --help          Show this message and exit.
 
 Commands:
   cache    Commands for adding to and inspecting the cache.
@@ -60,6 +61,12 @@ Commands:
   config   Commands for configuring the cache.
   execute  Execute staged notebooks that are outdated.
   stage    Commands for staging notebooks to be executed.
+```
+
+**Important**: Execute this in the terminal for auto-completion:
+
+```console
+eval "$(_JCACHE_COMPLETE=source jcache)"
 ```
 
 ### Caching Executed Notebooks

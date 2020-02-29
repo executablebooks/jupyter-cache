@@ -4,7 +4,7 @@ import click
 
 def callback_autocomplete(ctx, param, value):
     if value and not ctx.resilient_parsing:
-        click.echo("Run this in the terminal for auto-completion:")
+        click.echo("Execute this in the terminal for auto-completion:")
         click.echo('eval "$(_JCACHE_COMPLETE=source jcache)"')
         ctx.exit()
 
@@ -12,7 +12,7 @@ def callback_autocomplete(ctx, param, value):
 AUTOCOMPLETE = click.option(
     "-a",
     "--autocomplete",
-    help="Print the terminal autocompletion command and exit.",
+    help="Print the autocompletion command and exit.",
     is_flag=True,
     expose_value=True,
     is_eager=True,

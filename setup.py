@@ -36,7 +36,7 @@ setup(
     # note: nbdime could be made an extra
     install_requires=["attrs", "nbformat", "nbdime", "nbconvert", "sqlalchemy"],
     extras_require={
-        "cli": ["click", "click-log", "tabulate", "pyyaml"],
+        "cli": ["click", "click-completion", "click-log", "tabulate", "pyyaml"],
         "code_style": ["flake8<3.8.0,>=3.7.0", "black", "pre-commit==1.17.0"],
         "testing": ["coverage", "pytest>=3.6,<4", "pytest-cov", "pytest-regressions"],
     },
