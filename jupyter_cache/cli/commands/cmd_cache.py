@@ -62,7 +62,11 @@ def list_caches(cache_path, hashkeys, path_length):
 def show_cache(cache_path, pk):
     """Show details of a cached notebook in the cache."""
     db = JupyterCacheBase(cache_path)
-    record = db.get_cache_record(pk)
+    try:
+        record = db.get_cache_record(pk)
+    except KeyError:
+        click.secho("ID {} does not exist, Aborting!".format(pk), fg="red")
+        sys.exit(1)
     data = format_cache_record(record, True, None)
     click.echo(yaml.safe_dump(data, sort_keys=False), nl=False)
     with db.cache_artefacts_temppath(pk) as folder:

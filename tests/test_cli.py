@@ -144,7 +144,7 @@ def test_unstage_nbs(tmp_path):
     path = os.path.join(NB_PATH, "basic.ipynb")
     runner = CliRunner()
     result = runner.invoke(cmd_stage.stage_nbs, ["-p", tmp_path, path])
-    result = runner.invoke(cmd_stage.unstage_nbs, ["-p", tmp_path, path])
+    result = runner.invoke(cmd_stage.unstage_nbs_uri, ["-p", tmp_path, path])
     assert result.exception is None, result.output
     assert result.exit_code == 0, result.output
     assert "basic.ipynb" in result.output.strip(), result.output

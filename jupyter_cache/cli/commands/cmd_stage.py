@@ -1,3 +1,5 @@
+import sys
+
 import click
 import tabulate
 import yaml
@@ -43,12 +45,12 @@ def stage_nb(cache_path, nbpath, asset_paths):
     click.secho("Success!", fg="green")
 
 
-@cmnd_stage.command("remove")
+@cmnd_stage.command("remove-uris")
 @arguments.NB_PATHS
 @options.CACHE_PATH
 @options.REMOVE_ALL
-def unstage_nbs(cache_path, nbpaths, remove_all):
-    """Unstage notebook(s) for execution."""
+def unstage_nbs_uri(cache_path, nbpaths, remove_all):
+    """Un-stage notebook(s), by URI."""
     db = JupyterCacheBase(cache_path)
     if remove_all:
         nbpaths = [record.uri for record in db.list_staged_records()]
@@ -56,6 +58,22 @@ def unstage_nbs(cache_path, nbpaths, remove_all):
         # TODO deal with errors (print all at end? or option to ignore)
         click.echo("Unstaging: {}".format(path))
         db.discard_staged_notebook(path)
+    click.secho("Success!", fg="green")
+
+
+@cmnd_stage.command("remove-ids")
+@arguments.PKS
+@options.CACHE_PATH
+@options.REMOVE_ALL
+def unstage_nbs_id(cache_path, pks, remove_all):
+    """Un-stage notebook(s), by ID."""
+    db = JupyterCacheBase(cache_path)
+    if remove_all:
+        pks = [record.pk for record in db.list_staged_records()]
+    for pk in pks:
+        # TODO deal with errors (print all at end? or option to ignore)
+        click.echo("Unstaging ID: {}".format(pk))
+        db.discard_staged_notebook(pk)
     click.secho("Success!", fg="green")
 
 
@@ -102,7 +120,11 @@ def list_staged(cache_path, compare, path_length):
 def show_staged(cache_path, pk):
     """Show details of a staged notebook."""
     db = JupyterCacheBase(cache_path)
-    record = db.get_staged_record(pk)
+    try:
+        record = db.get_staged_record(pk)
+    except KeyError:
+        click.secho("ID {} does not exist, Aborting!".format(pk), fg="red")
+        sys.exit(1)
     cache_record = db.get_cache_record_of_staged(record.uri)
     data = format_staged_record(record, cache_record, None, assets=False)
     click.echo(yaml.safe_dump(data, sort_keys=False), nl=False)
