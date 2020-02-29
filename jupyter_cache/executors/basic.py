@@ -14,6 +14,7 @@ from jupyter_cache.utils import to_relative_paths, Timer
 
 
 def copy_assets(record, folder):
+    """Copy notebook assets to the folder the notebook will be executed in."""
     asset_files = []
     relative_paths = to_relative_paths(record.assets, Path(record.uri).parent)
     for path, rel_path in zip(record.assets, relative_paths):
@@ -25,6 +26,7 @@ def copy_assets(record, folder):
 
 
 def create_bundle(nb_bundle, tmpdirname, asset_files, exec_time, exec_tb=None):
+    """Create a cache bundle."""
     return NbBundleIn(
         nb_bundle.nb,
         nb_bundle.uri,
@@ -38,44 +40,74 @@ def create_bundle(nb_bundle, tmpdirname, asset_files, exec_time, exec_tb=None):
     )
 
 
-class JupyterExecutorBasic(JupyterExecutorAbstract):
-    """A basic implementation of an executor."""
+class ExecutionError(Exception):
+    """An exception to signify a error during execution of a specific URI."""
 
-    def run(self):
-        """This function interfaces with the cache, deferring execution to _execute."""
-        NbStageRecord.remove_tracebacks(self.cache.db)
-        # TODO check that staged notebook exists
-        iterator = iter(
-            (r, self.cache.get_staged_notebook(r.pk))
-            for r in self.cache.list_nbs_to_exec()
-        )
+    def __init__(self, message, uri, exc):
+        self.uri = uri
+        self.exc = exc
+        return super().__init__(message)
+
+
+class JupyterExecutorBasic(JupyterExecutorAbstract):
+    """A basic implementation of an executor.
+
+    The execution is split into two methods: `run` and `execute`.
+    In this way access to the cache can be synchronous, but the execution can be
+    multi/async processed.
+    """
+
+    def run_and_cache(self):
+        """This function interfaces with the cache, deferring execution to `execute`."""
+
+        # Get the notebook tha require re-execution
+        stage_records = self.cache.list_staged_unexecuted()
+
+        # remove any tracebacks from previous executions
+        NbStageRecord.remove_tracebacks([r.pk for r in stage_records], self.cache.db)
+
+        # setup an dictionary to categorise all executed notebook uris:
+        # excepted are where the actual notebook execution raised an exception;
+        # errored is where any other exception was raised
         result = {"succeeded": [], "excepted": [], "errored": []}
-        for exc_bundle in self._execute(iterator):
-            try:
-                if exc_bundle is None:
-                    # TODO deal with bundles that return None
-                    continue
-                if exc_bundle.traceback is not None:
-                    # TODO store excepted bundles
-                    result["excepted"].append(exc_bundle.uri)
-                    NbStageRecord.set_traceback(
-                        exc_bundle.uri, exc_bundle.traceback, self.cache.db
-                    )
-                    continue
+        # we pass an iterator to the execute method,
+        # so that we don't have to read all notebooks before execution
+
+        def _iterator():
+            for stage_record in stage_records:
                 try:
-                    self.cache.cache_notebook_bundle(exc_bundle, overwrite=True)
+                    nb_bundle = self.cache.get_staged_notebook(stage_record.pk)
                 except Exception:
                     self.logger.error(
-                        "Failed Caching: {}".format(exc_bundle.uri), exc_info=True
+                        "Failed Retrieving: {}".format(stage_record.uri), exc_info=True
                     )
-                    result["errored"].append(exc_bundle.uri)
+                    result["errored"].append(stage_record.uri)
                 else:
-                    result["succeeded"].append(exc_bundle.uri)
+                    yield stage_record, nb_bundle
+
+        # The execute method yields notebook bundles, or ExecutionError
+        for bundle_or_exc in self.execute(_iterator()):
+            if isinstance(bundle_or_exc, ExecutionError):
+                self.logger.error(bundle_or_exc.uri, exc_info=bundle_or_exc.exc)
+                continue
+            elif bundle_or_exc.traceback is not None:
+                # The notebook raised an exception during execution
+                # TODO store excepted bundles
+                result["excepted"].append(bundle_or_exc.uri)
+                NbStageRecord.set_traceback(
+                    bundle_or_exc.uri, bundle_or_exc.traceback, self.cache.db
+                )
+                continue
+            try:
+                # cache a successfully executed notebook
+                self.cache.cache_notebook_bundle(bundle_or_exc, overwrite=True)
             except Exception:
                 self.logger.error(
-                    "Failed Caching: {}".format(exc_bundle.uri), exc_info=True
+                    "Failed Caching: {}".format(bundle_or_exc.uri), exc_info=True
                 )
-                result["errored"].append(exc_bundle.uri)
+                result["errored"].append(bundle_or_exc.uri)
+            else:
+                result["succeeded"].append(bundle_or_exc.uri)
 
         # TODO it would also be ideal to tag all notebooks
         # that were executed at the same time (just part of `data` or separate column?).
@@ -88,36 +120,43 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
 
         return result
 
-    def _execute(self, input_iterator):
+    def execute(self, input_iterator):
         """This function is isolated from the cache, and is responsible for execution.
 
         The method is only supplied with the staged record and input notebook bundle,
         it then yield results for caching
         """
         for stage_record, nb_bundle in input_iterator:
-            uri = nb_bundle.uri
-            self.logger.info("Executing: {}".format(uri))
-            with tempfile.TemporaryDirectory() as tmpdirname:
-                try:
-                    asset_files = copy_assets(stage_record, tmpdirname)
-                except Exception as err:
-                    self.logger.error("Assets Error: {}".format(err), exc_info=True)
-                    yield None
-                    continue
-                timer = Timer()
-                try:
-                    with timer:
-                        # execute notebook, transforming it in-place
-                        # TODO does it need to wiped first?
-                        executenb(nb_bundle.nb, cwd=tmpdirname)
-                except Exception:
-                    exc_string = "".join(traceback.format_exc())
-                    self.logger.error("Execution Failed: {}".format(uri))
-                    yield create_bundle(
-                        nb_bundle, tmpdirname, asset_files, timer.last_split, exc_string
-                    )
-                else:
-                    self.logger.info("Execution Succeeded: {}".format(uri))
-                    yield create_bundle(
-                        nb_bundle, tmpdirname, asset_files, timer.last_split
-                    )
+            try:
+                uri = nb_bundle.uri
+                self.logger.info("Executing: {}".format(uri))
+
+                with tempfile.TemporaryDirectory() as tmpdirname:
+                    try:
+                        asset_files = copy_assets(stage_record, tmpdirname)
+                    except Exception as err:
+                        yield ExecutionError("Assets Retrieval Error", uri, err)
+                        continue
+                    timer = Timer()
+                    try:
+                        with timer:
+                            # execute notebook, transforming it in-place
+                            # TODO does it need to wiped first?
+                            executenb(nb_bundle.nb, cwd=tmpdirname)
+                    except Exception:
+                        exc_string = "".join(traceback.format_exc())
+                        self.logger.error("Execution Failed: {}".format(uri))
+                        yield create_bundle(
+                            nb_bundle,
+                            tmpdirname,
+                            asset_files,
+                            timer.last_split,
+                            exc_string,
+                        )
+                    else:
+                        self.logger.info("Execution Succeeded: {}".format(uri))
+                        yield create_bundle(
+                            nb_bundle, tmpdirname, asset_files, timer.last_split
+                        )
+            except Exception as err:
+                yield ExecutionError("Unexpected Error", uri, err)

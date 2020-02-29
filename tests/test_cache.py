@@ -81,11 +81,11 @@ def test_basic_workflow(tmp_path):
         assets=[os.path.join(NB_PATH, "basic.ipynb")],
     )
     assert [r.pk for r in cache.list_staged_records()] == [1]
-    assert [r.pk for r in cache.list_nbs_to_exec()] == []
+    assert [r.pk for r in cache.list_staged_unexecuted()] == []
 
     cache.stage_notebook_file(os.path.join(NB_PATH, "basic_failing.ipynb"))
     assert [r.pk for r in cache.list_staged_records()] == [1, 2]
-    assert [r.pk for r in cache.list_nbs_to_exec()] == [2]
+    assert [r.pk for r in cache.list_staged_unexecuted()] == [2]
 
     bundle = cache.get_staged_notebook(os.path.join(NB_PATH, "basic_failing.ipynb"))
     assert bundle.nb.metadata
@@ -160,7 +160,7 @@ def test_execution(tmp_path):
         assets=(os.path.join(NB_PATH, "basic.ipynb"),),
     )
     executor = load_executor("basic", db)
-    result = executor.run()
+    result = executor.run_and_cache()
     print(result)
     assert result == {
         "succeeded": [

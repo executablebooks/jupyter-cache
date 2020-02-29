@@ -280,10 +280,12 @@ class NbStageRecord(OrmBase):
             session.expunge_all()
         return results
 
-    def remove_tracebacks(db: Engine):
+    def remove_tracebacks(pks, db: Engine):
         """Remove all tracebacks."""
         with session_context(db) as session:  # type: Session
-            session.query(NbStageRecord).update({NbStageRecord.traceback: None})
+            session.query(NbStageRecord).filter(NbStageRecord.pk.in_(pks)).update(
+                {NbStageRecord.traceback: None}
+            )
             session.commit()
 
     def set_traceback(uri: str, traceback: Optional[str], db: Engine):
