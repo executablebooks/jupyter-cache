@@ -17,7 +17,7 @@ click_log.basic_config(logger)
 @options.CACHE_PATH
 @arguments.PKS
 def execute_nbs(cache_path, entry_point, pks):
-    """Execute staged notebooks that are outdated (or filtered by IDS)."""
+    """Execute staged notebooks that are outdated."""
     import yaml
     from jupyter_cache.executors import load_executor
 
