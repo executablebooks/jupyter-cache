@@ -2,8 +2,8 @@ import os
 
 from click.testing import CliRunner
 
-from jupyter_cache.cache import JupyterCacheBase
-from jupyter_cache.cli.commands import cmd_main, cmd_cache
+from jupyter_cache.cache.main import JupyterCacheBase
+from jupyter_cache.cli.commands import cmd_main, cmd_cache, cmd_stage
 
 NB_PATH = os.path.join(os.path.realpath(os.path.dirname(__file__)), "notebooks")
 
@@ -19,7 +19,7 @@ def test_base():
 def test_clear_cache(tmp_path):
     JupyterCacheBase(str(tmp_path))
     runner = CliRunner()
-    result = runner.invoke(cmd_cache.clear_cache, ["-p", tmp_path], input="y")
+    result = runner.invoke(cmd_main.clear_cache, ["-p", tmp_path], input="y")
     assert result.exception is None, result.output
     assert result.exit_code == 0, result.output
     assert "Cache cleared!" in result.output.strip(), result.output
@@ -132,7 +132,7 @@ def test_stage_nbs(tmp_path):
     db = JupyterCacheBase(str(tmp_path))
     path = os.path.join(NB_PATH, "basic.ipynb")
     runner = CliRunner()
-    result = runner.invoke(cmd_cache.stage_nbs, ["-p", tmp_path, path])
+    result = runner.invoke(cmd_stage.stage_nbs, ["-p", tmp_path, path])
     assert result.exception is None, result.output
     assert result.exit_code == 0, result.output
     assert "basic.ipynb" in result.output.strip(), result.output
@@ -143,8 +143,8 @@ def test_unstage_nbs(tmp_path):
     db = JupyterCacheBase(str(tmp_path))
     path = os.path.join(NB_PATH, "basic.ipynb")
     runner = CliRunner()
-    result = runner.invoke(cmd_cache.stage_nbs, ["-p", tmp_path, path])
-    result = runner.invoke(cmd_cache.unstage_nbs, ["-p", tmp_path, path])
+    result = runner.invoke(cmd_stage.stage_nbs, ["-p", tmp_path, path])
+    result = runner.invoke(cmd_stage.unstage_nbs_uri, ["-p", tmp_path, path])
     assert result.exception is None, result.output
     assert result.exit_code == 0, result.output
     assert "basic.ipynb" in result.output.strip(), result.output
@@ -160,7 +160,7 @@ def test_list_staged(tmp_path):
     db.stage_notebook_file(path=os.path.join(NB_PATH, "basic_failing.ipynb"))
 
     runner = CliRunner()
-    result = runner.invoke(cmd_cache.list_staged, ["-p", tmp_path])
+    result = runner.invoke(cmd_stage.list_staged, ["-p", tmp_path])
     assert result.exception is None, result.output
     assert result.exit_code == 0, result.output
     assert "basic.ipynb" in result.output.strip(), result.output
@@ -174,7 +174,7 @@ def test_show_staged(tmp_path):
     db.stage_notebook_file(path=os.path.join(NB_PATH, "basic.ipynb"))
 
     runner = CliRunner()
-    result = runner.invoke(cmd_cache.show_staged, ["-p", tmp_path, "1"])
+    result = runner.invoke(cmd_stage.show_staged, ["-p", tmp_path, "1"])
     assert result.exception is None, result.output
     assert result.exit_code == 0, result.output
     assert "basic.ipynb" in result.output.strip(), result.output

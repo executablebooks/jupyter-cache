@@ -4,7 +4,7 @@ from textwrap import dedent
 import nbformat as nbf
 import pytest
 
-from jupyter_cache.cache import JupyterCacheBase
+from jupyter_cache.cache.main import JupyterCacheBase
 from jupyter_cache.base import NbValidityError
 
 
