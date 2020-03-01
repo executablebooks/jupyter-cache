@@ -33,13 +33,19 @@ class JupyterExecutorAbstract(ABC):
         return self._logger
 
     @abstractmethod
-    def run(self, uri_filter: Optional[List[str]] = None) -> List[NbCacheRecord]:
+    def run_and_cache(
+        self,
+        filter_uris: Optional[List[str]] = None,
+        filter_pks: Optional[List[int]] = None,
+    ) -> List[NbCacheRecord]:
         """Run execution, stage successfully executed notebooks and return their URIs
 
         Parameters
         ----------
-        uri_filter: list
-            if specified only run these uris.
+        filter_uris: list
+            If specified filter the staged notebooks to execute by these URIs
+        filter_pks: list
+            If specified filter the staged notebooks to execute by these PKs
         """
         pass
 

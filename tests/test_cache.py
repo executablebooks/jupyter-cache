@@ -81,11 +81,11 @@ def test_basic_workflow(tmp_path):
         assets=[os.path.join(NB_PATH, "basic.ipynb")],
     )
     assert [r.pk for r in cache.list_staged_records()] == [1]
-    assert [r.pk for r in cache.list_nbs_to_exec()] == []
+    assert [r.pk for r in cache.list_staged_unexecuted()] == []
 
     cache.stage_notebook_file(os.path.join(NB_PATH, "basic_failing.ipynb"))
     assert [r.pk for r in cache.list_staged_records()] == [1, 2]
-    assert [r.pk for r in cache.list_nbs_to_exec()] == [2]
+    assert [r.pk for r in cache.list_staged_unexecuted()] == [2]
 
     bundle = cache.get_staged_notebook(os.path.join(NB_PATH, "basic_failing.ipynb"))
     assert bundle.nb.metadata
@@ -160,10 +160,16 @@ def test_execution(tmp_path):
         assets=(os.path.join(NB_PATH, "basic.ipynb"),),
     )
     executor = load_executor("basic", db)
-    assert [r.uri for r in executor.run()] == [
-        os.path.join(NB_PATH, "basic_unrun.ipynb"),
-        os.path.join(NB_PATH, "external_output.ipynb"),
-    ]
+    result = executor.run_and_cache()
+    print(result)
+    assert result == {
+        "succeeded": [
+            os.path.join(NB_PATH, "basic_unrun.ipynb"),
+            os.path.join(NB_PATH, "external_output.ipynb"),
+        ],
+        "excepted": [os.path.join(NB_PATH, "basic_failing.ipynb")],
+        "errored": [],
+    }
     assert len(db.list_cache_records()) == 2
     bundle = db.get_cache_bundle(1)
     assert bundle.nb.cells[0] == {
@@ -178,3 +184,6 @@ def test_execution(tmp_path):
         paths = [str(p.relative_to(path)) for p in path.glob("**/*") if p.is_file()]
         assert paths == ["artifact.txt"]
         assert path.joinpath("artifact.txt").read_text() == "hi"
+    stage_record = db.get_staged_record(2)
+    assert stage_record.traceback is not None
+    assert "Exception: oopsie!" in stage_record.traceback

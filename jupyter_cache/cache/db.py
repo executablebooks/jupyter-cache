@@ -2,10 +2,10 @@ from contextlib import contextmanager
 from datetime import datetime
 import os
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, DateTime, Integer, JSON, String
+from sqlalchemy import Column, DateTime, Integer, JSON, String, Text
 from sqlalchemy.orm import sessionmaker, Session, validates
 from sqlalchemy.engine import Engine, create_engine
 from sqlalchemy.exc import IntegrityError
@@ -51,7 +51,6 @@ class Setting(OrmBase):
                 session.add(Setting(key=key, value=value))
             else:
                 setting.value = value
-                session.merge(setting)
             try:
                 session.commit()
             except IntegrityError:
@@ -142,7 +141,6 @@ class NbCacheRecord(OrmBase):
             if record is None:
                 raise KeyError(pk)
             record.accessed = datetime.utcnow()
-            session.merge(record)
             session.commit()
 
     def touch_hashkey(hashkey, db: Engine):
@@ -154,7 +152,6 @@ class NbCacheRecord(OrmBase):
             if record is None:
                 raise KeyError(hashkey)
             record.accessed = datetime.utcnow()
-            session.merge(record)
             session.commit()
 
     @staticmethod
@@ -198,6 +195,7 @@ class NbStageRecord(OrmBase):
     pk = Column(Integer(), primary_key=True)
     uri = Column(String(255), nullable=False, unique=True)
     assets = Column(JSON(), nullable=False, default=list)
+    traceback = Column(Text(), nullable=True, default="")
     created = Column(DateTime, nullable=False, default=datetime.utcnow)
 
     @validates("assets")
@@ -281,3 +279,22 @@ class NbStageRecord(OrmBase):
             results = session.query(NbStageRecord).all()
             session.expunge_all()
         return results
+
+    def remove_tracebacks(pks, db: Engine):
+        """Remove all tracebacks."""
+        with session_context(db) as session:  # type: Session
+            session.query(NbStageRecord).filter(NbStageRecord.pk.in_(pks)).update(
+                {NbStageRecord.traceback: None}, synchronize_session=False
+            )
+            session.commit()
+
+    def set_traceback(uri: str, traceback: Optional[str], db: Engine):
+        with session_context(db) as session:  # type: Session
+            result = session.query(NbStageRecord).filter_by(uri=uri).one_or_none()
+            if result is None:
+                raise KeyError(uri)
+            result.traceback = traceback
+            try:
+                session.commit()
+            except IntegrityError:
+                raise TypeError(traceback)

@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Iterable, List, Optional, Tuple, Union
 
 import attr
-from attr.validators import instance_of
+from attr.validators import instance_of, optional
 import nbformat as nbf
 
 # TODO make these abstract
@@ -72,6 +72,12 @@ class NbBundleIn:
         factory=dict,
         validator=instance_of(dict),
         metadata={"help": "additional data related to the execution"},
+    )
+    traceback: Optional[str] = attr.ib(
+        kw_only=True,
+        default=None,
+        validator=optional(instance_of(str)),
+        metadata={"help": "the traceback, if the execution excepted"},
     )
 
 
@@ -272,7 +278,7 @@ class JupyterCacheAbstract(ABC):
         pass
 
     @abstractmethod
-    def list_nbs_to_exec(self) -> List[NbStageRecord]:
+    def list_staged_unexecuted(self) -> List[NbStageRecord]:
         """List staged notebooks, whose hash is not present in the cache."""
         pass
 
