@@ -131,7 +131,7 @@ def cache_file(db, nbpath, validate, overwrite, artifact_paths=()):
     return True
 
 
-@cmnd_cache.command("add-one")
+@cmnd_cache.command("add-with-artefacts")
 @arguments.ARTIFACT_PATHS
 @options.NB_PATH
 @options.CACHE_PATH
@@ -145,7 +145,7 @@ def cache_nb(cache_path, artifact_paths, nbpath, validate, overwrite):
         click.secho("Success!", fg="green")
 
 
-@cmnd_cache.command("add-many")
+@cmnd_cache.command("add")
 @arguments.NB_PATHS
 @options.CACHE_PATH
 @options.VALIDATE_NB
