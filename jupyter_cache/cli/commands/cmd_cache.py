@@ -16,7 +16,7 @@ def cmnd_cache():
 def format_cache_record(record, hashkeys, path_length):
     data = {
         "ID": record.pk,
-        "URI": str(shorten_path(record.uri, path_length)),
+        "Origin URI": str(shorten_path(record.uri, path_length)),
         "Created": record.created.isoformat(" ", "minutes"),
         "Accessed": record.accessed.isoformat(" ", "minutes"),
         # "Description": record.description,
