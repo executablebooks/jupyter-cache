@@ -279,7 +279,9 @@ class JupyterCacheBase(JupyterCacheAbstract):
         path = self._get_notebook_path_cache(record.hashkey)
         artifact_folder = self._get_artifact_path_cache(record.hashkey)
         if not path.exists():
-            raise KeyError(pk)
+            raise KeyError(
+                "Notebook file does not exist for cache record PK: {}".format(pk)
+            )
 
         return NbBundleOut(
             nbf.reads(path.read_text(), NB_VERSION),
@@ -307,7 +309,9 @@ class JupyterCacheBase(JupyterCacheAbstract):
         record = NbCacheRecord.record_from_pk(pk, self.db)
         path = self._get_notebook_path_cache(record.hashkey)
         if not path.exists():
-            raise KeyError(pk)
+            raise KeyError(
+                "Notebook file does not exist for cache record PK: {}".format(pk)
+            )
         shutil.rmtree(path.parent)
         NbCacheRecord.remove_records([pk], self.db)
 

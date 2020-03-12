@@ -13,7 +13,7 @@ def cmnd_stage():
     pass
 
 
-@cmnd_stage.command("add-many")
+@cmnd_stage.command("add")
 @arguments.NB_PATHS
 @options.CACHE_PATH
 def stage_nbs(cache_path, nbpaths):
@@ -26,7 +26,7 @@ def stage_nbs(cache_path, nbpaths):
     click.secho("Success!", fg="green")
 
 
-@cmnd_stage.command("add-one")
+@cmnd_stage.command("add-with-assets")
 @arguments.ASSET_PATHS
 @options.NB_PATH
 @options.CACHE_PATH

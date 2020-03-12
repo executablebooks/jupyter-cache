@@ -16,7 +16,7 @@ def cmnd_cache():
 def format_cache_record(record, hashkeys, path_length):
     data = {
         "ID": record.pk,
-        "URI": str(shorten_path(record.uri, path_length)),
+        "Origin URI": str(shorten_path(record.uri, path_length)),
         "Created": record.created.isoformat(" ", "minutes"),
         "Accessed": record.accessed.isoformat(" ", "minutes"),
         # "Description": record.description,
@@ -28,9 +28,15 @@ def format_cache_record(record, hashkeys, path_length):
 
 @cmnd_cache.command("list")
 @options.CACHE_PATH
-@click.option("-h", "--hashkeys", is_flag=True, help="Whether to show hashkeys.")
+@click.option(
+    "-l",
+    "--latest-only",
+    is_flag=True,
+    help="Show only the most recent record per origin URI.",
+)
+@click.option("-h", "--hashkeys", is_flag=True, help="Show the hashkey of notebook.")
 @options.PATH_LENGTH
-def list_caches(cache_path, hashkeys, path_length):
+def list_caches(cache_path, latest_only, hashkeys, path_length):
     """List cached notebook records in the cache."""
     import tabulate
 
@@ -39,6 +45,15 @@ def list_caches(cache_path, hashkeys, path_length):
     if not records:
         click.secho("No Cached Notebooks", fg="blue")
     # TODO optionally list number of artifacts
+    if latest_only:
+        latest_records = {}
+        for record in records:
+            if record.uri not in latest_records:
+                latest_records[record.uri] = record
+                continue
+            if latest_records[record.uri].created < record.created:
+                latest_records[record.uri] = record
+        records = list(latest_records.values())
     click.echo(
         tabulate.tabulate(
             [
@@ -131,7 +146,7 @@ def cache_file(db, nbpath, validate, overwrite, artifact_paths=()):
     return True
 
 
-@cmnd_cache.command("add-one")
+@cmnd_cache.command("add-with-artefacts")
 @arguments.ARTIFACT_PATHS
 @options.NB_PATH
 @options.CACHE_PATH
@@ -145,7 +160,7 @@ def cache_nb(cache_path, artifact_paths, nbpath, validate, overwrite):
         click.secho("Success!", fg="green")
 
 
-@cmnd_cache.command("add-many")
+@cmnd_cache.command("add")
 @arguments.NB_PATHS
 @options.CACHE_PATH
 @options.VALIDATE_NB
