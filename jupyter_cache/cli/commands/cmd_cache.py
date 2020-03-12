@@ -2,9 +2,10 @@ import sys
 
 import click
 
+from jupyter_cache import get_cache
 from jupyter_cache.cli.commands.cmd_main import jcache
 from jupyter_cache.cli import arguments, options
-from jupyter_cache.cli.utils import get_cache, tabulate_cache_records
+from jupyter_cache.utils import tabulate_cache_records
 
 
 @jcache.group("cache")

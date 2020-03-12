@@ -3,9 +3,9 @@ import logging
 import click
 import click_log
 
+from jupyter_cache import get_cache
 from jupyter_cache.cli.commands.cmd_main import jcache
 from jupyter_cache.cli import arguments, options
-from jupyter_cache.cli.utils import get_cache
 
 logger = logging.getLogger(__name__)
 click_log.basic_config(logger)
