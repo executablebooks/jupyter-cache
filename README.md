@@ -297,7 +297,7 @@ Executing: ../tests/notebooks/basic_failing.ipynb
 error: Execution Failed: ../tests/notebooks/basic_failing.ipynb
 Executing: ../tests/notebooks/basic_unrun.ipynb
 Execution Succeeded: ../tests/notebooks/basic_unrun.ipynb
-Finished!
+Finished! Successfully executed notebooks have been cached.
 succeeded:
 - ../tests/notebooks/basic.ipynb
 - ../tests/notebooks/basic_unrun.ipynb

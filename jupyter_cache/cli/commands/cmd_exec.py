@@ -28,5 +28,7 @@ def execute_nbs(cache_path, entry_point, pks):
         logger.error(str(error))
         return 1
     result = executor.run_and_cache(filter_pks=pks or None)
-    click.secho("Finished!", fg="green")
+    click.secho(
+        "Finished! Successfully executed notebooks have been cached.", fg="green"
+    )
     click.echo(yaml.safe_dump(result, sort_keys=False))
