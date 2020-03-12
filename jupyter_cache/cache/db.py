@@ -65,7 +65,7 @@ class Setting(OrmBase):
                     Setting.set_value(key, default, db)
                     result = [default]
                 else:
-                    raise KeyError(key)
+                    raise KeyError("Setting not found in DB: {}".format(key))
             value = result[0]
         return value
 
@@ -121,7 +121,9 @@ class NbCacheRecord(OrmBase):
                 session.query(NbCacheRecord).filter_by(hashkey=hashkey).one_or_none()
             )
             if result is None:
-                raise KeyError(hashkey)
+                raise KeyError(
+                    "Cache record not found for NB with hashkey: {}".format(hashkey)
+                )
             session.expunge(result)
         return result
 
@@ -130,7 +132,7 @@ class NbCacheRecord(OrmBase):
         with session_context(db) as session:  # type: Session
             result = session.query(NbCacheRecord).filter_by(pk=pk).one_or_none()
             if result is None:
-                raise KeyError(pk)
+                raise KeyError("Cache record not found for NB with PK: {}".format(pk))
             session.expunge(result)
         return result
 
@@ -139,7 +141,7 @@ class NbCacheRecord(OrmBase):
         with session_context(db) as session:  # type: Session
             record = session.query(NbCacheRecord).filter_by(pk=pk).one_or_none()
             if record is None:
-                raise KeyError(pk)
+                raise KeyError("Cache record not found for NB with PK: {}".format(pk))
             record.accessed = datetime.utcnow()
             session.commit()
 
@@ -150,7 +152,9 @@ class NbCacheRecord(OrmBase):
                 session.query(NbCacheRecord).filter_by(hashkey=hashkey).one_or_none()
             )
             if record is None:
-                raise KeyError(hashkey)
+                raise KeyError(
+                    "Cache record not found for NB with hashkey: {}".format(hashkey)
+                )
             record.accessed = datetime.utcnow()
             session.commit()
 
@@ -260,7 +264,7 @@ class NbStageRecord(OrmBase):
         with session_context(db) as session:  # type: Session
             result = session.query(NbStageRecord).filter_by(pk=pk).one_or_none()
             if result is None:
-                raise KeyError(pk)
+                raise KeyError("Staging record not found for NB with PK: {}".format(pk))
             session.expunge(result)
         return result
 
@@ -269,7 +273,9 @@ class NbStageRecord(OrmBase):
         with session_context(db) as session:  # type: Session
             result = session.query(NbStageRecord).filter_by(uri=uri).one_or_none()
             if result is None:
-                raise KeyError(uri)
+                raise KeyError(
+                    "Staging record not found for NB with URI: {}".format(uri)
+                )
             session.expunge(result)
         return result
 
@@ -292,7 +298,9 @@ class NbStageRecord(OrmBase):
         with session_context(db) as session:  # type: Session
             result = session.query(NbStageRecord).filter_by(uri=uri).one_or_none()
             if result is None:
-                raise KeyError(uri)
+                raise KeyError(
+                    "Staging record not found for NB with URI: {}".format(uri)
+                )
             result.traceback = traceback
             try:
                 session.commit()
