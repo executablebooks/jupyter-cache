@@ -95,6 +95,10 @@ def main():
     )
     strings.append(get_string(cmd_cache.list_caches, cache_name))
     strings.append(
+        "Tip: Use the `--latest-only` option, "
+        "to only show the latest versions of cached notebooks."
+    )
+    strings.append(
         dedent(
             """\
         You can also cache notebooks with artefacts

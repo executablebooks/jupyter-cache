@@ -41,7 +41,7 @@ to come ...
 
 ## Example CLI usage
 
-<!-- This section was auto-generated on 2020-03-12 17:11 by: /Users/cjs14/GitHub/jupyter-cache/tests/make_cli_readme.py -->
+<!-- This section was auto-generated on 2020-03-12 17:31 by: /Users/cjs14/GitHub/jupyter-cache/tests/make_cli_readme.py -->
 
 From the checked-out repository folder:
 
@@ -141,11 +141,13 @@ You can remove cached records by their ID.
 $ jcache cache list
   ID  Origin URI                             Created           Accessed
 ----  -------------------------------------  ----------------  ----------------
-   5  tests/notebooks/external_output.ipynb  2020-03-12 17:11  2020-03-12 17:11
-   4  tests/notebooks/complex_outputs.ipynb  2020-03-12 17:11  2020-03-12 17:11
-   3  tests/notebooks/basic_unrun.ipynb      2020-03-12 17:11  2020-03-12 17:11
-   2  tests/notebooks/basic_failing.ipynb    2020-03-12 17:11  2020-03-12 17:11
+   5  tests/notebooks/external_output.ipynb  2020-03-12 17:31  2020-03-12 17:31
+   4  tests/notebooks/complex_outputs.ipynb  2020-03-12 17:31  2020-03-12 17:31
+   3  tests/notebooks/basic_unrun.ipynb      2020-03-12 17:31  2020-03-12 17:31
+   2  tests/notebooks/basic_failing.ipynb    2020-03-12 17:31  2020-03-12 17:31
 ```
+
+Tip: Use the `--latest-only` option, to only show the latest versions of cached notebooks.
 
 You can also cache notebooks with artefacts
 (external outputs of the notebook execution).
@@ -164,8 +166,8 @@ Show a full description of a cached notebook by referring to its ID
 $ jcache cache show 6
 ID: 6
 Origin URI: ../tests/notebooks/basic.ipynb
-Created: 2020-03-12 17:11
-Accessed: 2020-03-12 17:11
+Created: 2020-03-12 17:31
+Accessed: 2020-03-12 17:31
 Hashkey: 818f3412b998fcf4fe9ca3cca11a3fc3
 Artifacts:
 - artifact_folder/artifact.txt
@@ -265,11 +267,11 @@ Success!
 $ jcache stage list
   ID  URI                                    Created             Assets    Cache ID
 ----  -------------------------------------  ----------------  --------  ----------
-   5  tests/notebooks/external_output.ipynb  2020-03-12 17:11         0           5
-   4  tests/notebooks/complex_outputs.ipynb  2020-03-12 17:11         0
-   3  tests/notebooks/basic_unrun.ipynb      2020-03-12 17:11         0           6
-   2  tests/notebooks/basic_failing.ipynb    2020-03-12 17:11         0           2
-   1  tests/notebooks/basic.ipynb            2020-03-12 17:11         0           6
+   5  tests/notebooks/external_output.ipynb  2020-03-12 17:31         0           5
+   4  tests/notebooks/complex_outputs.ipynb  2020-03-12 17:31         0
+   3  tests/notebooks/basic_unrun.ipynb      2020-03-12 17:31         0           6
+   2  tests/notebooks/basic_failing.ipynb    2020-03-12 17:31         0           2
+   1  tests/notebooks/basic.ipynb            2020-03-12 17:31         0           6
 ```
 
 You can remove a staged notebook by its URI or ID:
@@ -315,10 +317,10 @@ that are inside the notebook folder, and data supplied by the executor.
 $ jcache stage list
   ID  URI                                    Created             Assets    Cache ID
 ----  -------------------------------------  ----------------  --------  ----------
-   5  tests/notebooks/external_output.ipynb  2020-03-12 17:11         0           5
-   3  tests/notebooks/basic_unrun.ipynb      2020-03-12 17:11         0           6
-   2  tests/notebooks/basic_failing.ipynb    2020-03-12 17:11         0
-   1  tests/notebooks/basic.ipynb            2020-03-12 17:11         0           6
+   5  tests/notebooks/external_output.ipynb  2020-03-12 17:31         0           5
+   3  tests/notebooks/basic_unrun.ipynb      2020-03-12 17:31         0           6
+   2  tests/notebooks/basic_failing.ipynb    2020-03-12 17:31         0
+   1  tests/notebooks/basic.ipynb            2020-03-12 17:31         0           6
 ```
 
 Execution data (such as execution time) will be stored in the cache record:
@@ -327,11 +329,11 @@ Execution data (such as execution time) will be stored in the cache record:
 $ jcache cache show 6
 ID: 6
 Origin URI: ../tests/notebooks/basic_unrun.ipynb
-Created: 2020-03-12 17:11
-Accessed: 2020-03-12 17:11
+Created: 2020-03-12 17:31
+Accessed: 2020-03-12 17:31
 Hashkey: 818f3412b998fcf4fe9ca3cca11a3fc3
 Data:
-  execution_seconds: 1.1132317770000002
+  execution_seconds: 1.0559415130000005
 
 ```
 
@@ -341,7 +343,7 @@ Failed notebooks will not be cached, but the exception traceback will be added t
 $ jcache stage show 2
 ID: 2
 URI: ../tests/notebooks/basic_failing.ipynb
-Created: 2020-03-12 17:11
+Created: 2020-03-12 17:31
 Failed Last Execution!
 Traceback (most recent call last):
   File "../jupyter_cache/executors/basic.py", line 152, in execute
@@ -396,7 +398,7 @@ Success!
 $ jcache stage show 1
 ID: 1
 URI: ../tests/notebooks/basic.ipynb
-Created: 2020-03-12 17:11
+Created: 2020-03-12 17:31
 Cache ID: 6
 Assets:
 - ../tests/notebooks/artifact_folder/artifact.txt

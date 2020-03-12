@@ -39,6 +39,29 @@ def test_list_caches(tmp_path):
     assert "basic.ipynb" in result.output.strip(), result.output
 
 
+def test_list_caches_latest_only(tmp_path):
+    db = JupyterCacheBase(str(tmp_path))
+    db.cache_notebook_file(
+        path=os.path.join(NB_PATH, "basic.ipynb"),
+        uri="basic.ipynb",
+        check_validity=False,
+    )
+    db.cache_notebook_file(
+        path=os.path.join(NB_PATH, "complex_outputs.ipynb"),
+        uri="basic.ipynb",
+        check_validity=False,
+    )
+    runner = CliRunner()
+    result = runner.invoke(cmd_cache.list_caches, ["-p", tmp_path])
+    assert result.exception is None, result.output
+    assert result.exit_code == 0, result.output
+    assert len(result.output.strip().splitlines()) == 4, result.output
+    result = runner.invoke(cmd_cache.list_caches, ["-p", tmp_path, "--latest-only"])
+    assert result.exception is None, result.output
+    assert result.exit_code == 0, result.output
+    assert len(result.output.strip().splitlines()) == 3, result.output
+
+
 def test_cache_with_artifact(tmp_path):
     JupyterCacheBase(str(tmp_path))
     nb_path = os.path.join(NB_PATH, "basic.ipynb")

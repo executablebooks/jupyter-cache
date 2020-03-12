@@ -28,9 +28,15 @@ def format_cache_record(record, hashkeys, path_length):
 
 @cmnd_cache.command("list")
 @options.CACHE_PATH
-@click.option("-h", "--hashkeys", is_flag=True, help="Whether to show hashkeys.")
+@click.option(
+    "-l",
+    "--latest-only",
+    is_flag=True,
+    help="Show only the most recent record per origin URI.",
+)
+@click.option("-h", "--hashkeys", is_flag=True, help="Show the hashkey of notebook.")
 @options.PATH_LENGTH
-def list_caches(cache_path, hashkeys, path_length):
+def list_caches(cache_path, latest_only, hashkeys, path_length):
     """List cached notebook records in the cache."""
     import tabulate
 
@@ -39,6 +45,15 @@ def list_caches(cache_path, hashkeys, path_length):
     if not records:
         click.secho("No Cached Notebooks", fg="blue")
     # TODO optionally list number of artifacts
+    if latest_only:
+        latest_records = {}
+        for record in records:
+            if record.uri not in latest_records:
+                latest_records[record.uri] = record
+                continue
+            if latest_records[record.uri].created < record.created:
+                latest_records[record.uri] = record
+        records = list(latest_records.values())
     click.echo(
         tabulate.tabulate(
             [
