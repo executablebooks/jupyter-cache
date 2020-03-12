@@ -51,16 +51,25 @@ class NbArtifactsAbstract(ABC):
         """Yield the relative path and open files (in bytes mode)"""
         pass
 
+    def __repr__(self):
+        return "{0}(paths={1})".format(
+            self.__class__.__name__, len(self.relative_paths)
+        )
+
 
 @attr.s(frozen=True, slots=True)
 class NbBundleIn:
     """A container for notebooks and their associated data to cache."""
 
     nb: nbf.NotebookNode = attr.ib(
-        validator=instance_of(nbf.NotebookNode), metadata={"help": "the notebook"}
+        validator=instance_of(nbf.NotebookNode),
+        repr=lambda nb: "Notebook(cells={0})".format(len(nb.cells)),
+        metadata={"help": "the notebook"},
     )
     uri: str = attr.ib(
-        validator=instance_of(str), metadata={"help": "the origin URI of the notebook"}
+        converter=str,
+        validator=instance_of(str),
+        metadata={"help": "the origin URI of the notebook"},
     )
     artifacts: Optional[NbArtifactsAbstract] = attr.ib(
         kw_only=True,
@@ -86,7 +95,9 @@ class NbBundleOut:
     """A container for notebooks and their associated data that have been cached."""
 
     nb: nbf.NotebookNode = attr.ib(
-        validator=instance_of(nbf.NotebookNode), metadata={"help": "the notebook"}
+        validator=instance_of(nbf.NotebookNode),
+        repr=lambda nb: "Notebook(cells={0})".format(len(nb.cells)),
+        metadata={"help": "the notebook"},
     )
     record: NbCacheRecord = attr.ib(metadata={"help": "the cache record"})
     artifacts: Optional[NbArtifactsAbstract] = attr.ib(
