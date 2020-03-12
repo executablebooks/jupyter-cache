@@ -52,6 +52,6 @@ maxdepth: 2
 caption: Contents
 ---
 using/cli.md
-using/api.md
+using/api.ipynb
 develop/contributing.md
 ```

@@ -94,6 +94,9 @@ class NbCacheRecord(OrmBase):
     def to_dict(self):
         return {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
 
+    def __repr__(self):
+        return "{0}(pk={1})".format(self.__class__.__name__, self.pk)
+
     @staticmethod
     def create_record(uri: str, hashkey: str, db: Engine, **kwargs) -> "NbCacheRecord":
         with session_context(db) as session:  # type: Session
