@@ -115,6 +115,8 @@ class NbCacheRecord(OrmBase):
             data["Description"] = self.description
         if hashkey:
             data["Hashkey"] = self.hashkey
+        if self.data:
+            data["Data"] = self.data
         return data
 
     @staticmethod
