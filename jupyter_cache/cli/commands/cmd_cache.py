@@ -2,28 +2,16 @@ import sys
 
 import click
 
+from jupyter_cache import get_cache
 from jupyter_cache.cli.commands.cmd_main import jcache
 from jupyter_cache.cli import arguments, options
-from jupyter_cache.cli.utils import shorten_path, get_cache
+from jupyter_cache.utils import tabulate_cache_records
 
 
 @jcache.group("cache")
 def cmnd_cache():
     """Commands for adding to and inspecting the cache."""
     pass
-
-
-def format_cache_record(record, hashkeys, path_length):
-    data = {
-        "ID": record.pk,
-        "Origin URI": str(shorten_path(record.uri, path_length)),
-        "Created": record.created.isoformat(" ", "minutes"),
-        "Accessed": record.accessed.isoformat(" ", "minutes"),
-        # "Description": record.description,
-    }
-    if hashkeys:
-        data["Hashkey"] = record.hashkey
-    return data
 
 
 @cmnd_cache.command("list")
@@ -38,8 +26,6 @@ def format_cache_record(record, hashkeys, path_length):
 @options.PATH_LENGTH
 def list_caches(cache_path, latest_only, hashkeys, path_length):
     """List cached notebook records in the cache."""
-    import tabulate
-
     db = get_cache(cache_path)
     records = db.list_cache_records()
     if not records:
@@ -55,13 +41,7 @@ def list_caches(cache_path, latest_only, hashkeys, path_length):
                 latest_records[record.uri] = record
         records = list(latest_records.values())
     click.echo(
-        tabulate.tabulate(
-            [
-                format_cache_record(r, hashkeys, path_length)
-                for r in sorted(records, key=lambda r: r.accessed, reverse=True)
-            ],
-            headers="keys",
-        )
+        tabulate_cache_records(records, hashkeys=hashkeys, path_length=path_length)
     )
 
 
@@ -78,7 +58,7 @@ def show_cache(cache_path, pk):
     except KeyError:
         click.secho("ID {} does not exist, Aborting!".format(pk), fg="red")
         sys.exit(1)
-    data = format_cache_record(record, True, None)
+    data = record.format_dict(hashkey=True, path_length=None)
     click.echo(yaml.safe_dump(data, sort_keys=False), nl=False)
     with db.cache_artefacts_temppath(pk) as folder:
         paths = [str(p.relative_to(folder)) for p in folder.glob("**/*") if p.is_file()]

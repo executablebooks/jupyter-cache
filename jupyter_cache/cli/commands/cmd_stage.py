@@ -2,9 +2,10 @@ import sys
 
 import click
 
+from jupyter_cache import get_cache
 from jupyter_cache.cli.commands.cmd_main import jcache
 from jupyter_cache.cli import arguments, options
-from jupyter_cache.cli.utils import shorten_path, get_cache
+from jupyter_cache.utils import tabulate_stage_records
 
 
 @jcache.group("stage")
@@ -69,19 +70,6 @@ def unstage_nbs_id(cache_path, pks, remove_all):
     click.secho("Success!", fg="green")
 
 
-def format_staged_record(record, cache_record, path_length, assets=True):
-    data = {
-        "ID": record.pk,
-        "URI": str(shorten_path(record.uri, path_length)),
-        "Created": record.created.isoformat(" ", "minutes"),
-    }
-    if assets:
-        data["Assets"] = len(record.assets)
-    if cache_record:
-        data["Cache ID"] = cache_record.pk
-    return data
-
-
 @cmnd_stage.command("list")
 @options.CACHE_PATH
 @click.option(
@@ -93,19 +81,11 @@ def format_staged_record(record, cache_record, path_length, assets=True):
 @options.PATH_LENGTH
 def list_staged(cache_path, compare, path_length):
     """List notebooks staged for possible execution."""
-    import tabulate
-
     db = get_cache(cache_path)
     records = db.list_staged_records()
     if not records:
         click.secho("No Staged Notebooks", fg="blue")
-    rows = []
-    for record in sorted(records, key=lambda r: r.created, reverse=True):
-        cache_record = None
-        if compare:
-            cache_record = db.get_cache_record_of_staged(record.uri)
-        rows.append(format_staged_record(record, cache_record, path_length))
-    click.echo(tabulate.tabulate(rows, headers="keys"))
+    click.echo(tabulate_stage_records(records, path_length=path_length, cache=db))
 
 
 @cmnd_stage.command("show")
@@ -128,7 +108,7 @@ def show_staged(cache_path, pk, tb):
         click.secho("ID {} does not exist, Aborting!".format(pk), fg="red")
         sys.exit(1)
     cache_record = db.get_cache_record_of_staged(record.uri)
-    data = format_staged_record(record, cache_record, None, assets=False)
+    data = record.format_dict(cache_record=cache_record, path_length=None, assets=False)
     click.echo(yaml.safe_dump(data, sort_keys=False).rstrip())
     if record.assets:
         click.echo(f"Assets:")

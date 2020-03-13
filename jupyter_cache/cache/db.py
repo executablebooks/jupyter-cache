@@ -11,6 +11,8 @@ from sqlalchemy.engine import Engine, create_engine
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql.expression import desc
 
+from jupyter_cache.utils import shorten_path
+
 
 OrmBase = declarative_base()
 
@@ -42,6 +44,11 @@ class Setting(OrmBase):
     pk = Column(Integer(), primary_key=True)
     key = Column(String(36), nullable=False, unique=True)
     value = Column(JSON())
+
+    def __repr__(self):
+        return "{0}(pk={1},{2}={3})".format(
+            self.__class__.__name__, self.pk, self.key, self.value
+        )
 
     @staticmethod
     def set_value(key: str, value, db: Engine):
@@ -91,8 +98,28 @@ class NbCacheRecord(OrmBase):
         DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
     )
 
+    def __repr__(self):
+        return "{0}(pk={1})".format(self.__class__.__name__, self.pk)
+
     def to_dict(self):
         return {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
+
+    def format_dict(
+        self, hashkey=False, path_length=None, show_descript=False, show_data=True
+    ):
+        data = {
+            "ID": self.pk,
+            "Origin URI": str(shorten_path(self.uri, path_length)),
+            "Created": self.created.isoformat(" ", "minutes"),
+            "Accessed": self.accessed.isoformat(" ", "minutes"),
+        }
+        if show_descript:
+            data["Description"] = self.description
+        if hashkey:
+            data["Hashkey"] = self.hashkey
+        if show_data and self.data:
+            data["Data"] = self.data
+        return data
 
     @staticmethod
     def create_record(uri: str, hashkey: str, db: Engine, **kwargs) -> "NbCacheRecord":
@@ -202,6 +229,24 @@ class NbStageRecord(OrmBase):
     traceback = Column(Text(), nullable=True, default="")
     created = Column(DateTime, nullable=False, default=datetime.utcnow)
 
+    def __repr__(self):
+        return "{0}(pk={1})".format(self.__class__.__name__, self.pk)
+
+    def to_dict(self):
+        return {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
+
+    def format_dict(self, cache_record=None, path_length=None, assets=True):
+        data = {
+            "ID": self.pk,
+            "URI": str(shorten_path(self.uri, path_length)),
+            "Created": self.created.isoformat(" ", "minutes"),
+        }
+        if assets:
+            data["Assets"] = len(self.assets)
+        if cache_record is not None:
+            data["Cache ID"] = cache_record.pk
+        return data
+
     @validates("assets")
     def validator_assets(self, key, value):
         return self.validate_assets(value)
@@ -223,9 +268,6 @@ class NbStageRecord(OrmBase):
             except ValueError:
                 raise ValueError(f"Asset '{path}' is not in folder '{uri_folder}''")
         return list(paths)
-
-    def to_dict(self):
-        return {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
 
     @staticmethod
     def create_record(

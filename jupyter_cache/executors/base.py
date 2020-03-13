@@ -24,6 +24,9 @@ class JupyterExecutorAbstract(ABC):
         self._cache = cache
         self._logger = logger or logging.getLogger(__name__)
 
+    def __repr__(self):
+        return "{0}(cache={1})".format(self.__class__.__name__, self._cache)
+
     @property
     def cache(self):
         return self._cache
@@ -48,6 +51,10 @@ class JupyterExecutorAbstract(ABC):
             If specified filter the staged notebooks to execute by these PKs
         """
         pass
+
+
+def list_executors():
+    return list(pkg_resources.iter_entry_points(ENTRY_POINT_GROUP))
 
 
 def load_executor(

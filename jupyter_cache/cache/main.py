@@ -54,7 +54,7 @@ class NbArtifacts(NbArtifactsAbstract):
 
 class JupyterCacheBase(JupyterCacheAbstract):
     def __init__(self, path):
-        self._path = Path(path)
+        self._path = Path(path).absolute()
         self._db = None
 
     @property
@@ -69,6 +69,9 @@ class JupyterCacheBase(JupyterCacheAbstract):
         if self._db is None:
             self._db = create_db(self.path)
         return self._db
+
+    def __repr__(self):
+        return "{0}({1})".format(self.__class__.__name__, repr(str(self._path)))
 
     def __getstate__(self):
         """For pickling instances, db must be removed."""
@@ -101,6 +104,9 @@ class JupyterCacheBase(JupyterCacheAbstract):
         pks = NbCacheRecord.records_to_delete(cache_limit, self.db)
         for pk in pks:
             self.remove_cache(pk)
+
+    def get_cache_limit(self):
+        return Setting.get_value(CACHE_LIMIT_KEY, self.db, DEFAULT_CACHE_LIMIT)
 
     def change_cache_limit(self, size: int):
         assert isinstance(size, int) and size > 0
@@ -255,11 +261,11 @@ class JupyterCacheBase(JupyterCacheAbstract):
         :param overwrite: Allow overwrite of cached notebooks with matching hash
         :return: The primary key of the cache record
         """
-        notebook = nbf.read(path, NB_VERSION)
+        notebook = nbf.read(str(path), NB_VERSION)
         return self.cache_notebook_bundle(
             NbBundleIn(
                 notebook,
-                uri or path,
+                uri or str(path),
                 artifacts=NbArtifacts(artifacts, in_folder=Path(path).parent),
                 data=data or {},
             ),
