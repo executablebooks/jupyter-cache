@@ -9,6 +9,7 @@ setup(
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     url="https://github.com/ExecutableBookProject/jupyter-cache",
+    project_urls={"Documentation": "https://jupyter-cache.readthedocs.io"},
     author="Chris Sewell",
     author_email="chrisj_sewell@hotmail.com",
     license="MIT",
