@@ -17,6 +17,7 @@ if the notebook had been modified in a way that may alter its code cell outputs.
 
 Some desired requirements (not yet all implemented):
 
+- A clear and robust API
 - The cache is persistent on disk
 - Notebook comparisons separate out "edits to content" from "edits to code cells".
   Cell rearranges and code cell changes should require a re-execution.
@@ -32,7 +33,7 @@ Some desired requirements (not yet all implemented):
 To install `jupytes-cache`, do the following:
 
 ```bash
-pip install -e "git+https://github.com/ExecutableBookProject/jupyter-cache.git#egg=jupyter-cache[cli]"
+pip install jupyter-cache[cli]
 ```
 
 For package development:

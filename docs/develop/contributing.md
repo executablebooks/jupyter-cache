@@ -3,8 +3,8 @@
 [![CI Status][travis-badge]][travis-link]
 [![Coverage][coveralls-badge]][coveralls-link]
 [![Code style: black][black-badge]][black-link]
-<!-- [![CircleCI][circleci-badge]][circleci-link]
-[![Documentation Status][rtd-badge]][rtd-link] -->
+[![CircleCI][circleci-badge]][circleci-link]
+[![Documentation Status][rtd-badge]][rtd-link]
 
 ## Code Style
 

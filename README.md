@@ -2,8 +2,11 @@
 
 # jupyter-cache
 
-[![Build Status](https://travis-ci.org/ExecutableBookProject/jupyter-cache.svg?branch=master)](https://travis-ci.org/ExecutableBookProject/jupyter-cache)
-[![Coverage Status](https://coveralls.io/repos/github/ExecutableBookProject/jupyter-cache/badge.svg?branch=master)](https://coveralls.io/github/ExecutableBookProject/jupyter-cache?branch=master)
+[![CI Status][travis-badge]][travis-link]
+[![Coverage][coveralls-badge]][coveralls-link]
+[![Documentation Status][rtd-badge]][rtd-link]
+[![Code style: black][black-badge]][black-link]
+[![PyPI][pypi-badge]][pypi-link]
 
 A defined interface for working with a cache of jupyter notebooks.
 
@@ -20,10 +23,21 @@ Some desired requirements (not yet all implemented):
 - Store execution artifacts: created during exeution
 - A transparent and robust cache invalidation: imagine the user updating an external dependency or a Python module, or checking out a different git branch.
 
+[travis-badge]: https://travis-ci.org/ExecutableBookProject/jupyter-cache.svg?branch=master
+[travis-link]: https://travis-ci.org/ExecutableBookProject/jupyter-cache
+[coveralls-badge]: https://coveralls.io/repos/github/ExecutableBookProject/jupyter-cache/badge.svg?branch=master
+[coveralls-link]: https://coveralls.io/github/ExecutableBookProject/jupyter-cache?branch=master
+[rtd-badge]: https://readthedocs.org/projects/jupyter-cache/badge/?version=latest
+[rtd-link]: https://jupyter-cache.readthedocs.io/en/latest/?badge=latest
+[black-badge]: https://img.shields.io/badge/code%20style-black-000000.svg
+[pypi-badge]: https://img.shields.io/pypi/v/jupyter-cache.svg
+[pypi-link]: https://pypi.org/project/jupyter-cache
+[black-link]: https://github.com/ambv/black
+
 ## Install
 
 ```bash
-pip install -e "git+https://github.com/ExecutableBookProject/jupyter-cache.git#egg=jupyter-cache[cli]"
+pip install jupyter-cache[cli]
 ```
 
 For development:
