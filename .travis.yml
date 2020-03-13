@@ -4,13 +4,10 @@ matrix:
     include:
       - python: 3.7
         env: TEST_TYPE="pre-commit"
-      # Not working with some of the annotation syntax
-      # - python: 3.5
-      #   env: TEST_TYPE="pytest"
       - python: 3.6
         env: TEST_TYPE="pytest"
       - python: 3.7
-        env: TEST_TYPE="pytest"
+        env: TEST_TYPE="pytest" PYPI_DEPLOY=true
       - python: 3.8
         env: TEST_TYPE="pytest"
 install:
@@ -38,3 +35,13 @@ after_success:
   if [[ "$TEST_TYPE" == "pytest" ]]; then
       coveralls
   fi
+
+deploy:
+  - provider: pypi
+    distributions: "sdist bdist_wheel"
+    user: cjsewell
+    password:
+      secure: sTAhmXxRw3QdL9WS33dxEXaJVJSIk208X35/3tSQycLLBk/VAgHTTPGeOKBnZ8dY18iwMpALrmI9FX7QhCVLBI5RO7U4AkrjFtVnWtvyKPaC1OBUDYh4OKCyUlBhHx2ko3HdH/bQwjE57/TgbgC7cjIRnEIMGrLnL3623imnpr+/86jL9rsachEjoN6pswaHYkPwAChDOWUWpJeYkH06HgQy9AOHkuJNDvTho/RWNGv3lCT8rbvAjLfgQgUCoxl1iQOrL/FTLj2mt4FIk8I2203Kra9KeFXkz2X32R/sWHFOkB++5KoYB41r4J4lCzU2cBhgucrIwIrO3QW3Kw44CYbzK5q+BjbXnazNu7H6sqN7SjCjwr+E3ib17mjcB87cTgwCqxQeiRrX4GMqngC/xsXPgK6XdhQzihpyKKzNpS5BK/XtvANldzsYvYPKyPAbbWqnpwb2+aEAq00a2gUTCg5ZmWiEm8Pu8jRp2OG9C5Uk1ymP7ZCcL0NDCoSSKRC8oOTx1ERQjL4xN/rNk85ZXu5lME0cGrWU9ZRxOYi/GFJAzGD2Fi52D1oO1BgxXM3hMI1HB1xiMwRTbmxOMbnFz2Ewzi/RAzGtslCg9iLbqphjAbkGyOzkZDhptEn2eOx+ThcFP9sW4cOocrPcySSjKFfrtJWaWDNUBX+nkcAFsDY=
+    on:
+      tags: true
+      condition: $PYPI_DEPLOY = true
