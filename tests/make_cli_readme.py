@@ -41,11 +41,13 @@ def main():
     strings.append(
         dedent(
             """\
-        **Important**: Execute this in the terminal for auto-completion:
+            ````{tip}
+            Execute this in the terminal for auto-completion:
 
-        ```console
-        eval "$(_JCACHE_COMPLETE=source jcache)"
-        ```"""
+            ```console
+            eval "$(_JCACHE_COMPLETE=source jcache)"
+            ```
+            ````"""
         )
     )
 
@@ -95,8 +97,16 @@ def main():
     )
     strings.append(get_string(cmd_cache.list_caches, cache_name))
     strings.append(
-        "Tip: Use the `--latest-only` option, "
-        "to only show the latest versions of cached notebooks."
+        dedent(
+            """\
+            ````{tip}
+            To only show the latest versions of cached notebooks.
+
+            ```console
+            $ jcache cache list --latest-only
+            ```
+            ````"""
+        )
     )
     strings.append(
         dedent(
@@ -186,6 +196,16 @@ def main():
         "but the exception traceback will be added to the stage record:"
     )
     strings.append(get_string(cmd_stage.show_staged, stage_name, ["2"]))
+    strings.append(
+        dedent(
+            """\
+        ```{tip}
+        Code cells can be tagged with `raises-exception` to let the executor known that
+        a cell *may* raise an exception(see
+        [this issue on its behaviour](https://github.com/jupyter/nbconvert/issues/730)).
+        ```"""
+        )
+    )
     strings.append(
         "Once executed you may leave staged notebooks, "
         "for later re-execution, or remove them:"

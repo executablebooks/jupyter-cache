@@ -341,6 +341,11 @@ Exception: oopsie!
 
 ```
 
+```{tip}
+Code cells can be tagged with `raises-exception` to let the executor known that
+a cell *may* raise an exception (see [this issue on its behaviour](https://github.com/jupyter/nbconvert/issues/730)).
+```
+
 Once executed you may leave staged notebooks, for later re-execution, or remove them:
 
 ```console
