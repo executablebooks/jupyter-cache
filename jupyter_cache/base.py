@@ -229,7 +229,7 @@ class JupyterCacheAbstract(ABC):
         :raises KeyError: if no match is found
         :return: pk, input notebook with cached code cells and metadata merged.
         """
-        nb = nbf.read(path, NB_VERSION)
+        nb = nbf.read(str(path), NB_VERSION)
         return self.merge_match_into_notebook(nb, nb_meta, cell_meta)
 
     @abstractmethod

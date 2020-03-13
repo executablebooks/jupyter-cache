@@ -49,6 +49,7 @@ exclude_patterns = [
     ".DS_Store",
     "**/example_nbs/*",
     "**/.jupyter_cache/**/*",
+    "**/.ipynb_checkpoints/*",
 ]
 
 
