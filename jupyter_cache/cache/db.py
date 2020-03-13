@@ -104,18 +104,20 @@ class NbCacheRecord(OrmBase):
     def to_dict(self):
         return {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
 
-    def format_dict(self, hashkey=False, path_length=None, descript=False):
+    def format_dict(
+        self, hashkey=False, path_length=None, show_descript=False, show_data=True
+    ):
         data = {
             "ID": self.pk,
             "Origin URI": str(shorten_path(self.uri, path_length)),
             "Created": self.created.isoformat(" ", "minutes"),
             "Accessed": self.accessed.isoformat(" ", "minutes"),
         }
-        if descript:
+        if show_descript:
             data["Description"] = self.description
         if hashkey:
             data["Hashkey"] = self.hashkey
-        if self.data:
+        if show_data and self.data:
             data["Data"] = self.data
         return data
 

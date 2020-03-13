@@ -105,6 +105,9 @@ class JupyterCacheBase(JupyterCacheAbstract):
         for pk in pks:
             self.remove_cache(pk)
 
+    def get_cache_limit(self):
+        return Setting.get_value(CACHE_LIMIT_KEY, self.db, DEFAULT_CACHE_LIMIT)
+
     def change_cache_limit(self, size: int):
         assert isinstance(size, int) and size > 0
         Setting.set_value(CACHE_LIMIT_KEY, size, self.db)

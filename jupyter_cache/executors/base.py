@@ -53,6 +53,10 @@ class JupyterExecutorAbstract(ABC):
         pass
 
 
+def list_executors():
+    return list(pkg_resources.iter_entry_points(ENTRY_POINT_GROUP))
+
+
 def load_executor(
     entry_point: str, cache: JupyterCacheAbstract, logger=None
 ) -> JupyterExecutorAbstract:

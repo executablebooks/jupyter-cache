@@ -1,1 +1,1 @@
-from .base import JupyterExecutorAbstract, load_executor  # noqa: F401
+from .base import JupyterExecutorAbstract, list_executors, load_executor  # noqa: F401

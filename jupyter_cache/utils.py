@@ -84,7 +84,7 @@ def tabulate_cache_records(records: list, hashkeys=False, path_length=None) -> s
 
     return tabulate.tabulate(
         [
-            r.format_dict(hashkey=hashkeys, path_length=path_length)
+            r.format_dict(hashkey=hashkeys, path_length=path_length, show_data=False)
             for r in sorted(records, key=lambda r: r.accessed, reverse=True)
         ],
         headers="keys",
