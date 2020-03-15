@@ -276,8 +276,12 @@ class JupyterCacheBase(JupyterCacheAbstract):
     def list_cache_records(self) -> List[NbCacheRecord]:
         return NbCacheRecord.records_all(self.db)
 
-    def get_cache_record(self, pk: int) -> NbCacheRecord:
-        return NbCacheRecord.record_from_pk(pk, self.db)
+    def get_cache_record(self, uri_or_pk: Union[int, str]) -> NbCacheRecord:
+        if isinstance(uri_or_pk, int):
+            record = NbStageRecord.record_from_pk(uri_or_pk, self.db)
+        else:
+            record = NbStageRecord.record_from_uri(uri_or_pk, self.db)
+        return record
 
     def get_cache_bundle(self, pk: int) -> NbBundleOut:
         record = NbCacheRecord.record_from_pk(pk, self.db)
