@@ -62,15 +62,13 @@ def show_cache(cache_path, pk):
     click.echo(yaml.safe_dump(data, sort_keys=False), nl=False)
     with db.cache_artefacts_temppath(pk) as folder:
         paths = [str(p.relative_to(folder)) for p in folder.glob("**/*") if p.is_file()]
-    if not (paths or record.data):
+    if not paths:
         click.echo("")
         return
     if paths:
         click.echo(f"Artifacts:")
         for path in paths:
             click.echo(f"- {path}")
-    if record.data:
-        click.echo(yaml.safe_dump({"Data": record.data}))
 
 
 @cmnd_cache.command("cat-artifact")
