@@ -38,7 +38,7 @@ setup(
         "attrs",
         "nbformat",
         "nbdime",
-        "nbclient~0.1",
+        "nbclient~=0.1",
         "sqlalchemy~=1.3.12",
     ],
     extras_require={
