@@ -34,12 +34,18 @@ setup(
     ],
     python_requires=">=3.6",
     # note: nbdime could be made an extra
-    install_requires=["attrs", "nbformat", "nbdime", "nbconvert", "sqlalchemy~=1.3.12"],
+    install_requires=[
+        "attrs",
+        "nbformat",
+        "nbdime",
+        "nbclient~0.1",
+        "sqlalchemy~=1.3.12",
+    ],
     extras_require={
         "cli": ["click", "click-completion", "click-log", "tabulate", "pyyaml"],
         "code_style": ["flake8<3.8.0,>=3.7.0", "black", "pre-commit==1.17.0"],
         "testing": ["coverage", "pytest>=3.6,<4", "pytest-cov", "pytest-regressions"],
-        "rtd": ["myst-nb~=0.2.1", "sphinx-copybutton"],
+        "rtd": ["myst-nb~=0.2.1", "sphinx-copybutton", "pydata-sphinx-theme"],
     },
     zip_safe=True,
 )

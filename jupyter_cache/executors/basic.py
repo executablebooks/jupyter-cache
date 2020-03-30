@@ -3,7 +3,7 @@ import shutil
 import tempfile
 import traceback
 
-from nbconvert.preprocessors.execute import executenb
+from nbclient import execute as executenb
 
 # from jupyter_client.kernelspec import get_kernel_spec, NoSuchKernel
 
