@@ -422,6 +422,10 @@ class JupyterCacheBase(JupyterCacheAbstract):
         """Return a single staged notebook."""
         if isinstance(uri_or_pk, int):
             uri_or_pk = NbStageRecord.record_from_pk(uri_or_pk, self.db).uri
+        if not Path(uri_or_pk).exists():
+            raise IOError(
+                "The URI of the staged record no longer exists: {}".format(uri_or_pk)
+            )
         notebook = nbf.read(uri_or_pk, NB_VERSION)
         return NbBundleIn(notebook, uri_or_pk)
 
