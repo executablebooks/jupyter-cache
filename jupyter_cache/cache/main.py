@@ -351,7 +351,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
             nb.metadata = cache_nb.metadata
         else:
             for key in nb_meta:
-                if key in cache_nb:
+                if key in cache_nb.metadata:
                     nb.metadata[key] = cache_nb.metadata[key]
         for idx in range(len(nb.cells)):
             if nb.cells[idx].cell_type == "code":
