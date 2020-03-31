@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import logging
 import pkg_resources
-from typing import List, Optional
+from typing import Callable, List, Optional
 
 from jupyter_cache.base import JupyterCacheAbstract
 
@@ -40,6 +40,7 @@ class JupyterExecutorAbstract(ABC):
         self,
         filter_uris: Optional[List[str]] = None,
         filter_pks: Optional[List[int]] = None,
+        converter: Optional[Callable] = None,
     ) -> List[NbCacheRecord]:
         """Run execution, stage successfully executed notebooks and return their URIs
 
@@ -49,6 +50,9 @@ class JupyterExecutorAbstract(ABC):
             If specified filter the staged notebooks to execute by these URIs
         filter_pks: list
             If specified filter the staged notebooks to execute by these PKs
+        converter:
+            An optional converter for staged notebooks,
+            which takes the URI and returns a notebook node
         """
         pass
 

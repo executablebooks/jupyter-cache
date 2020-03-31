@@ -6,7 +6,7 @@ with no assumptions about the backend storage/retrieval mechanisms.
 from abc import ABC, abstractmethod
 import io
 from pathlib import Path
-from typing import Iterable, List, Optional, Tuple, Union
+from typing import Callable, Iterable, List, Optional, Tuple, Union
 
 import attr
 from attr.validators import instance_of, optional
@@ -278,19 +278,31 @@ class JupyterCacheAbstract(ABC):
         pass
 
     @abstractmethod
-    def get_staged_notebook(self, uri_or_pk: Union[int, str]) -> NbBundleIn:
-        """Return a single staged notebook, by its primary key or URI."""
+    def get_staged_notebook(
+        self, uri_or_pk: Union[int, str], converter: Optional[Callable] = None
+    ) -> NbBundleIn:
+        """Return a single staged notebook, by its primary key or URI.
+
+        :param converter: An optional converter for staged notebooks,
+            which takes the URI and returns a notebook node (default nbformat.read)
+        """
         pass
 
     @abstractmethod
     def get_cache_record_of_staged(
-        self, uri_or_pk: Union[int, str]
+        self, uri_or_pk: Union[int, str], converter: Optional[Callable] = None
     ) -> Optional[NbCacheRecord]:
         pass
 
     @abstractmethod
-    def list_staged_unexecuted(self) -> List[NbStageRecord]:
-        """List staged notebooks, whose hash is not present in the cache."""
+    def list_staged_unexecuted(
+        self, converter: Optional[Callable] = None
+    ) -> List[NbStageRecord]:
+        """List staged notebooks, whose hash is not present in the cache.
+
+        :param converter: An optional converter for staged notebooks,
+            which takes the URI and returns a notebook node (default nbformat.read)
+        """
         pass
 
     # removed until defined use case

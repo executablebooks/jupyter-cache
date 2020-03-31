@@ -3,7 +3,10 @@ import shutil
 import tempfile
 import traceback
 
-from nbclient import execute as executenb
+# from nbclient import execute as executenb
+# TODO nbclient is giving hanging warnings:
+# [IPKernelApp] WARNING | Parent appears to have exited, shutting down.
+from nbconvert.preprocessors.execute import executenb
 
 # from jupyter_client.kernelspec import get_kernel_spec, NoSuchKernel
 
@@ -57,11 +60,11 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
     multi/async processed.
     """
 
-    def run_and_cache(self, filter_uris=None, filter_pks=None):
+    def run_and_cache(self, filter_uris=None, filter_pks=None, converter=None):
         """This function interfaces with the cache, deferring execution to `execute`."""
 
         # Get the notebook tha require re-execution
-        stage_records = self.cache.list_staged_unexecuted()
+        stage_records = self.cache.list_staged_unexecuted(converter=converter)
         if filter_uris is not None:
             stage_records = [r for r in stage_records if r.uri in filter_uris]
         if filter_pks is not None:
@@ -80,7 +83,9 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
         def _iterator():
             for stage_record in stage_records:
                 try:
-                    nb_bundle = self.cache.get_staged_notebook(stage_record.pk)
+                    nb_bundle = self.cache.get_staged_notebook(
+                        stage_record.pk, converter
+                    )
                 except Exception:
                     self.logger.error(
                         "Failed Retrieving: {}".format(stage_record.uri), exc_info=True
