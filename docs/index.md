@@ -52,7 +52,7 @@ Here are the site contents:
 maxdepth: 2
 caption: Contents
 ---
-using/cli.md
-using/api.ipynb
-develop/contributing.md
+using/cli
+using/api
+develop/contributing
 ```

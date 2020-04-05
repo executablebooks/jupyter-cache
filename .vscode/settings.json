@@ -14,6 +14,6 @@
     "python.linting.pylintEnabled": false,
     "python.linting.flake8Enabled": true,
     "python.linting.enabled": true,
-    "python.pythonPath": "/anaconda/envs/mistune/bin/python",
+    "python.pythonPath": "/anaconda/envs/ebp/bin/python",
     "autoDocstring.customTemplatePath": "docstring.fmt.mustache"
 }

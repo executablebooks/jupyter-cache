@@ -29,13 +29,13 @@ master_doc = "index"
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    "myst_parser",
     "myst_nb",
     "sphinx.ext.intersphinx",
     "sphinx_copybutton",
     # "sphinx.ext.autodoc",
     # "sphinx.ext.viewcode",
 ]
+jupyter_execute_notebooks = "off"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -65,7 +65,7 @@ html_logo = "_static/logo_small.jpg"
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
-html_css_files = ["css/custom.css"]
+# html_css_files = ["css/custom.css"]
 
 
 intersphinx_mapping = {"python": ("https://docs.python.org/3.7", None)}
@@ -77,8 +77,3 @@ nitpick_ignore = [
     ("py:class", "ForwardRef"),
     ("py:class", "NoneType"),
 ]
-
-
-def setup(app):
-    """Add functions to the Sphinx setup."""
-    # app.connect("builder-inited", run_apidoc)

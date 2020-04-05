@@ -418,6 +418,8 @@ class JupyterCacheBase(JupyterCacheAbstract):
         else:
             NbStageRecord.remove_uris([uri_or_pk], self.db)
 
+    # TODO add discard all/multiple staged records method
+
     def get_staged_notebook(
         self, uri_or_pk: Union[int, str], converter: Optional[Callable] = None
     ) -> NbBundleIn:

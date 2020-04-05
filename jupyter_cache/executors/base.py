@@ -42,7 +42,7 @@ class JupyterExecutorAbstract(ABC):
         filter_pks: Optional[List[int]] = None,
         converter: Optional[Callable] = None,
     ) -> List[NbCacheRecord]:
-        """Run execution, stage successfully executed notebooks and return their URIs
+        """Run execution, cache successfully executed notebooks and return their URIs
 
         Parameters
         ----------
