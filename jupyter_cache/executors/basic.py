@@ -61,7 +61,7 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
     """
 
     def run_and_cache(
-        self, filter_uris=None, filter_pks=None, converter=None, timeout=None
+        self, filter_uris=None, filter_pks=None, converter=None, timeout=30
     ):
         """This function interfaces with the cache, deferring execution to `execute`."""
 
@@ -134,7 +134,7 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
 
         return result
 
-    def execute(self, input_iterator, timeout=None):
+    def execute(self, input_iterator, timeout=30):
         """This function is isolated from the cache, and is responsible for execution.
 
         The method is only supplied with the staged record and input notebook bundle,
