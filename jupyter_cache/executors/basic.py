@@ -156,6 +156,11 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
                         with timer:
                             # execute notebook, transforming it in-place
                             # TODO does it need to wiped first?
+                            if (
+                                "execution" in nb_bundle.nb.metadata
+                                and "timeout" in nb_bundle.nb.metadata.execution
+                            ):
+                                timeout = nb_bundle.nb.metadata.execution.timeout
                             executenb(nb_bundle.nb, cwd=tmpdirname, timeout=timeout)
                     except Exception:
                         exc_string = "".join(traceback.format_exc())
