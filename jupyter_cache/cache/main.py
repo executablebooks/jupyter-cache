@@ -23,19 +23,32 @@ from .db import create_db, NbCacheRecord, NbStageRecord, Setting
 
 CACHE_LIMIT_KEY = "cache_limit"
 DEFAULT_CACHE_LIMIT = 1000
+ARTIFACT_SKIP_PATTERNS = ["__pycache__"]
 
 
 class NbArtifacts(NbArtifactsAbstract):
     """Container for artefacts of a notebook execution."""
 
-    def __init__(self, paths: List[str], in_folder, check_existence=True):
+    def __init__(
+        self,
+        paths: List[str],
+        in_folder,
+        check_existence=True,
+        skip_patterns=ARTIFACT_SKIP_PATTERNS,
+    ):
         """Initiate NbArtifacts
 
         :param paths: list of paths
         :param check_existence: check the paths exist
         :param in_folder: The folder that all paths should be in (or subfolder).
+        :param skip_patterns: Exclude paths that contain one of these patterns
         :raises IOError: if check_existence and file does not exist
         """
+
+        def path_not_in_skip_artifacts(path):
+            return all(path != pattern for pattern in skip_patterns)
+
+        paths = list(filter(path_not_in_skip_artifacts, paths))
         self.paths = [Path(p).absolute() for p in paths]
         self.in_folder = Path(in_folder).absolute()
         to_relative_paths(self.paths, self.in_folder, check_existence=check_existence)
