@@ -111,10 +111,10 @@ def show_staged(cache_path, pk, tb):
     data = record.format_dict(cache_record=cache_record, path_length=None, assets=False)
     click.echo(yaml.safe_dump(data, sort_keys=False).rstrip())
     if record.assets:
-        click.echo(f"Assets:")
+        click.echo(f"Assets:")  # noqa: F541
         for path in record.assets:
             click.echo(f"- {path}")
     if record.traceback:
-        click.secho(f"Failed Last Execution!", fg="red")
+        click.secho(f"Failed Last Execution!", fg="red")  # noqa: F541
         if tb:
             click.echo(record.traceback)

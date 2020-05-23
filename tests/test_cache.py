@@ -195,11 +195,11 @@ def test_execution_timeout_config(tmp_path):
     from jupyter_cache.executors import load_executor
 
     db = JupyterCacheBase(str(tmp_path))
-    db.stage_notebook_file(path=os.path.join(NB_PATH, "complex_outputs.ipynb"))
+    db.stage_notebook_file(path=os.path.join(NB_PATH, "complex_outputs_unrun.ipynb"))
     executor = load_executor("basic", db)
     result = executor.run_and_cache()
     assert result == {
-        "succeeded": [os.path.join(NB_PATH, "complex_outputs.ipynb")],
+        "succeeded": [os.path.join(NB_PATH, "complex_outputs_unrun.ipynb")],
         "excepted": [],
         "errored": [],
     }
