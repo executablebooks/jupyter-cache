@@ -84,7 +84,7 @@ EXEC_TIMEOUT = click.option(
     "-t",
     "--timeout",
     help="Execution timeout value in seconds.",
-    default="30",
+    default=30,
     show_default=True,
 )
 

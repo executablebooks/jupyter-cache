@@ -66,7 +66,7 @@ def show_cache(cache_path, pk):
         click.echo("")
         return
     if paths:
-        click.echo(f"Artifacts:")
+        click.echo(f"Artifacts:")  # noqa: F541
         for path in paths:
             click.echo(f"- {path}")
 
