@@ -14,9 +14,10 @@ click_log.basic_config(logger)
 @jcache.command("execute")
 @click_log.simple_verbosity_option(logger)
 @options.EXEC_ENTRYPOINT
+@options.EXEC_TIMEOUT
 @options.CACHE_PATH
 @arguments.PKS
-def execute_nbs(cache_path, entry_point, pks):
+def execute_nbs(cache_path, entry_point, pks, timeout):
     """Execute staged notebooks that are outdated."""
     import yaml
     from jupyter_cache.executors import load_executor
@@ -27,7 +28,7 @@ def execute_nbs(cache_path, entry_point, pks):
     except ImportError as error:
         logger.error(str(error))
         return 1
-    result = executor.run_and_cache(filter_pks=pks or None)
+    result = executor.run_and_cache(filter_pks=pks or None, timeout=timeout)
     click.secho(
         "Finished! Successfully executed notebooks have been cached.", fg="green"
     )

@@ -187,3 +187,47 @@ def test_execution(tmp_path):
     stage_record = db.get_staged_record(2)
     assert stage_record.traceback is not None
     assert "Exception: oopsie!" in stage_record.traceback
+
+
+@pytest.mark.filterwarnings("ignore")
+def test_execution_timeout_config(tmp_path):
+    """ tests the timeout value passed to the executor"""
+    from jupyter_cache.executors import load_executor
+
+    db = JupyterCacheBase(str(tmp_path))
+    db.stage_notebook_file(path=os.path.join(NB_PATH, "complex_outputs_unrun.ipynb"))
+    executor = load_executor("basic", db)
+    result = executor.run_and_cache(timeout=60)
+    assert result == {
+        "succeeded": [os.path.join(NB_PATH, "complex_outputs_unrun.ipynb")],
+        "excepted": [],
+        "errored": [],
+    }
+    db.clear_cache()
+
+    db.stage_notebook_file(path=os.path.join(NB_PATH, "complex_outputs_unrun.ipynb"))
+    executor = load_executor("basic", db)
+    result = executor.run_and_cache(timeout=1)
+    assert result == {
+        "succeeded": [],
+        "excepted": [os.path.join(NB_PATH, "complex_outputs_unrun.ipynb")],
+        "errored": [],
+    }
+
+
+@pytest.mark.filterwarnings("ignore")
+def test_execution_timeout_metadata(tmp_path):
+    """ tests the timeout metadata key in notebooks"""
+    from jupyter_cache.executors import load_executor
+
+    db = JupyterCacheBase(str(tmp_path))
+    db.stage_notebook_file(
+        path=os.path.join(NB_PATH, "complex_outputs_unrun_timeout.ipynb")
+    )
+    executor = load_executor("basic", db)
+    result = executor.run_and_cache()
+    assert result == {
+        "succeeded": [],
+        "excepted": [os.path.join(NB_PATH, "complex_outputs_unrun_timeout.ipynb")],
+        "errored": [],
+    }

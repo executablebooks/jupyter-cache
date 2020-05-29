@@ -80,6 +80,14 @@ EXEC_ENTRYPOINT = click.option(
     show_default=True,
 )
 
+EXEC_TIMEOUT = click.option(
+    "-t",
+    "--timeout",
+    help="Execution timeout value in seconds.",
+    default=30,
+    show_default=True,
+)
+
 
 PATH_LENGTH = click.option(
     "-l", "--path-length", default=3, show_default=True, help="Maximum URI path."
