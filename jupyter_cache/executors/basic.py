@@ -57,12 +57,13 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
 
     The execution is split into two methods: `run` and `execute`.
     In this way access to the cache can be synchronous, but the execution can be
-    multi/async processed.
+    multi/async processed. Takes timeout parameter in seconds for execution
     """
 
-    def run_and_cache(self, filter_uris=None, filter_pks=None, converter=None):
+    def run_and_cache(
+        self, filter_uris=None, filter_pks=None, converter=None, timeout=30
+    ):
         """This function interfaces with the cache, deferring execution to `execute`."""
-
         # Get the notebook tha require re-execution
         stage_records = self.cache.list_staged_unexecuted(converter=converter)
         if filter_uris is not None:
@@ -95,7 +96,7 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
                     yield stage_record, nb_bundle
 
         # The execute method yields notebook bundles, or ExecutionError
-        for bundle_or_exc in self.execute(_iterator()):
+        for bundle_or_exc in self.execute(_iterator(), int(timeout)):
             if isinstance(bundle_or_exc, ExecutionError):
                 self.logger.error(bundle_or_exc.uri, exc_info=bundle_or_exc.exc)
                 result["errored"].append(bundle_or_exc.uri)
@@ -132,7 +133,7 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
 
         return result
 
-    def execute(self, input_iterator):
+    def execute(self, input_iterator, timeout=30):
         """This function is isolated from the cache, and is responsible for execution.
 
         The method is only supplied with the staged record and input notebook bundle,
@@ -154,7 +155,12 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
                         with timer:
                             # execute notebook, transforming it in-place
                             # TODO does it need to wiped first?
-                            executenb(nb_bundle.nb, cwd=tmpdirname)
+                            if (
+                                "execution" in nb_bundle.nb.metadata
+                                and "timeout" in nb_bundle.nb.metadata.execution
+                            ):
+                                timeout = nb_bundle.nb.metadata.execution.timeout
+                            executenb(nb_bundle.nb, cwd=tmpdirname, timeout=timeout)
                     except Exception:
                         exc_string = "".join(traceback.format_exc())
                         self.logger.error("Execution Failed: {}".format(uri))

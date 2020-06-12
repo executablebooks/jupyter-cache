@@ -45,7 +45,16 @@ setup(
     extras_require={
         "cli": ["click", "click-completion", "click-log", "tabulate", "pyyaml"],
         "code_style": ["flake8<3.8.0,>=3.7.0", "black", "pre-commit==1.17.0"],
-        "testing": ["coverage", "pytest>=3.6,<4", "pytest-cov", "pytest-regressions"],
+        "testing": [
+            "coverage",
+            "pytest>=3.6,<4",
+            "pytest-cov",
+            "pytest-regressions",
+            "matplotlib",
+            "numpy",
+            "sympy",
+            "pandas",
+        ],
         "rtd": ["myst-nb~=0.7", "sphinx-copybutton", "pydata-sphinx-theme"],
     },
     zip_safe=True,

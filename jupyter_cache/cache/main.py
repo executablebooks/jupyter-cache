@@ -46,7 +46,7 @@ class NbArtifacts(NbArtifactsAbstract):
         """
 
         def path_not_in_skip_artifacts(path):
-            return all(path != pattern for pattern in skip_patterns)
+            return all(pattern not in str(path) for pattern in skip_patterns)
 
         paths = list(filter(path_not_in_skip_artifacts, paths))
         self.paths = [Path(p).absolute() for p in paths]

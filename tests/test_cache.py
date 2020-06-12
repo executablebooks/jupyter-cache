@@ -146,6 +146,32 @@ def test_artifacts(tmp_path):
         assert path.joinpath("artifact_folder").exists()
 
 
+def test_artifacts_skip_patterns(tmp_path):
+    cache = JupyterCacheBase(str(tmp_path))
+    with pytest.raises(IOError):
+        cache.cache_notebook_file(
+            path=os.path.join(NB_PATH, "basic.ipynb"),
+            uri="basic.ipynb",
+            artifacts=(os.path.join(NB_PATH),),
+            check_validity=False,
+        )
+    cache.cache_notebook_file(
+        path=os.path.join(NB_PATH, "basic.ipynb"),
+        uri="basic.ipynb",
+        artifacts=(
+            os.path.join(NB_PATH, "artifact_folder", "artifact.txt"),
+            os.path.join(NB_PATH, "artifact_folder", "__pycache__"),
+        ),
+        check_validity=False,
+    )
+
+    # __pycache__ is ignored and not saved as artifact in cache
+    bundle = cache.get_cache_bundle(1)
+    assert {str(p) for p in bundle.artifacts.relative_paths} == {
+        "artifact_folder/artifact.txt"
+    }
+
+
 # jupyter_client/session.py:371: DeprecationWarning:
 # Session._key_changed is deprecated in traitlets: use @observe and @unobserve instead
 @pytest.mark.filterwarnings("ignore")
@@ -187,3 +213,47 @@ def test_execution(tmp_path):
     stage_record = db.get_staged_record(2)
     assert stage_record.traceback is not None
     assert "Exception: oopsie!" in stage_record.traceback
+
+
+@pytest.mark.filterwarnings("ignore")
+def test_execution_timeout_config(tmp_path):
+    """ tests the timeout value passed to the executor"""
+    from jupyter_cache.executors import load_executor
+
+    db = JupyterCacheBase(str(tmp_path))
+    db.stage_notebook_file(path=os.path.join(NB_PATH, "complex_outputs_unrun.ipynb"))
+    executor = load_executor("basic", db)
+    result = executor.run_and_cache(timeout=60)
+    assert result == {
+        "succeeded": [os.path.join(NB_PATH, "complex_outputs_unrun.ipynb")],
+        "excepted": [],
+        "errored": [],
+    }
+    db.clear_cache()
+
+    db.stage_notebook_file(path=os.path.join(NB_PATH, "complex_outputs_unrun.ipynb"))
+    executor = load_executor("basic", db)
+    result = executor.run_and_cache(timeout=1)
+    assert result == {
+        "succeeded": [],
+        "excepted": [os.path.join(NB_PATH, "complex_outputs_unrun.ipynb")],
+        "errored": [],
+    }
+
+
+@pytest.mark.filterwarnings("ignore")
+def test_execution_timeout_metadata(tmp_path):
+    """ tests the timeout metadata key in notebooks"""
+    from jupyter_cache.executors import load_executor
+
+    db = JupyterCacheBase(str(tmp_path))
+    db.stage_notebook_file(
+        path=os.path.join(NB_PATH, "complex_outputs_unrun_timeout.ipynb")
+    )
+    executor = load_executor("basic", db)
+    result = executor.run_and_cache()
+    assert result == {
+        "succeeded": [],
+        "excepted": [os.path.join(NB_PATH, "complex_outputs_unrun_timeout.ipynb")],
+        "errored": [],
+    }
