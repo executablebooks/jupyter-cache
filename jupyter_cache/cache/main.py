@@ -46,6 +46,7 @@ class NbArtifacts(NbArtifactsAbstract):
         """
 
         def path_not_in_skip_artifacts(path):
+            # TODO: This should probably be a more-specific regex in the future
             return all(pattern not in str(path) for pattern in skip_patterns)
 
         paths = list(filter(path_not_in_skip_artifacts, paths))
