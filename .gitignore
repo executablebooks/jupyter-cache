@@ -50,6 +50,7 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
+!tests/notebooks/artifact_folder/__pycache__/
 
 # Translations
 *.mo
