@@ -146,6 +146,32 @@ def test_artifacts(tmp_path):
         assert path.joinpath("artifact_folder").exists()
 
 
+def test_artifacts_skip_patterns(tmp_path):
+    cache = JupyterCacheBase(str(tmp_path))
+    with pytest.raises(IOError):
+        cache.cache_notebook_file(
+            path=os.path.join(NB_PATH, "basic.ipynb"),
+            uri="basic.ipynb",
+            artifacts=(os.path.join(NB_PATH),),
+            check_validity=False,
+        )
+    cache.cache_notebook_file(
+        path=os.path.join(NB_PATH, "basic.ipynb"),
+        uri="basic.ipynb",
+        artifacts=(
+            os.path.join(NB_PATH, "artifact_folder", "artifact.txt"),
+            os.path.join(NB_PATH, "artifact_folder", "__pycache__"),
+        ),
+        check_validity=False,
+    )
+
+    # __pycache__ is ignored and not saved as artifact in cache
+    bundle = cache.get_cache_bundle(1)
+    assert {str(p) for p in bundle.artifacts.relative_paths} == {
+        "artifact_folder/artifact.txt"
+    }
+
+
 # jupyter_client/session.py:371: DeprecationWarning:
 # Session._key_changed is deprecated in traitlets: use @observe and @unobserve instead
 @pytest.mark.filterwarnings("ignore")
