@@ -86,7 +86,7 @@ def cat_artifact(cache_path, pk, artifact_rpath):
         if not artifact_path.is_file():
             click.secho("Artifact is not a file", fg="red")
             sys.exit(1)
-        text = artifact_path.read_text()
+        text = artifact_path.read_text(encoding="utf8")
     click.echo(text)
 
 

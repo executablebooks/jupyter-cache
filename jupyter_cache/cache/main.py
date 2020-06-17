@@ -290,7 +290,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
             )
 
         return NbBundleOut(
-            nbf.reads(path.read_text(), NB_VERSION),
+            nbf.reads(path.read_text(encoding="utf8"), NB_VERSION),
             record=record,
             artifacts=NbArtifacts(
                 [p for p in artifact_folder.glob("**/*") if p.is_file()],

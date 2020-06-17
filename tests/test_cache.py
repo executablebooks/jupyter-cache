@@ -183,7 +183,7 @@ def test_execution(tmp_path):
     with db.cache_artefacts_temppath(2) as path:
         paths = [str(p.relative_to(path)) for p in path.glob("**/*") if p.is_file()]
         assert paths == ["artifact.txt"]
-        assert path.joinpath("artifact.txt").read_text() == "hi"
+        assert path.joinpath("artifact.txt").read_text(encoding="utf8") == "hi"
     stage_record = db.get_staged_record(2)
     assert stage_record.traceback is not None
     assert "Exception: oopsie!" in stage_record.traceback
