@@ -6,7 +6,7 @@ setup(
     name="jupyter-cache",
     version=import_module("jupyter_cache").__version__,
     description=("A defined interface for working with a cache of jupyter notebooks."),
-    long_description=open("README.md").read(),
+    long_description=open("README.md", encoding="utf8").read(),
     long_description_content_type="text/markdown",
     url="https://github.com/ExecutableBookProject/jupyter-cache",
     author="Chris Sewell",
