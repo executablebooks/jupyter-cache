@@ -223,7 +223,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         )
         path.parent.mkdir(parents=True)
         self._prepare_nb_for_cache(bundle.nb)
-        path.write_text(nbf.writes(bundle.nb, NB_VERSION))
+        path.write_text(nbf.writes(bundle.nb, NB_VERSION), encoding="utf8")
 
         # write artifacts
         artifact_folder = self._get_artifact_path_cache(hashkey)
