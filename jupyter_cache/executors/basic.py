@@ -3,10 +3,7 @@ import shutil
 import tempfile
 import traceback
 
-# from nbclient import execute as executenb
-# TODO nbclient is giving hanging warnings:
-# [IPKernelApp] WARNING | Parent appears to have exited, shutting down.
-from nbconvert.preprocessors.execute import executenb
+from nbclient import execute as executenb
 
 # from jupyter_client.kernelspec import get_kernel_spec, NoSuchKernel
 

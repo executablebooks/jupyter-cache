@@ -131,3 +131,5 @@ dmypy.json
 _archive/
 .jupyter_cache/
 *_old*
+.DS_Store
+.vscode/
