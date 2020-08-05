@@ -157,7 +157,14 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
                                 and "timeout" in nb_bundle.nb.metadata.execution
                             ):
                                 timeout = nb_bundle.nb.metadata.execution.timeout
-                            executenb(nb_bundle.nb, cwd=tmpdirname, timeout=timeout)
+                            # TODO: for now we don't use the new record_timing feature
+                            # because it can affect test results
+                            executenb(
+                                nb_bundle.nb,
+                                cwd=tmpdirname,
+                                timeout=timeout,
+                                record_timing=False,
+                            )
                     except Exception:
                         exc_string = "".join(traceback.format_exc())
                         self.logger.error("Execution Failed: {}".format(uri))
