@@ -231,3 +231,18 @@ def test_execution_timeout_metadata(tmp_path):
         "excepted": [os.path.join(NB_PATH, "complex_outputs_unrun_timeout.ipynb")],
         "errored": [],
     }
+
+
+def test_execution_allow_errors_config(tmp_path):
+    """ tests the timeout value passed to the executor"""
+    from jupyter_cache.executors import load_executor
+
+    db = JupyterCacheBase(str(tmp_path))
+    db.stage_notebook_file(path=os.path.join(NB_PATH, "basic_failing.ipynb"))
+    executor = load_executor("basic", db)
+    result = executor.run_and_cache(allow_errors=True)
+    assert result == {
+        "succeeded": [os.path.join(NB_PATH, "basic_failing.ipynb")],
+        "excepted": [],
+        "errored": [],
+    }

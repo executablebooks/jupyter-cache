@@ -1,16 +1,14 @@
 from pathlib import Path
 import shutil
 import tempfile
-import traceback
-
-from nbclient import execute as executenb
 
 # from jupyter_client.kernelspec import get_kernel_spec, NoSuchKernel
 
 from jupyter_cache.executors.base import JupyterExecutorAbstract
+from jupyter_cache.executors.utils import single_nb_execution
 from jupyter_cache.cache.main import NbBundleIn, NbArtifacts
 from jupyter_cache.cache.db import NbStageRecord
-from jupyter_cache.utils import to_relative_paths, Timer
+from jupyter_cache.utils import to_relative_paths
 
 
 def copy_assets(record, folder):
@@ -58,7 +56,12 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
     """
 
     def run_and_cache(
-        self, filter_uris=None, filter_pks=None, converter=None, timeout=30
+        self,
+        filter_uris=None,
+        filter_pks=None,
+        converter=None,
+        timeout=30,
+        allow_errors=False,
     ):
         """This function interfaces with the cache, deferring execution to `execute`."""
         # Get the notebook tha require re-execution
@@ -93,7 +96,7 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
                     yield stage_record, nb_bundle
 
         # The execute method yields notebook bundles, or ExecutionError
-        for bundle_or_exc in self.execute(_iterator(), int(timeout)):
+        for bundle_or_exc in self.execute(_iterator(), int(timeout), allow_errors):
             if isinstance(bundle_or_exc, ExecutionError):
                 self.logger.error(bundle_or_exc.uri, exc_info=bundle_or_exc.exc)
                 result["errored"].append(bundle_or_exc.uri)
@@ -130,7 +133,7 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
 
         return result
 
-    def execute(self, input_iterator, timeout=30):
+    def execute(self, input_iterator, timeout=30, allow_errors=False):
         """This function is isolated from the cache, and is responsible for execution.
 
         The method is only supplied with the staged record and input notebook bundle,
@@ -147,38 +150,27 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
                     except Exception as err:
                         yield ExecutionError("Assets Retrieval Error", uri, err)
                         continue
-                    timer = Timer()
-                    try:
-                        with timer:
-                            # execute notebook, transforming it in-place
-                            # TODO does it need to wiped first?
-                            if (
-                                "execution" in nb_bundle.nb.metadata
-                                and "timeout" in nb_bundle.nb.metadata.execution
-                            ):
-                                timeout = nb_bundle.nb.metadata.execution.timeout
-                            # TODO: for now we don't use the new record_timing feature
-                            # because it can affect test results
-                            executenb(
-                                nb_bundle.nb,
-                                cwd=tmpdirname,
-                                timeout=timeout,
-                                record_timing=False,
-                            )
-                    except Exception:
-                        exc_string = "".join(traceback.format_exc())
+
+                    result = single_nb_execution(
+                        nb_bundle.nb,
+                        cwd=tmpdirname,
+                        timeout=timeout,
+                        allow_errors=allow_errors,
+                    )
+                    if result.err:
                         self.logger.error("Execution Failed: {}".format(uri))
                         yield create_bundle(
                             nb_bundle,
                             tmpdirname,
                             asset_files,
-                            timer.last_split,
-                            exc_string,
+                            result.time,
+                            result.exc_string,
                         )
                     else:
                         self.logger.info("Execution Succeeded: {}".format(uri))
                         yield create_bundle(
-                            nb_bundle, tmpdirname, asset_files, timer.last_split
+                            nb_bundle, tmpdirname, asset_files, result.time
                         )
+
             except Exception as err:
                 yield ExecutionError("Unexpected Error", uri, err)
