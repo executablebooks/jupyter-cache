@@ -38,7 +38,9 @@ setup(
         "attrs",
         "nbformat",
         "nbdime",
-        "nbclient~=0.4.1",
+        # note: we do not yet pin to higher, since there are reports of issues with 0.3
+        # see: https://github.com/jupyter/nbclient/issues/58
+        "nbclient>=0.2,<0.5",
         "sqlalchemy~=1.3.12",
     ],
     extras_require={
