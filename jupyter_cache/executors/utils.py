@@ -1,6 +1,6 @@
 import attr
 
-from typing import Optional
+from typing import Optional, Union
 import traceback
 
 from nbformat import NotebookNode
@@ -12,8 +12,9 @@ from jupyter_cache.utils import Timer
 
 @attr.s()
 class ExecutionResult:
+    nb: NotebookNode = attr.ib()
     time: float = attr.ib()
-    err: Optional[Exception] = attr.ib(default=None)
+    err: Optional[Union[CellExecutionError, CellTimeoutError]] = attr.ib(default=None)
     exc_string: Optional[str] = attr.ib(default=None)
 
 
@@ -58,4 +59,4 @@ def single_nb_execution(
             error = err
             exc_string = "".join(traceback.format_exc())
 
-    return ExecutionResult(timer.last_split, error, exc_string)
+    return ExecutionResult(nb, timer.last_split, error, exc_string)
