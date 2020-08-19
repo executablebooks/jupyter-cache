@@ -39,7 +39,7 @@ class Timer:
 
     def __init__(self):
         self._last_time = time.perf_counter()
-        self._split_time = 0
+        self._split_time = 0.0
 
     @property
     def last_split(self):
@@ -48,7 +48,7 @@ class Timer:
     def reset(self):
         """Reset timer."""
         self._last_time = time.perf_counter()
-        self._split_time = 0
+        self._split_time = 0.0
 
     def split(self):
         """Record a split time."""

@@ -41,6 +41,7 @@ class JupyterExecutorAbstract(ABC):
         filter_uris: Optional[List[str]] = None,
         filter_pks: Optional[List[int]] = None,
         converter: Optional[Callable] = None,
+        **kwargs
     ) -> List[NbCacheRecord]:
         """Run execution, cache successfully executed notebooks and return their URIs
 
