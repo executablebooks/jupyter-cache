@@ -152,12 +152,19 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
 
     def execute_single(self, nb_bundle, uri, cwd, timeout, allow_errors, asset_files):
         result = single_nb_execution(
-            nb_bundle.nb, cwd=cwd, timeout=timeout, allow_errors=allow_errors,
+            nb_bundle.nb,
+            cwd=cwd,
+            timeout=timeout,
+            allow_errors=allow_errors,
         )
         if result.err:
             self.logger.error("Execution Failed: {}".format(uri))
             return _create_bundle(
-                nb_bundle, cwd, asset_files, result.time, result.exc_string,
+                nb_bundle,
+                cwd,
+                asset_files,
+                result.time,
+                result.exc_string,
             )
 
         self.logger.info("Execution Succeeded: {}".format(uri))
