@@ -183,8 +183,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         # TODO assets
 
     def _prepare_nb_for_cache(self, nb: nbf.NotebookNode, deepcopy=False):
-        """Prepare in-place, we remove non-code cells.
-        """
+        """Prepare in-place, we remove non-code cells."""
         if deepcopy:
             nb = copy.deepcopy(nb)
         nb.cells = [cell for cell in nb.cells if cell.cell_type == "code"]

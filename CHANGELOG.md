@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.4.1 - 2020-08-28
+
+⬆️ UPGRADE: nbclient v0.5
+
 ## 0.4.0 - 2020-08-19
 
 - 👌 IMPROVE: Add `allow_errors` execution option to `JupyterExecutorBasic.run_and_cache`
