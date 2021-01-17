@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## 0.4.2 - 2020-08-28
+## 0.4.2 - 2021-01-17
 
 🐛 FIX: nbfomat v4.5 cell IDs
 
