@@ -112,54 +112,63 @@ class JupyterCacheBase(JupyterCacheAbstract):
         assert isinstance(size, int) and size > 0
         Setting.set_value(CACHE_LIMIT_KEY, size, self.db)
 
-    def _create_hashable_nb(
+    def create_hashed_notebook(
         self,
         nb: nbf.NotebookNode,
-        compare_nb_meta=("kernelspec",),
-        compare_cell_meta=None,
-    ):
-        """Create a notebook containing only content desired for hashing."""
+        nb_metadata: Optional[Iterable[str]] = ("kernelspec",),
+        cell_metadata: Optional[Iterable[str]] = None,
+    ) -> Tuple[nbf.NotebookNode, str]:
+        """Convert a notebook to a standard format and hash.
+
+        Note: we always hash notebooks as version 4.4,
+        to allow for matching notebooks of different versions
+
+        :param nb_metadata: The notebook metadata keys to hash (if None, use all)
+        :param cell_metadata: The cell metadata keys to hash (if None, use all)
+
+        :return: (notebook, hash)
+        """
+        # copy the notebook
         nb = copy.deepcopy(nb)
-        nb.metadata = nbf.from_dict(
+        # update the notebook to consistent version 4.4
+        nb = nbf.convert(nb, to_version=NB_VERSION)
+        if nb.nbformat_minor > 5:
+            raise CachingError("notebook version greater than 4.5 not yet supported")
+        # remove non-code cells
+        nb.cells = [cell for cell in nb.cells if cell.cell_type == "code"]
+        # create notebook for hashing, with selected metadata
+        hash_nb = nbf.from_dict(
             {
-                k: v
-                for k, v in nb.metadata.items()
-                if compare_nb_meta is None or (k in compare_nb_meta)
+                "nbformat": nb.nbformat,
+                "nbformat_minor": 4,  # v4.5 include cell ids, which we do not cache
+                "metadata": {
+                    k: v
+                    for k, v in nb.metadata.items()
+                    if nb_metadata is None or (k in nb_metadata)
+                },
+                "cells": [
+                    {
+                        "cell_type": cell.cell_type,
+                        "source": cell.source,
+                        "metadata": {
+                            k: v
+                            for k, v in cell.metadata.items()
+                            if cell_metadata is None or (k in cell_metadata)
+                        },
+                        "execution_count": None,
+                        "outputs": [],
+                    }
+                    for cell in nb.cells
+                    if cell.cell_type == "code"
+                ],
             }
         )
-        diff_cells = []
-        for cell in nb.cells:
-            if cell.cell_type != "code":
-                continue
-            diff_cell = nbf.from_dict(
-                {
-                    "cell_type": cell.cell_type,
-                    "source": cell.source,
-                    "metadata": {
-                        k: v
-                        for k, v in cell.metadata.items()
-                        if compare_cell_meta is None or (k in compare_cell_meta)
-                    },
-                    "execution_count": None,
-                    "outputs": [],
-                }
-            )
-            diff_cells.append(diff_cell)
-        nb.cells = diff_cells
-        return nb
 
-    def _hash_notebook(
-        self,
-        nb: nbf.NotebookNode,
-        compare_nb_meta=("kernelspec",),
-        compare_cell_meta=None,
-    ):
-        """Create a hashkey for a notebook bundle."""
-        nb = self._create_hashable_nb(
-            nb, compare_nb_meta=compare_nb_meta, compare_cell_meta=compare_cell_meta
-        )
-        string = nbf.writes(nb, NB_VERSION)
-        return hashlib.md5(string.encode()).hexdigest()
+        # hash notebook
+        string = nbf.writes(hash_nb, nbf.NO_CONVERT)
+        hash_string = hashlib.md5(string.encode()).hexdigest()
+
+        return (nb, hash_string)
 
     def _validate_nb_bundle(self, nb_bundle: NbBundleIn):
         """Validate that a notebook bundle should be cached.
@@ -182,13 +191,6 @@ class JupyterCacheBase(JupyterCacheAbstract):
             # TODO check for output exceptions?
         # TODO assets
 
-    def _prepare_nb_for_cache(self, nb: nbf.NotebookNode, deepcopy=False):
-        """Prepare in-place, we remove non-code cells."""
-        if deepcopy:
-            nb = copy.deepcopy(nb)
-        nb.cells = [cell for cell in nb.cells if cell.cell_type == "code"]
-        return nb
-
     def cache_notebook_bundle(
         self,
         bundle: NbBundleIn,
@@ -201,7 +203,9 @@ class JupyterCacheBase(JupyterCacheAbstract):
 
         if check_validity:
             self._validate_nb_bundle(bundle)
-        hashkey = self._hash_notebook(bundle.nb)
+
+        hashed_nb, hashkey = self.create_hashed_notebook(bundle.nb)
+
         path = self._get_notebook_path_cache(hashkey)
         if path.exists():
             if not overwrite:
@@ -221,8 +225,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
             description=description,
         )
         path.parent.mkdir(parents=True)
-        self._prepare_nb_for_cache(bundle.nb)
-        path.write_text(nbf.writes(bundle.nb, NB_VERSION), encoding="utf8")
+        path.write_text(nbf.writes(hashed_nb, nbf.NO_CONVERT), encoding="utf8")
 
         # write artifacts
         artifact_folder = self._get_artifact_path_cache(hashkey)
@@ -260,7 +263,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         :param overwrite: Allow overwrite of cached notebooks with matching hash
         :return: The primary key of the cache record
         """
-        notebook = nbf.read(str(path), NB_VERSION)
+        notebook = nbf.read(str(path), nbf.NO_CONVERT)
         return self.cache_notebook_bundle(
             NbBundleIn(
                 notebook,
@@ -289,7 +292,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
             )
 
         return NbBundleOut(
-            nbf.reads(path.read_text(encoding="utf8"), NB_VERSION),
+            nbf.reads(path.read_text(encoding="utf8"), nbf.NO_CONVERT),
             record=record,
             artifacts=NbArtifacts(
                 [p for p in artifact_folder.glob("**/*") if p.is_file()],
@@ -325,15 +328,15 @@ class JupyterCacheBase(JupyterCacheAbstract):
 
         :raises KeyError: if no match is found
         """
-        hashkey = self._hash_notebook(nb)
+        _, hashkey = self.create_hashed_notebook(nb)
         cache_record = NbCacheRecord.record_from_hashkey(hashkey, self.db)
         return cache_record
 
     def merge_match_into_notebook(
         self,
         nb: nbf.NotebookNode,
-        nb_meta=("kernelspec", "language_info", "widgets"),
-        cell_meta=None,
+        nb_meta: Optional[Iterable[str]] = ("kernelspec", "language_info", "widgets"),
+        cell_meta: Optional[Iterable[str]] = None,
     ) -> Tuple[int, nbf.NotebookNode]:
         """Match to an executed notebook and return a merged version
 
@@ -342,10 +345,11 @@ class JupyterCacheBase(JupyterCacheAbstract):
         :param cell_meta: cell metadata keys to merge from cached notebook (all if None)
         :raises KeyError: if no match is found
         :return: pk, input notebook with cached code cells and metadata merged.
+
         """
         pk = self.match_cache_notebook(nb).pk
         cache_nb = self.get_cache_bundle(pk).nb
-        nb = copy.deepcopy(nb)
+        nb = nbf.convert(copy.deepcopy(nb), NB_VERSION)
         if nb_meta is None:
             nb.metadata = cache_nb.metadata
         else:
@@ -355,13 +359,18 @@ class JupyterCacheBase(JupyterCacheAbstract):
         for idx in range(len(nb.cells)):
             if nb.cells[idx].cell_type == "code":
                 cache_cell = cache_nb.cells.pop(0)
+                in_cell = nb.cells[idx]
                 if cell_meta is not None:
                     # update the input metadata with select cached notebook metadata
                     # then add the input metadata to the cached cell
-                    nb.cells[idx].metadata.update(
+                    in_cell.metadata.update(
                         {k: v for k, v in cache_cell.metadata.items() if k in cell_meta}
                     )
-                    cache_cell.metadata = nb.cells[idx].metadata
+                    cache_cell.metadata = in_cell.metadata
+                if nb.nbformat_minor >= 5:
+                    cache_cell.id = in_cell.id
+                else:
+                    cache_cell.pop("id", None)
                 nb.cells[idx] = cache_cell
         return pk, nb
 
@@ -376,7 +385,8 @@ class JupyterCacheBase(JupyterCacheAbstract):
         from nbdime.prettyprint import pretty_print_diff, PrettyPrintConfig
 
         cached_nb = self.get_cache_bundle(pk).nb
-        nb = self._prepare_nb_for_cache(nb, deepcopy=True)
+        nb, _ = self.create_hashed_notebook(nb)
+
         diff = nbdime.diff_notebooks(cached_nb, nb)
         if not as_str:
             return diff
@@ -430,7 +440,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
                 "The URI of the staged record no longer exists: {}".format(uri_or_pk)
             )
         if converter is None:
-            notebook = nbf.read(uri_or_pk, NB_VERSION)
+            notebook = nbf.read(uri_or_pk, nbf.NO_CONVERT)
         else:
             notebook = converter(uri_or_pk)
         return NbBundleIn(notebook, uri_or_pk)
@@ -443,7 +453,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         else:
             record = NbStageRecord.record_from_uri(uri_or_pk, self.db)
         nb = self.get_staged_notebook(record.uri, converter=converter).nb
-        hashkey = self._hash_notebook(nb)
+        _, hashkey = self.create_hashed_notebook(nb)
         try:
             return NbCacheRecord.record_from_hashkey(hashkey, self.db)
         except KeyError:
@@ -456,7 +466,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         records = []
         for record in self.list_staged_records():
             nb = self.get_staged_notebook(record.uri, converter).nb
-            hashkey = self._hash_notebook(nb)
+            _, hashkey = self.create_hashed_notebook(nb)
             try:
                 NbCacheRecord.record_from_hashkey(hashkey, self.db)
             except KeyError:

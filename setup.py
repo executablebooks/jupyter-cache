@@ -55,6 +55,7 @@ setup(
             "numpy",
             "sympy",
             "pandas",
+            "nbformat>=5.1",  # to include v4.5 notebook
         ],
         "rtd": ["myst-nb~=0.7", "sphinx-copybutton", "pydata-sphinx-theme"],
     },

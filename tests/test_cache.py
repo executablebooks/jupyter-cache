@@ -94,6 +94,42 @@ def test_basic_workflow(tmp_path):
     assert cache.list_cache_records() == []
 
 
+def test_v4_2_to_v4_5(tmp_path):
+    """Test that caching a v4.2 notebook can be recovered,
+    if the notebook is updated to v4.5 (adding cell ids).
+    """
+    cache = JupyterCacheBase(str(tmp_path))
+    cache_record = cache.cache_notebook_file(
+        path=os.path.join(NB_PATH, "basic.ipynb"),
+        uri="basic.ipynb",
+        check_validity=False,
+    )
+    (pk, nb) = cache.merge_match_into_notebook(
+        nbf.read(os.path.join(NB_PATH, "basic_v4-5.ipynb"), nbf.NO_CONVERT)
+    )
+    assert cache_record.pk == pk
+    assert nb.nbformat_minor == 5, nb
+    assert "id" in nb.cells[1], nb
+
+
+def test_v4_5_to_v4_2(tmp_path):
+    """Test that caching a v4.5 notebook can be recovered,
+    if the notebook is downgraded to v4.2 (removing cell ids).
+    """
+    cache = JupyterCacheBase(str(tmp_path))
+    cache_record = cache.cache_notebook_file(
+        path=os.path.join(NB_PATH, "basic_v4-5.ipynb"),
+        uri="basic_v4-5.ipynb",
+        check_validity=False,
+    )
+    (pk, nb) = cache.merge_match_into_notebook(
+        nbf.read(os.path.join(NB_PATH, "basic.ipynb"), nbf.NO_CONVERT)
+    )
+    assert cache_record.pk == pk
+    assert nb.nbformat_minor == 2, nb
+    assert "id" not in nb.cells[1], nb
+
+
 def test_merge_match_into_notebook(tmp_path):
     cache = JupyterCacheBase(str(tmp_path))
     cache.cache_notebook_file(
@@ -195,22 +231,22 @@ def test_execution_timeout_config(tmp_path):
     from jupyter_cache.executors import load_executor
 
     db = JupyterCacheBase(str(tmp_path))
-    db.stage_notebook_file(path=os.path.join(NB_PATH, "complex_outputs_unrun.ipynb"))
+    db.stage_notebook_file(path=os.path.join(NB_PATH, "sleep_2.ipynb"))
     executor = load_executor("basic", db)
-    result = executor.run_and_cache(timeout=60)
+    result = executor.run_and_cache(timeout=10)
     assert result == {
-        "succeeded": [os.path.join(NB_PATH, "complex_outputs_unrun.ipynb")],
+        "succeeded": [os.path.join(NB_PATH, "sleep_2.ipynb")],
         "excepted": [],
         "errored": [],
     }
     db.clear_cache()
 
-    db.stage_notebook_file(path=os.path.join(NB_PATH, "complex_outputs_unrun.ipynb"))
+    db.stage_notebook_file(path=os.path.join(NB_PATH, "sleep_2.ipynb"))
     executor = load_executor("basic", db)
     result = executor.run_and_cache(timeout=1)
     assert result == {
         "succeeded": [],
-        "excepted": [os.path.join(NB_PATH, "complex_outputs_unrun.ipynb")],
+        "excepted": [os.path.join(NB_PATH, "sleep_2.ipynb")],
         "errored": [],
     }
 
@@ -221,14 +257,12 @@ def test_execution_timeout_metadata(tmp_path):
     from jupyter_cache.executors import load_executor
 
     db = JupyterCacheBase(str(tmp_path))
-    db.stage_notebook_file(
-        path=os.path.join(NB_PATH, "complex_outputs_unrun_timeout.ipynb")
-    )
+    db.stage_notebook_file(path=os.path.join(NB_PATH, "sleep_2_timeout_1.ipynb"))
     executor = load_executor("basic", db)
     result = executor.run_and_cache()
     assert result == {
         "succeeded": [],
-        "excepted": [os.path.join(NB_PATH, "complex_outputs_unrun_timeout.ipynb")],
+        "excepted": [os.path.join(NB_PATH, "sleep_2_timeout_1.ipynb")],
         "errored": [],
     }
 
