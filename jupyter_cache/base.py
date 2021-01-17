@@ -195,7 +195,7 @@ class JupyterCacheAbstract(ABC):
 
         :raises KeyError: if no match is found
         """
-        notebook = nbf.read(path, NB_VERSION)
+        notebook = nbf.read(path, nbf.NO_CONVERT)
         return self.match_cache_notebook(notebook)
 
     @abstractmethod
@@ -229,7 +229,7 @@ class JupyterCacheAbstract(ABC):
         :raises KeyError: if no match is found
         :return: pk, input notebook with cached code cells and metadata merged.
         """
-        nb = nbf.read(str(path), NB_VERSION)
+        nb = nbf.read(str(path), nbf.NO_CONVERT)
         return self.merge_match_into_notebook(nb, nb_meta, cell_meta)
 
     @abstractmethod
@@ -249,7 +249,7 @@ class JupyterCacheAbstract(ABC):
 
         Note: this will not diff markdown content, since it is not stored in the cache.
         """
-        nb = nbf.read(path, NB_VERSION)
+        nb = nbf.read(path, nbf.NO_CONVERT)
         return self.diff_nbnode_with_cache(pk, nb, uri=path, as_str=as_str, **kwargs)
 
     @abstractmethod
