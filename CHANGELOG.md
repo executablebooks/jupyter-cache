@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 0.4.2 - 2020-08-28
+
+🐛 FIX: nbfomat v4.5 cell IDs
+
+Version 4.5 notebooks now contain `cell.id` (see [JEP 0062](https://jupyter.org/enhancement-proposals/62-cell-id/cell-id.html#Case-loading-notebook-without-cell-id)).
+To deal with this, we always hash the notebooks as v4.4 (with ids removed), since IDs do not affect the execution output.
+Merging cached outputs into a notebook now also preserves the input notebook minor version, adding or removing `cell.id` where required.
+
 ## 0.4.1 - 2020-08-28
 
 ⬆️ UPGRADE: nbclient v0.5
