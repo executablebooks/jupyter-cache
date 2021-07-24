@@ -8,7 +8,7 @@
 [![Code style: black][black-badge]][black-link]
 [![PyPI][pypi-badge]][pypi-link]
 
-A defined interface for working with a cache of jupyter notebooks.
+An interface for storing, accessing, and executing a cache of jupyter notebooks.
 
 NOTE: This package is in an Alpha stage and liable to change.
 
