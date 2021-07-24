@@ -41,7 +41,7 @@ setup(
         # note: we do not yet pin to higher, since there are reports of issues with 0.3
         # see: https://github.com/jupyter/nbclient/issues/58
         "nbclient>=0.2,<0.6",
-        "sqlalchemy~=1.3,<1.5",
+        "sqlalchemy>=1.3.12,<1.5",
     ],
     extras_require={
         "cli": ["click", "click-completion", "click-log", "tabulate", "pyyaml"],
