@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.4.3 - 2021-07-29
+
+⬆️ Allow SQLAlchemy v1.4
+
 ## 0.4.2 - 2021-01-17
 
 🐛 FIX: nbfomat v4.5 cell IDs
