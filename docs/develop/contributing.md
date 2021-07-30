@@ -1,10 +1,10 @@
 # Contributing
 
-[![CI Status][travis-badge]][travis-link]
-[![Coverage][coveralls-badge]][coveralls-link]
-[![Code style: black][black-badge]][black-link]
-[![CircleCI][circleci-badge]][circleci-link]
+[![Github-CI][github-ci]][github-link]
+[![Coverage Status][codecov-badge]][codecov-link]
 [![Documentation Status][rtd-badge]][rtd-link]
+[![Code style: black][black-badge]][black-link]
+[![PyPI][pypi-badge]][pypi-link]
 
 ## Code Style
 
@@ -63,14 +63,13 @@ Merging pull requests: There are three ways of 'merging' pull requests on GitHub
 - Merge with merge commit: put all commits as they are on the base branch, with a merge commit on top
     Choose for collaborative PRs with many commits. Here, the merge commit provides actual benefits.
 
-[travis-badge]: https://travis-ci.org/ExecutableBookProject/jupyter-cache.svg?branch=master
-[travis-link]: https://travis-ci.org/ExecutableBookProject/jupyter-cache
-[coveralls-badge]: https://coveralls.io/repos/github/ExecutableBookProject/jupyter-cache/badge.svg?branch=master
-[coveralls-link]: https://coveralls.io/github/ExecutableBookProject/jupyter-cache?branch=master
-[circleci-badge]: https://circleci.com/gh/ExecutableBookProject/jupyter-cache.svg?style=shield
-[circleci-link]: https://circleci.com/gh/ExecutableBookProject/jupyter-cache
+[github-ci]: https://github.com/executablebooks/jupyter-cache/workflows/continuous-integration/badge.svg?branch=master
+[github-link]: https://github.com/executablebooks/jupyter-cache
+[codecov-badge]: https://codecov.io/gh/executablebooks/jupyter-cache/branch/master/graph/badge.svg
+[codecov-link]: https://codecov.io/gh/executablebooks/jupyter-cache
 [rtd-badge]: https://readthedocs.org/projects/jupyter-cache/badge/?version=latest
 [rtd-link]: https://jupyter-cache.readthedocs.io/en/latest/?badge=latest
 [black-badge]: https://img.shields.io/badge/code%20style-black-000000.svg
+[pypi-badge]: https://img.shields.io/pypi/v/jupyter-cache.svg
+[pypi-link]: https://pypi.org/project/jupyter-cache
 [black-link]: https://github.com/ambv/black
-[autodocstring]: https://marketplace.visualstudio.com/items?itemName=njpwerner.autodocstring

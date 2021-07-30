@@ -2,12 +2,6 @@
 
 A defined interface for working with a cache of jupyter notebooks.
 
-```{warning}
-This project is in an alpha state. It may evolve rapidly and/or make breaking changes!
-Comments, requests, or bugreports are welcome and recommended! Please
-[open an issue here](https://github.com/ExecutableBookProject/jupyter-cache/issues)
-```
-
 This packages provides a clear [API](use/api) and [CLI](use/cli) for staging, executing and cacheing
 Jupyter Notebooks. Although there are certainly other use cases,
 the principle use case this was written for is generating books / websites,
@@ -25,7 +19,7 @@ Some desired requirements (not yet all implemented):
 - Allow parallel access to notebooks (for execution)
 - Store execution statistics/reports.
 - Store external assets: Notebooks being executed often require external assets: importing scripts/data/etc. These are prepared by the users.
-- Store execution artifacts: created during exeution
+- Store execution artifacts: created during execution
 - A transparent and robust cache invalidation: imagine the user updating an external dependency or a Python module, or checking out a different git branch.
 
 ## Installation
