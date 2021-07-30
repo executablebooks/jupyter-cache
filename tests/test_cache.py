@@ -4,9 +4,8 @@ from textwrap import dedent
 import nbformat as nbf
 import pytest
 
-from jupyter_cache.cache.main import JupyterCacheBase
 from jupyter_cache.base import NbValidityError
-
+from jupyter_cache.cache.main import JupyterCacheBase
 
 NB_PATH = os.path.join(os.path.realpath(os.path.dirname(__file__)), "notebooks")
 
@@ -227,7 +226,7 @@ def test_execution(tmp_path):
 
 @pytest.mark.filterwarnings("ignore")
 def test_execution_timeout_config(tmp_path):
-    """ tests the timeout value passed to the executor"""
+    """tests the timeout value passed to the executor"""
     from jupyter_cache.executors import load_executor
 
     db = JupyterCacheBase(str(tmp_path))
@@ -253,7 +252,7 @@ def test_execution_timeout_config(tmp_path):
 
 @pytest.mark.filterwarnings("ignore")
 def test_execution_timeout_metadata(tmp_path):
-    """ tests the timeout metadata key in notebooks"""
+    """tests the timeout metadata key in notebooks"""
     from jupyter_cache.executors import load_executor
 
     db = JupyterCacheBase(str(tmp_path))
@@ -268,7 +267,7 @@ def test_execution_timeout_metadata(tmp_path):
 
 
 def test_execution_allow_errors_config(tmp_path):
-    """ tests the timeout value passed to the executor"""
+    """tests the timeout value passed to the executor"""
     from jupyter_cache.executors import load_executor
 
     db = JupyterCacheBase(str(tmp_path))
@@ -283,7 +282,7 @@ def test_execution_allow_errors_config(tmp_path):
 
 
 def test_run_in_temp_false(tmp_path):
-    """ tests the timeout value passed to the executor"""
+    """tests the timeout value passed to the executor"""
     from jupyter_cache.executors import load_executor
 
     db = JupyterCacheBase(str(tmp_path))

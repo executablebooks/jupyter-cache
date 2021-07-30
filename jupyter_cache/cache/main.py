@@ -1,25 +1,26 @@
-from contextlib import contextmanager
 import copy
-import io
-from pathlib import Path
 import hashlib
+import io
 import shutil
+from contextlib import contextmanager
+from pathlib import Path
 from typing import Callable, Iterable, List, Optional, Tuple, Union
 
 import nbformat as nbf
 
 from jupyter_cache.base import (  # noqa: F401
+    NB_VERSION,
+    CachingError,
     JupyterCacheAbstract,
+    NbArtifactsAbstract,
     NbBundleIn,
     NbBundleOut,
-    CachingError,
-    RetrievalError,
     NbValidityError,
-    NB_VERSION,
-    NbArtifactsAbstract,
+    RetrievalError,
 )
 from jupyter_cache.utils import to_relative_paths
-from .db import create_db, NbCacheRecord, NbStageRecord, Setting
+
+from .db import NbCacheRecord, NbStageRecord, Setting, create_db
 
 CACHE_LIMIT_KEY = "cache_limit"
 DEFAULT_CACHE_LIMIT = 1000
@@ -85,14 +86,14 @@ class JupyterCacheBase(JupyterCacheAbstract):
         self._db = None
 
     def _get_notebook_path_cache(self, hashkey, raise_on_missing=False) -> Path:
-        """"Retrieve a relative path in the cache to a notebook, from its hash."""
+        """Retrieve a relative path in the cache to a notebook, from its hash."""
         path = self.path.joinpath(Path("executed", hashkey, "base.ipynb"))
         if not path.exists() and raise_on_missing:
             raise RetrievalError("hashkey not in cache: {}".format(hashkey))
         return path
 
     def _get_artifact_path_cache(self, hashkey) -> Path:
-        """"Retrieve a relative path in the cache to a notebook, from its hash."""
+        """Retrieve a relative path in the cache to a notebook, from its hash."""
         path = self.path.joinpath(Path("executed", hashkey, "artifacts"))
         return path
 
@@ -382,7 +383,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         Note: this will not diff markdown content, since it is not stored in the cache.
         """
         import nbdime
-        from nbdime.prettyprint import pretty_print_diff, PrettyPrintConfig
+        from nbdime.prettyprint import PrettyPrintConfig, pretty_print_diff
 
         cached_nb = self.get_cache_bundle(pk).nb
         nb, _ = self.create_hashed_notebook(nb)

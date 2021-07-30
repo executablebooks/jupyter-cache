@@ -1,6 +1,6 @@
 import pytest
 
-from jupyter_cache.cache.db import create_db, NbCacheRecord, Setting
+from jupyter_cache.cache.db import NbCacheRecord, Setting, create_db
 
 
 def test_setting(tmp_path):

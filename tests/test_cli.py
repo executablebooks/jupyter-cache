@@ -3,7 +3,7 @@ import os
 from click.testing import CliRunner
 
 from jupyter_cache.cache.main import JupyterCacheBase
-from jupyter_cache.cli.commands import cmd_main, cmd_cache, cmd_stage
+from jupyter_cache.cli.commands import cmd_cache, cmd_main, cmd_stage
 
 NB_PATH = os.path.join(os.path.realpath(os.path.dirname(__file__)), "notebooks")
 

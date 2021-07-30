@@ -1,7 +1,7 @@
 """Non-core imports in this module are lazily loaded, in order to improve CLI speed """
 
-from pathlib import Path
 import time
+from pathlib import Path
 from typing import List, Union
 
 
