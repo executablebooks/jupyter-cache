@@ -1,7 +1,8 @@
-from abc import ABC, abstractmethod
 import logging
-import pkg_resources
+from abc import ABC, abstractmethod
 from typing import Callable, List, Optional
+
+import pkg_resources
 
 from jupyter_cache.base import JupyterCacheAbstract
 

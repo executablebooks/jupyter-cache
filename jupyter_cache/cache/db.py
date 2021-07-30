@@ -1,18 +1,17 @@
+import os
 from contextlib import contextmanager
 from datetime import datetime
-import os
 from pathlib import Path
 from typing import List, Optional
 
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, DateTime, Integer, JSON, String, Text
-from sqlalchemy.orm import sessionmaker, Session, validates
+from sqlalchemy import JSON, Column, DateTime, Integer, String, Text
 from sqlalchemy.engine import Engine, create_engine
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import Session, sessionmaker, validates
 from sqlalchemy.sql.expression import desc
 
 from jupyter_cache.utils import shorten_path
-
 
 OrmBase = declarative_base()
 

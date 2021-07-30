@@ -1,11 +1,10 @@
-import attr
-
-from typing import Optional, Union
 import traceback
+from typing import Optional, Union
 
-from nbformat import NotebookNode
+import attr
 from nbclient import execute as executenb
 from nbclient.client import CellExecutionError, CellTimeoutError
+from nbformat import NotebookNode
 
 from jupyter_cache.utils import Timer
 

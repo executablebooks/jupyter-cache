@@ -3,14 +3,14 @@
 API access to the cache should use this interface,
 with no assumptions about the backend storage/retrieval mechanisms.
 """
-from abc import ABC, abstractmethod
 import io
+from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Callable, Iterable, List, Optional, Tuple, Union
 
 import attr
-from attr.validators import instance_of, optional
 import nbformat as nbf
+from attr.validators import instance_of, optional
 
 # TODO make these abstract
 from jupyter_cache.cache.db import NbCacheRecord, NbStageRecord

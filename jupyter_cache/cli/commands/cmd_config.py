@@ -1,8 +1,8 @@
 import click
 
 from jupyter_cache import get_cache
-from jupyter_cache.cli.commands.cmd_main import jcache
 from jupyter_cache.cli import options
+from jupyter_cache.cli.commands.cmd_main import jcache
 
 
 @jcache.group("config")

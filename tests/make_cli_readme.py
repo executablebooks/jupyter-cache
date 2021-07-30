@@ -1,12 +1,12 @@
+import os
 from datetime import datetime
 from glob import glob
-import os
 from textwrap import dedent
 
 from click.testing import CliRunner
 
-from jupyter_cache.cli.commands import cmd_main, cmd_cache, cmd_stage, cmd_exec
 from jupyter_cache.cache.main import DEFAULT_CACHE_LIMIT
+from jupyter_cache.cli.commands import cmd_cache, cmd_exec, cmd_main, cmd_stage
 
 
 def get_string(cli, group=None, args=(), input=None):
