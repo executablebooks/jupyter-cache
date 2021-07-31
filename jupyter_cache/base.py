@@ -44,12 +44,10 @@ class NbArtifactsAbstract(ABC):
     @abstractmethod
     def relative_paths(self) -> List[Path]:
         """Return the list of paths (relative to the notebook folder)."""
-        pass
 
     @abstractmethod
     def __iter__(self) -> Iterable[Tuple[Path, io.BufferedReader]]:
         """Yield the relative path and open files (in bytes mode)"""
-        pass
 
     def __repr__(self):
         return "{0}(paths={1})".format(
@@ -110,9 +108,8 @@ class JupyterCacheAbstract(ABC):
     """An abstract cache for storing pre/post executed notebooks."""
 
     @abstractmethod
-    def clear_cache(self):
+    def clear_cache(self) -> None:
         """Clear the cache completely."""
-        pass
 
     @abstractmethod
     def cache_notebook_bundle(
@@ -128,7 +125,6 @@ class JupyterCacheAbstract(ABC):
         :param overwrite: Allow overwrite of cache with matching hash
         :return: The primary key of the cache
         """
-        pass
 
     @abstractmethod
     def cache_notebook_file(
@@ -154,21 +150,18 @@ class JupyterCacheAbstract(ABC):
         :param overwrite: Allow overwrite of cache with matching hash
         :return: The primary key of the cache
         """
-        pass
 
     @abstractmethod
     def list_cache_records(self) -> List[NbCacheRecord]:
         """Return a list of cached notebook records."""
-        pass
 
+    @abstractmethod
     def get_cache_record(self, pk: int) -> NbCacheRecord:
         """Return the record of a cache, by its primary key"""
-        pass
 
     @abstractmethod
     def get_cache_bundle(self, pk: int) -> NbBundleOut:
         """Return an executed notebook bundle, by its primary key"""
-        pass
 
     @abstractmethod
     def cache_artefacts_temppath(self, pk: int) -> Path:
@@ -180,7 +173,6 @@ class JupyterCacheAbstract(ABC):
             with cache.cache_artefacts_temppath(1) as path:
                 shutil.copytree(path, destination)
         """
-        pass
 
     @abstractmethod
     def match_cache_notebook(self, nb: nbf.NotebookNode) -> NbCacheRecord:
@@ -188,7 +180,6 @@ class JupyterCacheAbstract(ABC):
 
         :raises KeyError: if no match is found
         """
-        pass
 
     def match_cache_file(self, path: str) -> NbCacheRecord:
         """Match to an executed notebook, returning its primary key.
@@ -213,7 +204,6 @@ class JupyterCacheAbstract(ABC):
         :raises KeyError: if no match is found
         :return: pk, input notebook with cached code cells and metadata merged.
         """
-        pass
 
     def merge_match_into_file(
         self,
@@ -240,7 +230,6 @@ class JupyterCacheAbstract(ABC):
 
         Note: this will not diff markdown content, since it is not stored in the cache.
         """
-        pass
 
     def diff_nbfile_with_cache(
         self, pk: int, path: str, as_str=False, **kwargs
@@ -260,22 +249,18 @@ class JupyterCacheAbstract(ABC):
         :param assets: The path of files required by the notebook to run.
         :raises ValueError: assets not within the same folder as the notebook URI.
         """
-        pass
 
     @abstractmethod
     def discard_staged_notebook(self, uri_or_pk: Union[int, str]):
         """Discard a staged notebook."""
-        pass
 
     @abstractmethod
     def list_staged_records(self) -> List[NbStageRecord]:
         """list staged notebook URI's in the cache."""
-        pass
 
     @abstractmethod
     def get_staged_record(self, uri_or_pk: Union[int, str]) -> NbStageRecord:
         """Return the record of a staged notebook, by its primary key or URI."""
-        pass
 
     @abstractmethod
     def get_staged_notebook(
@@ -286,13 +271,12 @@ class JupyterCacheAbstract(ABC):
         :param converter: An optional converter for staged notebooks,
             which takes the URI and returns a notebook node (default nbformat.read)
         """
-        pass
 
     @abstractmethod
     def get_cache_record_of_staged(
         self, uri_or_pk: Union[int, str], converter: Optional[Callable] = None
     ) -> Optional[NbCacheRecord]:
-        pass
+        """Get cache record from staged notebook."""
 
     @abstractmethod
     def list_staged_unexecuted(
@@ -303,7 +287,6 @@ class JupyterCacheAbstract(ABC):
         :param converter: An optional converter for staged notebooks,
             which takes the URI and returns a notebook node (default nbformat.read)
         """
-        pass
 
     # removed until defined use case
     # @abstractmethod
@@ -314,4 +297,3 @@ class JupyterCacheAbstract(ABC):
     #     `[codecell_0, textcell_1, codecell_2]`
     #     would map {0: codecell_0, 1: codecell_2}
     #     """
-    #     pass
