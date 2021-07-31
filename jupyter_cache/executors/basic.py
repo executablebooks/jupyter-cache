@@ -1,10 +1,11 @@
 import shutil
 import tempfile
 from pathlib import Path
+from typing import Optional
 
 from jupyter_cache.cache.db import NbStageRecord
 from jupyter_cache.cache.main import NbArtifacts, NbBundleIn
-from jupyter_cache.executors.base import JupyterExecutorAbstract
+from jupyter_cache.executors.base import ExecutorRunResult, JupyterExecutorAbstract
 from jupyter_cache.executors.utils import single_nb_execution
 from jupyter_cache.utils import to_relative_paths
 
@@ -20,8 +21,8 @@ class ExecutionError(Exception):
         return super().__init__(message)
 
 
-class JupyterExecutorBasic(JupyterExecutorAbstract):
-    """A basic implementation of an executor.
+class JupyterExecutorLocalSerial(JupyterExecutorAbstract):
+    """A basic implementation of an executor; executing locally in serial.
 
     The execution is split into two methods: `run` and `execute`.
     In this way access to the cache can be synchronous, but the execution can be
@@ -30,13 +31,13 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
 
     def run_and_cache(
         self,
+        *,
         filter_uris=None,
         filter_pks=None,
         converter=None,
         timeout=30,
         allow_errors=False,
-        run_in_temp=True,
-    ):
+    ) -> ExecutorRunResult:
         """This function interfaces with the cache, deferring execution to `execute`."""
         # Get the notebook tha require re-execution
         stage_records = self.cache.list_staged_unexecuted(converter=converter)
@@ -51,7 +52,7 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
         # setup an dictionary to categorise all executed notebook uris:
         # excepted are where the actual notebook execution raised an exception;
         # errored is where any other exception was raised
-        result = {"succeeded": [], "excepted": [], "errored": []}
+        result = ExecutorRunResult()
         # we pass an iterator to the execute method,
         # so that we don't have to read all notebooks before execution
 
@@ -65,22 +66,24 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
                     self.logger.error(
                         "Failed Retrieving: {}".format(stage_record.uri), exc_info=True
                     )
-                    result["errored"].append(stage_record.uri)
+                    result.errored.append(stage_record.uri)
                 else:
                     yield stage_record, nb_bundle
 
         # The execute method yields notebook bundles, or ExecutionError
         for bundle_or_exc in self.execute(
-            _iterator(), int(timeout), allow_errors, run_in_temp
+            _iterator(),
+            int(timeout),
+            allow_errors,
         ):
             if isinstance(bundle_or_exc, ExecutionError):
                 self.logger.error(bundle_or_exc.uri, exc_info=bundle_or_exc.exc)
-                result["errored"].append(bundle_or_exc.uri)
+                result.errored.append(bundle_or_exc.uri)
                 continue
             elif bundle_or_exc.traceback is not None:
                 # The notebook raised an exception during execution
                 # TODO store excepted bundles
-                result["excepted"].append(bundle_or_exc.uri)
+                result.excepted.append(bundle_or_exc.uri)
                 NbStageRecord.set_traceback(
                     bundle_or_exc.uri, bundle_or_exc.traceback, self.cache.db
                 )
@@ -94,9 +97,9 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
                 self.logger.error(
                     "Failed Caching: {}".format(bundle_or_exc.uri), exc_info=True
                 )
-                result["errored"].append(bundle_or_exc.uri)
+                result.errored.append(bundle_or_exc.uri)
             else:
-                result["succeeded"].append(bundle_or_exc.uri)
+                result.succeeded.append(bundle_or_exc.uri)
 
         # TODO it would also be ideal to tag all notebooks
         # that were executed at the same time (just part of `data` or separate column?).
@@ -109,48 +112,15 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
 
         return result
 
-    def execute(self, input_iterator, timeout=30, allow_errors=False, in_temp=True):
-        """This function is isolated from the cache, and is responsible for execution.
-
-        The method is only supplied with the staged record and input notebook bundle,
-        it then yield results for caching
-        """
-        for stage_record, nb_bundle in input_iterator:
-            try:
-                uri = nb_bundle.uri
-                self.logger.info("Executing: {}".format(uri))
-
-                if in_temp:
-                    with tempfile.TemporaryDirectory() as tmpdirname:
-
-                        try:
-                            asset_files = _copy_assets(stage_record, tmpdirname)
-                        except Exception as err:
-                            yield ExecutionError("Assets Retrieval Error", uri, err)
-                            continue
-
-                        yield self.execute_single(
-                            nb_bundle,
-                            uri,
-                            tmpdirname,
-                            timeout,
-                            allow_errors,
-                            asset_files,
-                        )
-                else:
-                    yield self.execute_single(
-                        nb_bundle,
-                        uri,
-                        str(Path(uri).parent),
-                        timeout,
-                        allow_errors,
-                        None,
-                    )
-
-            except Exception as err:
-                yield ExecutionError("Unexpected Error", uri, err)
-
-    def execute_single(self, nb_bundle, uri, cwd, timeout, allow_errors, asset_files):
+    def execute_single(
+        self,
+        nb_bundle,
+        uri: str,
+        cwd: Optional[str],
+        timeout: Optional[int],
+        allow_errors: bool,
+        asset_files,
+    ):
         result = single_nb_execution(
             nb_bundle.nb,
             cwd=cwd,
@@ -169,6 +139,64 @@ class JupyterExecutorBasic(JupyterExecutorAbstract):
 
         self.logger.info("Execution Succeeded: {}".format(uri))
         return _create_bundle(nb_bundle, cwd, asset_files, result.time, None)
+
+    def execute(self, input_iterator, timeout=30, allow_errors=False):
+        """This function is isolated from the cache, and is responsible for execution.
+
+        The method is only supplied with the staged record and input notebook bundle,
+        it then yield results for caching
+        """
+        for _, nb_bundle in input_iterator:
+            try:
+                uri = nb_bundle.uri
+                self.logger.info("Executing: {}".format(uri))
+
+                yield self.execute_single(
+                    nb_bundle,
+                    uri,
+                    str(Path(uri).parent),
+                    timeout,
+                    allow_errors,
+                    None,
+                )
+
+            except Exception as err:
+                yield ExecutionError("Unexpected Error", uri, err)
+
+
+class JupyterExecutorTempSerial(JupyterExecutorLocalSerial):
+    """An implementation of an executor; executing in a temporary folder in serial."""
+
+    def execute(self, input_iterator, timeout=30, allow_errors=False):
+        """This function is isolated from the cache, and is responsible for execution.
+
+        The method is only supplied with the staged record and input notebook bundle,
+        it then yield results for caching
+        """
+        for stage_record, nb_bundle in input_iterator:
+            try:
+                uri = nb_bundle.uri
+                self.logger.info("Executing: {}".format(uri))
+
+                with tempfile.TemporaryDirectory() as tmpdirname:
+
+                    try:
+                        asset_files = _copy_assets(stage_record, tmpdirname)
+                    except Exception as err:
+                        yield ExecutionError("Assets Retrieval Error", uri, err)
+                        continue
+
+                    yield self.execute_single(
+                        nb_bundle,
+                        uri,
+                        tmpdirname,
+                        timeout,
+                        allow_errors,
+                        asset_files,
+                    )
+
+            except Exception as err:
+                yield ExecutionError("Unexpected Error", uri, err)
 
 
 def _copy_assets(record, folder):

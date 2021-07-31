@@ -76,8 +76,9 @@ NB_PATH = click.option(
 EXEC_ENTRYPOINT = click.option(
     "-e",
     "--entry-point",
-    help="The entry-point from which to load the executor.",
-    default="basic",
+    # TODO list additional entry points
+    help="The entry-point from which to load the executor [local-serial|temp-serial].",
+    default="local-serial",
     show_default=True,
 )
 

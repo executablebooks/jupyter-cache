@@ -1,4 +1,5 @@
 import os
+import shutil
 from textwrap import dedent
 
 import nbformat as nbf
@@ -184,25 +185,28 @@ def test_artifacts(tmp_path):
 # jupyter_client/session.py:371: DeprecationWarning:
 # Session._key_changed is deprecated in traitlets: use @observe and @unobserve instead
 @pytest.mark.filterwarnings("ignore")
-def test_execution(tmp_path):
+@pytest.mark.parametrize("executor_key", ["local-serial", "temp-serial"])
+def test_execution(tmp_path, executor_key):
     from jupyter_cache.executors import load_executor
 
-    db = JupyterCacheBase(str(tmp_path))
-    db.stage_notebook_file(path=os.path.join(NB_PATH, "basic_unrun.ipynb"))
-    db.stage_notebook_file(path=os.path.join(NB_PATH, "basic_failing.ipynb"))
+    db = JupyterCacheBase(str(tmp_path / "cache"))
+    temp_nb_path = tmp_path / "notebooks"
+    shutil.copytree(NB_PATH, temp_nb_path)
+    db.stage_notebook_file(path=os.path.join(temp_nb_path, "basic_unrun.ipynb"))
+    db.stage_notebook_file(path=os.path.join(temp_nb_path, "basic_failing.ipynb"))
     db.stage_notebook_file(
-        path=os.path.join(NB_PATH, "external_output.ipynb"),
-        assets=(os.path.join(NB_PATH, "basic.ipynb"),),
+        path=os.path.join(temp_nb_path, "external_output.ipynb"),
+        assets=(os.path.join(temp_nb_path, "basic.ipynb"),),
     )
-    executor = load_executor("basic", db)
+    executor = load_executor(executor_key, db)
     result = executor.run_and_cache()
     print(result)
-    assert result == {
+    assert result.as_json() == {
         "succeeded": [
-            os.path.join(NB_PATH, "basic_unrun.ipynb"),
-            os.path.join(NB_PATH, "external_output.ipynb"),
+            os.path.join(temp_nb_path, "basic_unrun.ipynb"),
+            os.path.join(temp_nb_path, "external_output.ipynb"),
         ],
-        "excepted": [os.path.join(NB_PATH, "basic_failing.ipynb")],
+        "excepted": [os.path.join(temp_nb_path, "basic_failing.ipynb")],
         "errored": [],
     }
     assert len(db.list_cache_records()) == 2
@@ -215,10 +219,11 @@ def test_execution(tmp_path):
         "source": "a=1\nprint(a)",
     }
     assert "execution_seconds" in bundle.record.data
-    with db.cache_artefacts_temppath(2) as path:
-        paths = [str(p.relative_to(path)) for p in path.glob("**/*") if p.is_file()]
-        assert paths == ["artifact.txt"]
-        assert path.joinpath("artifact.txt").read_text(encoding="utf8") == "hi"
+    if "temp" in executor_key:
+        with db.cache_artefacts_temppath(2) as path:
+            paths = [str(p.relative_to(path)) for p in path.glob("**/*") if p.is_file()]
+            assert paths == ["artifact.txt"]
+            assert path.joinpath("artifact.txt").read_text(encoding="utf8") == "hi"
     stage_record = db.get_staged_record(2)
     assert stage_record.traceback is not None
     assert "Exception: oopsie!" in stage_record.traceback
@@ -231,9 +236,9 @@ def test_execution_timeout_config(tmp_path):
 
     db = JupyterCacheBase(str(tmp_path))
     db.stage_notebook_file(path=os.path.join(NB_PATH, "sleep_2.ipynb"))
-    executor = load_executor("basic", db)
+    executor = load_executor("local-serial", db)
     result = executor.run_and_cache(timeout=10)
-    assert result == {
+    assert result.as_json() == {
         "succeeded": [os.path.join(NB_PATH, "sleep_2.ipynb")],
         "excepted": [],
         "errored": [],
@@ -241,9 +246,9 @@ def test_execution_timeout_config(tmp_path):
     db.clear_cache()
 
     db.stage_notebook_file(path=os.path.join(NB_PATH, "sleep_2.ipynb"))
-    executor = load_executor("basic", db)
+    executor = load_executor("local-serial", db)
     result = executor.run_and_cache(timeout=1)
-    assert result == {
+    assert result.as_json() == {
         "succeeded": [],
         "excepted": [os.path.join(NB_PATH, "sleep_2.ipynb")],
         "errored": [],
@@ -257,9 +262,9 @@ def test_execution_timeout_metadata(tmp_path):
 
     db = JupyterCacheBase(str(tmp_path))
     db.stage_notebook_file(path=os.path.join(NB_PATH, "sleep_2_timeout_1.ipynb"))
-    executor = load_executor("basic", db)
+    executor = load_executor("local-serial", db)
     result = executor.run_and_cache()
-    assert result == {
+    assert result.as_json() == {
         "succeeded": [],
         "excepted": [os.path.join(NB_PATH, "sleep_2_timeout_1.ipynb")],
         "errored": [],
@@ -272,9 +277,9 @@ def test_execution_allow_errors_config(tmp_path):
 
     db = JupyterCacheBase(str(tmp_path))
     db.stage_notebook_file(path=os.path.join(NB_PATH, "basic_failing.ipynb"))
-    executor = load_executor("basic", db)
+    executor = load_executor("local-serial", db)
     result = executor.run_and_cache(allow_errors=True)
-    assert result == {
+    assert result.as_json() == {
         "succeeded": [os.path.join(NB_PATH, "basic_failing.ipynb")],
         "excepted": [],
         "errored": [],
@@ -287,9 +292,9 @@ def test_run_in_temp_false(tmp_path):
 
     db = JupyterCacheBase(str(tmp_path))
     db.stage_notebook_file(path=os.path.join(NB_PATH, "basic.ipynb"))
-    executor = load_executor("basic", db)
-    result = executor.run_and_cache(run_in_temp=False)
-    assert result == {
+    executor = load_executor("temp-serial", db)
+    result = executor.run_and_cache()
+    assert result.as_json() == {
         "succeeded": [os.path.join(NB_PATH, "basic.ipynb")],
         "excepted": [],
         "errored": [],

@@ -1,13 +1,13 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import Callable, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
+import attr
+
+# TODO use importlib.metadata
 import pkg_resources
 
 from jupyter_cache.base import JupyterCacheAbstract
-
-# TODO abstact
-from jupyter_cache.cache.db import NbCacheRecord
 
 ENTRY_POINT_GROUP = "jupyter_executors"
 
@@ -16,6 +16,30 @@ base_logger = logging.getLogger(__name__)
 
 class ExecutionError(Exception):
     pass
+
+
+@attr.s(slots=True)
+class ExecutorRunResult:
+    """A container for the execution result."""
+
+    # URIs of notebooks which where successfully executed
+    succeeded: List[str] = attr.ib(factory=list)
+    # URIs of notebooks which excepted during execution
+    excepted: List[str] = attr.ib(factory=list)
+    # URIs of notebooks which errored before execution
+    errored: List[str] = attr.ib(factory=list)
+
+    def all(self) -> List[str]:
+        """Return all notebooks."""
+        return self.succeeded + self.excepted + self.errored
+
+    def as_json(self) -> Dict[str, Any]:
+        """Return the result as a JSON serializable dict."""
+        return {
+            "succeeded": self.succeeded,
+            "excepted": self.excepted,
+            "errored": self.errored,
+        }
 
 
 class JupyterExecutorAbstract(ABC):
@@ -39,11 +63,14 @@ class JupyterExecutorAbstract(ABC):
     @abstractmethod
     def run_and_cache(
         self,
+        *,
         filter_uris: Optional[List[str]] = None,
         filter_pks: Optional[List[int]] = None,
         converter: Optional[Callable] = None,
-        **kwargs
-    ) -> List[NbCacheRecord]:
+        timeout: Optional[int] = 30,
+        allow_errors: bool = False,
+        **kwargs: Any
+    ) -> ExecutorRunResult:
         """Run execution, cache successfully executed notebooks and return their URIs
 
         Parameters
@@ -55,8 +82,12 @@ class JupyterExecutorAbstract(ABC):
         converter:
             An optional converter for staged notebooks,
             which takes the URI and returns a notebook node
+        timeout: int
+            Maximum time in seconds to wait for a single cell to run for
+        allow_errors: bool
+            Whether to halt execution on the first cell exception
+            (provided the cell is not tagged as an expected exception)
         """
-        pass
 
 
 def list_executors():

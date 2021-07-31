@@ -34,3 +34,5 @@ ASSET_PATHS = click.argument(
 PK = click.argument("pk", metavar="ID", type=int)
 
 PKS = click.argument("pks", metavar="IDs", nargs=-1, type=int)
+
+PK_OR_PATHS = click.argument("pk_paths", metavar="ID_OR_PATHS", nargs=-1)
