@@ -72,16 +72,10 @@ class JupyterExecutorAbstract(ABC):
     ) -> ExecutorRunResult:
         """Run execution, cache successfully executed notebooks and return their URIs
 
-        Parameters
-        ----------
-        filter_uris: list
-            If specified filter the staged notebooks to execute by these URIs
-        filter_pks: list
-            If specified filter the staged notebooks to execute by these PKs
-        timeout: int
-            Maximum time in seconds to wait for a single cell to run for
-        allow_errors: bool
-            Whether to halt execution on the first cell exception
+        :param filter_uris: Filter the notebooks in the project to execute by these URIs
+        :param filter_pks: Filter the notebooks in the project to execute by these PKs
+        :param timeout: Maximum time in seconds to wait for a single cell to run for
+        :param allow_errors: Whether to halt execution on the first cell exception
             (provided the cell is not tagged as an expected exception)
         """
 

@@ -2,12 +2,9 @@
 
 A defined interface for working with a cache of jupyter notebooks.
 
-This packages provides a clear [API](use/api) and [CLI](use/cli) for staging, executing and cacheing
-Jupyter Notebooks. Although there are certainly other use cases,
-the principle use case this was written for is generating books / websites,
-created from multiple notebooks (and other text documents),
-during which it is desired that notebooks can be *auto-executed* **only**
-if the notebook had been modified in a way that may alter its code cell outputs.
+This packages provides a clear [API](use/api) and [CLI](use/cli) for executing and cacheing multiple Jupyter Notebooks in a project.
+Although there are certainly other use cases, the principle use case this was written for is generating books / websites, created from multiple notebooks (and other text documents).
+It is desired that notebooks can be *auto-executed* **only** if the notebook had been modified in a way that may alter its code cell outputs.
 
 Some desired requirements (not yet all implemented):
 
@@ -24,7 +21,7 @@ Some desired requirements (not yet all implemented):
 
 ## Installation
 
-To install `jupytes-cache`, do the following:
+To install `jupyter-cache`, do the following:
 
 ```bash
 pip install jupyter-cache[cli]
@@ -42,10 +39,6 @@ pip install -e .[cli,code_style,testing,rtd]
 Here are the site contents:
 
 ```{toctree}
----
-maxdepth: 2
-caption: Contents
----
 using/cli
 using/api
 develop/contributing

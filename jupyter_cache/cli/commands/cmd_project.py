@@ -5,92 +5,91 @@ import click
 from jupyter_cache import get_cache
 from jupyter_cache.cli import arguments, options
 from jupyter_cache.cli.commands.cmd_main import jcache
-from jupyter_cache.utils import tabulate_stage_records
+from jupyter_cache.utils import tabulate_project_records
 
 
-@jcache.group("stage")
-def cmnd_stage():
-    """Commands for staging notebooks to be executed."""
-    pass
+@jcache.group("project")
+def cmnd_project():
+    """Commands for interacting with a project."""
 
 
-@cmnd_stage.command("add")
+@cmnd_project.command("add")
 @arguments.NB_PATHS
 @options.READER_KEY
 @options.CACHE_PATH
-def stage_nbs(cache_path, nbpaths, reader):
-    """Stage notebook(s) for execution."""
+def add_notebooks(cache_path, nbpaths, reader):
+    """Add notebook(s) to the project."""
     db = get_cache(cache_path)
     for path in nbpaths:
         # TODO deal with errors (print all at end? or option to ignore)
-        click.echo("Staging: {}".format(path))
-        db.stage_notebook_file(path, reader=reader)
+        click.echo("Adding: {}".format(path))
+        db.add_nb_to_project(path, reader=reader)
     click.secho("Success!", fg="green")
 
 
-@cmnd_stage.command("add-with-assets")
+@cmnd_project.command("add-with-assets")
 @arguments.ASSET_PATHS
 @options.NB_PATH
 @options.READER_KEY
 @options.CACHE_PATH
-def stage_nb(cache_path, nbpath, reader, asset_paths):
-    """Stage a notebook, with possible asset files."""
+def add_notebook(cache_path, nbpath, reader, asset_paths):
+    """Add notebook(s) to the project, with possible asset files."""
     db = get_cache(cache_path)
-    db.stage_notebook_file(nbpath, reader=reader, assets=asset_paths)
+    db.add_nb_to_project(nbpath, reader=reader, assets=asset_paths)
     click.secho("Success!", fg="green")
 
 
-@cmnd_stage.command("remove-uris")
+@cmnd_project.command("remove-uris")
 @arguments.NB_PATHS
 @options.CACHE_PATH
 @options.REMOVE_ALL
-def unstage_nbs_uri(cache_path, nbpaths, remove_all):
-    """Un-stage notebook(s), by URI."""
+def remove_nbs_uri(cache_path, nbpaths, remove_all):
+    """Remove notebook(s) from the project, by URI."""
     db = get_cache(cache_path)
     if remove_all:
-        nbpaths = [record.uri for record in db.list_staged_records()]
+        nbpaths = [record.uri for record in db.nb_project_records()]
     for path in nbpaths:
         # TODO deal with errors (print all at end? or option to ignore)
-        click.echo("Unstaging: {}".format(path))
-        db.discard_staged_notebook(path)
+        click.echo("Removing: {}".format(path))
+        db.remove_nb_from_project(path)
     click.secho("Success!", fg="green")
 
 
-@cmnd_stage.command("remove-ids")
+@cmnd_project.command("remove-ids")
 @arguments.PKS
 @options.CACHE_PATH
 @options.REMOVE_ALL
-def unstage_nbs_id(cache_path, pks, remove_all):
-    """Un-stage notebook(s), by ID."""
+def remove_nbs_id(cache_path, pks, remove_all):
+    """Remove notebook(s) from the project, by ID."""
     db = get_cache(cache_path)
     if remove_all:
-        pks = [record.pk for record in db.list_staged_records()]
+        pks = [record.pk for record in db.nb_project_records()]
     for pk in pks:
         # TODO deal with errors (print all at end? or option to ignore)
-        click.echo("Unstaging ID: {}".format(pk))
-        db.discard_staged_notebook(pk)
+        click.echo("Removing: {}".format(pk))
+        db.remove_nb_from_project(pk)
     click.secho("Success!", fg="green")
 
 
-@cmnd_stage.command("list")
+@cmnd_project.command("list")
 @options.CACHE_PATH
-@click.option(
-    "--compare/--no-compare",
-    default=True,
-    show_default=True,
-    help="Compare to cached notebooks (to find cache ID).",
-)
+# @click.option(
+#     "--compare/--no-compare",
+#     default=True,
+#     show_default=True,
+#     help="Compare to cached notebooks (to find cache ID).",
+# )
 @options.PATH_LENGTH
-def list_staged(cache_path, compare, path_length):
-    """List notebooks staged for possible execution."""
+def list_nbs_in_project(cache_path, path_length):
+    """List notebooks in the project."""
     db = get_cache(cache_path)
-    records = db.list_staged_records()
+    records = db.nb_project_records()
     if not records:
-        click.secho("No Staged Notebooks", fg="blue")
-    click.echo(tabulate_stage_records(records, path_length=path_length, cache=db))
+        click.secho("No notebooks in project", fg="blue")
+    click.echo(tabulate_project_records(records, path_length=path_length, cache=db))
 
 
-@cmnd_stage.command("show")
+@cmnd_project.command("show")
 @options.CACHE_PATH
 @arguments.PK
 @click.option(
@@ -99,17 +98,17 @@ def list_staged(cache_path, compare, path_length):
     show_default=True,
     help="Show traceback, if last execution failed.",
 )
-def show_staged(cache_path, pk, tb):
-    """Show details of a staged notebook."""
+def show_project_record(cache_path, pk, tb):
+    """Show details of a notebook."""
     import yaml
 
     db = get_cache(cache_path)
     try:
-        record = db.get_staged_record(pk)
+        record = db.get_project_record(pk)
     except KeyError:
         click.secho("ID {} does not exist, Aborting!".format(pk), fg="red")
         sys.exit(1)
-    cache_record = db.get_cache_record_of_staged(record.uri)
+    cache_record = db.get_cached_project_nb(record.uri)
     data = record.format_dict(cache_record=cache_record, path_length=None, assets=False)
     click.echo(yaml.safe_dump(data, sort_keys=False).rstrip())
     if record.assets:

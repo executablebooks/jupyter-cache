@@ -2,7 +2,7 @@
 
 # Command-Line
 
-<!-- This section was auto-generated on 2021-08-01 17:43 by: tests/make_cli_readme.py -->
+<!-- This section was auto-generated on 2021-08-02 03:51 by: tests/make_cli_readme.py -->
 
 From the checked-out repository folder:
 
@@ -22,8 +22,8 @@ Commands:
   cache    Commands for adding to and inspecting the cache.
   clear    Clear the cache completely.
   config   Commands for configuring the cache.
-  execute  Execute notebooks that are not in the cache or outdated.
-  stage    Commands for staging notebooks to be executed.
+  execute  Execute all or specific outdated notebooks in the project.
+  project  Commands for interacting with a project.
 ```
 
 ````{tip}
@@ -49,6 +49,7 @@ Commands:
   add                 Cache notebook(s) that have already been executed.
   add-with-artefacts  Cache a notebook, with possible artefact files.
   cat-artifact        Print the contents of a cached artefact.
+  clear               Remove all executed notebooks from the cache.
   diff-nb             Print a diff of a notebook to one stored in the cache.
   list                List cached notebook records in the cache.
   remove              Remove notebooks stored in the cache.
@@ -93,7 +94,7 @@ Once you've cached some notebooks, you can look at the 'cache records'
 for what has been cached.
 
 Each notebook is hashed (code cells and kernel spec only),
-which is used to compare against 'staged' notebooks.
+which is used to compare against notebooks in the project.
 Multiple hashes for the same URI can be added
 (the URI is just there for inspection) and the size of the cache is limited
 (current default 1000) so that, at this size,
@@ -104,10 +105,10 @@ You can remove cached records by their ID.
 $ jcache cache list
   ID  Origin URI                             Created           Accessed
 ----  -------------------------------------  ----------------  ----------------
-   5  tests/notebooks/external_output.ipynb  2021-08-01 15:43  2021-08-01 15:43
-   4  tests/notebooks/complex_outputs.ipynb  2021-08-01 15:43  2021-08-01 15:43
-   3  tests/notebooks/basic_unrun.ipynb      2021-08-01 15:43  2021-08-01 15:43
-   2  tests/notebooks/basic_failing.ipynb    2021-08-01 15:43  2021-08-01 15:43
+   5  tests/notebooks/external_output.ipynb  2021-08-02 01:51  2021-08-02 01:51
+   4  tests/notebooks/complex_outputs.ipynb  2021-08-02 01:51  2021-08-02 01:51
+   3  tests/notebooks/basic_unrun.ipynb      2021-08-02 01:51  2021-08-02 01:51
+   2  tests/notebooks/basic_failing.ipynb    2021-08-02 01:51  2021-08-02 01:51
 ```
 
 ````{tip}
@@ -135,8 +136,8 @@ Show a full description of a cached notebook by referring to its ID
 $ jcache cache show 6
 ID: 6
 Origin URI: ../tests/notebooks/basic.ipynb
-Created: 2021-08-01 15:43
-Accessed: 2021-08-01 15:43
+Created: 2021-08-02 01:51
+Accessed: 2021-08-02 01:51
 Hashkey: 94c17138f782c75df59e989fffa64e3a
 Artifacts:
 - artifact_folder/artifact.txt
@@ -195,59 +196,60 @@ nbdiff
 Success!
 ```
 
-## Staging Notebooks for execution
+## Adding notebooks to the project
 
 ```console
-$ jcache stage --help
-Usage: stage [OPTIONS] COMMAND [ARGS]...
+$ jcache project --help
+Usage: project [OPTIONS] COMMAND [ARGS]...
 
-  Commands for staging notebooks to be executed.
+  Commands for creating/interacting with a project of notebooks.
 
 Options:
   --help  Show this message and exit.
 
 Commands:
-  add              Stage notebook(s) for execution.
-  add-with-assets  Stage a notebook, with possible asset files.
-  list             List notebooks staged for possible execution.
-  remove-ids       Un-stage notebook(s), by ID.
-  remove-uris      Un-stage notebook(s), by URI.
-  show             Show details of a staged notebook.
+  add              Add notebook(s) to the project.
+  add-with-assets  Add notebook(s) to the project, with possible asset files.
+  list             List notebooks in the project.
+  remove-ids       Remove notebook(s) from the project, by ID.
+  remove-uris      Remove notebook(s) from the project, by URI.
+  show             Show details of a notebook.
 ```
 
-Staged notebooks are recorded as pointers to their URI,
+A project consist of a set of notebooks to be executed.
+
+Notebooks are recorded as pointers to their URI (e.g. file path),
 i.e. no physical copying takes place until execution time.
 
-If you stage some notebooks for execution, then
-you can list them to see which have existing records in the cache (by hash),
+You can list the notebooks to see which have existing records in the cache (by hash),
 and which will require execution:
 
 ```console
-$ jcache stage add tests/notebooks/basic.ipynb tests/notebooks/basic_failing.ipynb tests/notebooks/basic_unrun.ipynb tests/notebooks/complex_outputs.ipynb tests/notebooks/external_output.ipynb
-Staging: ../tests/notebooks/basic.ipynb
-Staging: ../tests/notebooks/basic_failing.ipynb
-Staging: ../tests/notebooks/basic_unrun.ipynb
-Staging: ../tests/notebooks/complex_outputs.ipynb
-Staging: ../tests/notebooks/external_output.ipynb
+$ jcache project add tests/notebooks/basic.ipynb tests/notebooks/basic_failing.ipynb tests/notebooks/basic_unrun.ipynb tests/notebooks/complex_outputs.ipynb tests/notebooks/external_output.ipynb
+Adding: ../tests/notebooks/basic.ipynb
+Adding: ../tests/notebooks/basic_failing.ipynb
+Adding: ../tests/notebooks/basic_unrun.ipynb
+Adding: ../tests/notebooks/complex_outputs.ipynb
+Adding: ../tests/notebooks/external_output.ipynb
 Success!
 ```
 
 ```console
-$ jcache stage list
+$ jcache project list
   ID  URI                                    Reader    Created             Assets    Cache ID
 ----  -------------------------------------  --------  ----------------  --------  ----------
-   5  tests/notebooks/external_output.ipynb  nbformat  2021-08-01 15:43         0           5
-   4  tests/notebooks/complex_outputs.ipynb  nbformat  2021-08-01 15:43         0
-   3  tests/notebooks/basic_unrun.ipynb      nbformat  2021-08-01 15:43         0           6
-   2  tests/notebooks/basic_failing.ipynb    nbformat  2021-08-01 15:43         0           2
-   1  tests/notebooks/basic.ipynb            nbformat  2021-08-01 15:43         0           6
+   5  tests/notebooks/external_output.ipynb  nbformat  2021-08-02 01:51         0           5
+   4  tests/notebooks/complex_outputs.ipynb  nbformat  2021-08-02 01:51         0
+   3  tests/notebooks/basic_unrun.ipynb      nbformat  2021-08-02 01:51         0           6
+   2  tests/notebooks/basic_failing.ipynb    nbformat  2021-08-02 01:51         0           2
+   1  tests/notebooks/basic.ipynb            nbformat  2021-08-02 01:51         0           6
 ```
 
-You can remove a staged notebook by its URI or ID:
+You can remove a notebook from the project by its URI or ID:
 
 ```console
-$ jcache stage remove-ids 4
-Unstaging ID: 4
+$ jcache project remove-ids 4
+Removing: 4
 Success!
 ```
 
@@ -284,13 +286,13 @@ along with any 'artefacts' created by the execution,
 that are inside the notebook folder, and data supplied by the executor.
 
 ```console
-$ jcache stage list
+$ jcache project list
   ID  URI                                    Reader    Created             Assets    Cache ID
 ----  -------------------------------------  --------  ----------------  --------  ----------
-   5  tests/notebooks/external_output.ipynb  nbformat  2021-08-01 15:43         0           5
-   3  tests/notebooks/basic_unrun.ipynb      nbformat  2021-08-01 15:43         0           6
-   2  tests/notebooks/basic_failing.ipynb    nbformat  2021-08-01 15:43         0
-   1  tests/notebooks/basic.ipynb            nbformat  2021-08-01 15:43         0           6
+   5  tests/notebooks/external_output.ipynb  nbformat  2021-08-02 01:51         0           5
+   3  tests/notebooks/basic_unrun.ipynb      nbformat  2021-08-02 01:51         0           6
+   2  tests/notebooks/basic_failing.ipynb    nbformat  2021-08-02 01:51         0
+   1  tests/notebooks/basic.ipynb            nbformat  2021-08-02 01:51         0           6
 ```
 
 Execution data (such as execution time) will be stored in the cache record:
@@ -299,22 +301,22 @@ Execution data (such as execution time) will be stored in the cache record:
 $ jcache cache show 6
 ID: 6
 Origin URI: ../tests/notebooks/basic_unrun.ipynb
-Created: 2021-08-01 15:43
-Accessed: 2021-08-01 15:43
+Created: 2021-08-02 01:51
+Accessed: 2021-08-02 01:51
 Hashkey: 94c17138f782c75df59e989fffa64e3a
 Data:
-  execution_seconds: 0.9876813249999996
+  execution_seconds: 2.027238027
 
 ```
 
-Failed notebooks will not be cached, but the exception traceback will be added to the stage record:
+Failed notebooks will not be cached, but the exception traceback will be added to the notebook's project record:
 
 ```console
-$ jcache stage show 2
+$ jcache project show 2
 ID: 2
 URI: ../tests/notebooks/basic_failing.ipynb
 Reader: nbformat
-Created: 2021-08-01 15:43
+Created: 2021-08-02 01:51
 Failed Last Execution!
 Traceback (most recent call last):
   File "../jupyter_cache/executors/utils.py", line 55, in single_nb_execution
@@ -340,7 +342,7 @@ raise Exception('oopsie!')
 
 ---------------------------------------------------------------------------
 Exception                                 Traceback (most recent call last)
-/var/folders/t2/xbl15_3n4tsb1vr_ccmmtmbr0000gn/T/ipykernel_39409/340246212.py in <module>
+/var/folders/t2/xbl15_3n4tsb1vr_ccmmtmbr0000gn/T/ipykernel_76025/340246212.py in <module>
 ----> 1 raise Exception('oopsie!')
 
 Exception: oopsie!
@@ -354,34 +356,34 @@ Code cells can be tagged with `raises-exception` to let the executor known that 
 (see [this issue on its behaviour](https://github.com/jupyter/nbconvert/issues/730)).
 ```
 
-Once executed you may leave staged notebooks, for later re-execution, or remove them:
+Once executed you may leave notebooks in the project, for later re-execution, or remove them:
 
 ```console
-$ jcache stage remove-ids --all
+$ jcache project remove-ids --all
 Are you sure you want to remove all? [y/N]: y
-Unstaging ID: 1
-Unstaging ID: 2
-Unstaging ID: 3
-Unstaging ID: 5
+Removing: 1
+Removing: 2
+Removing: 3
+Removing: 5
 Success!
 ```
 
-You can also stage notebooks with assets;
+You can also add notebooks to the projects with assets;
 external files that are required by the notebook during execution.
 As with artefacts, these files must be in the same folder as the notebook,
 or a sub-folder.
 
 ```console
-$ jcache stage add-with-assets -nb tests/notebooks/basic.ipynb tests/notebooks/artifact_folder/artifact.txt
+$ jcache project add-with-assets -nb tests/notebooks/basic.ipynb tests/notebooks/artifact_folder/artifact.txt
 Success!
 ```
 
 ```console
-$ jcache stage show 1
+$ jcache project show 1
 ID: 1
 URI: ../tests/notebooks/basic.ipynb
 Reader: nbformat
-Created: 2021-08-01 15:43
+Created: 2021-08-02 01:51
 Cache ID: 6
 Assets:
 - ../tests/notebooks/artifact_folder/artifact.txt

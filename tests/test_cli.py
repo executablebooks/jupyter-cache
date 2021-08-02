@@ -3,7 +3,7 @@ import os
 from click.testing import CliRunner
 
 from jupyter_cache.cache.main import JupyterCacheBase
-from jupyter_cache.cli.commands import cmd_cache, cmd_main, cmd_stage
+from jupyter_cache.cli.commands import cmd_cache, cmd_main, cmd_project
 
 NB_PATH = os.path.join(os.path.realpath(os.path.dirname(__file__)), "notebooks")
 
@@ -151,53 +151,53 @@ def test_diff_nbs(tmp_path):
     ]
 
 
-def test_stage_nbs(tmp_path):
+def test_add_nbs_to_project(tmp_path):
     db = JupyterCacheBase(str(tmp_path))
     path = os.path.join(NB_PATH, "basic.ipynb")
     runner = CliRunner()
-    result = runner.invoke(cmd_stage.stage_nbs, ["-p", tmp_path, path])
+    result = runner.invoke(cmd_project.add_notebooks, ["-p", tmp_path, path])
     assert result.exception is None, result.output
     assert result.exit_code == 0, result.output
     assert "basic.ipynb" in result.output.strip(), result.output
-    assert db.list_staged_records()[0].uri == path
+    assert db.nb_project_records()[0].uri == path
 
 
-def test_unstage_nbs(tmp_path):
+def test_remove_nbs_from_project(tmp_path):
     db = JupyterCacheBase(str(tmp_path))
     path = os.path.join(NB_PATH, "basic.ipynb")
     runner = CliRunner()
-    result = runner.invoke(cmd_stage.stage_nbs, ["-p", tmp_path, path])
-    result = runner.invoke(cmd_stage.unstage_nbs_uri, ["-p", tmp_path, path])
+    result = runner.invoke(cmd_project.add_notebooks, ["-p", tmp_path, path])
+    result = runner.invoke(cmd_project.remove_nbs_uri, ["-p", tmp_path, path])
     assert result.exception is None, result.output
     assert result.exit_code == 0, result.output
     assert "basic.ipynb" in result.output.strip(), result.output
-    assert db.list_staged_records() == []
+    assert db.nb_project_records() == []
 
 
-def test_list_staged(tmp_path):
+def test_list_nbs_in_project(tmp_path):
     db = JupyterCacheBase(str(tmp_path))
     db.cache_notebook_file(
         path=os.path.join(NB_PATH, "basic.ipynb"), check_validity=False
     )
-    db.stage_notebook_file(path=os.path.join(NB_PATH, "basic.ipynb"))
-    db.stage_notebook_file(path=os.path.join(NB_PATH, "basic_failing.ipynb"))
+    db.add_nb_to_project(path=os.path.join(NB_PATH, "basic.ipynb"))
+    db.add_nb_to_project(path=os.path.join(NB_PATH, "basic_failing.ipynb"))
 
     runner = CliRunner()
-    result = runner.invoke(cmd_stage.list_staged, ["-p", tmp_path])
+    result = runner.invoke(cmd_project.list_nbs_in_project, ["-p", tmp_path])
     assert result.exception is None, result.output
     assert result.exit_code == 0, result.output
     assert "basic.ipynb" in result.output.strip(), result.output
 
 
-def test_show_staged(tmp_path):
+def test_show_project_record(tmp_path):
     db = JupyterCacheBase(str(tmp_path))
     db.cache_notebook_file(
         path=os.path.join(NB_PATH, "basic.ipynb"), check_validity=False
     )
-    db.stage_notebook_file(path=os.path.join(NB_PATH, "basic.ipynb"))
+    db.add_nb_to_project(path=os.path.join(NB_PATH, "basic.ipynb"))
 
     runner = CliRunner()
-    result = runner.invoke(cmd_stage.show_staged, ["-p", tmp_path, "1"])
+    result = runner.invoke(cmd_project.show_project_record, ["-p", tmp_path, "1"])
     assert result.exception is None, result.output
     assert result.exit_code == 0, result.output
     assert "basic.ipynb" in result.output.strip(), result.output

@@ -123,6 +123,10 @@ OVERWRITE_CACHED = click.option(
     help="Whether to overwrite an existing notebook with the same hash.",
 )
 
+FORCE = click.option(
+    "-f", "--force", default=False, is_flag=True, help="Do not ask for confirmation."
+)
+
 
 def confirm_remove_all(ctx, param, remove_all):
     if remove_all and not click.confirm("Are you sure you want to remove all?"):

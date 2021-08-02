@@ -5,7 +5,7 @@ from textwrap import dedent
 from click.testing import CliRunner
 
 from jupyter_cache.cache.main import DEFAULT_CACHE_LIMIT
-from jupyter_cache.cli.commands import cmd_cache, cmd_exec, cmd_main, cmd_stage
+from jupyter_cache.cli.commands import cmd_cache, cmd_exec, cmd_main, cmd_project
 
 
 def get_string(cli, group=None, args=(), input=None):
@@ -94,7 +94,7 @@ def main():
         for what has been cached.
 
         Each notebook is hashed (code cells and kernel spec only),
-        which is used to compare against 'staged' notebooks.
+        which is used to compare against notebooks in the project.
         Multiple hashes for the same URI can be added
         (the URI is just there for inspection) and the size of the cache is limited
         (current default {}) so that, at this size,
@@ -163,25 +163,25 @@ def main():
         get_string(cmd_cache.diff_nb, cache_name, ["2", "tests/notebooks/basic.ipynb"])
     )
 
-    # staging
-    strings.append("## Staging Notebooks for execution")
-    stage_name = cmd_stage.cmnd_stage.name
-    strings.append(get_string(cmd_stage.cmnd_stage, None, ["--help"]))
+    strings.append("## Adding notebooks to the project")
+    project_cmd_name = cmd_project.cmnd_project.name
+    strings.append(get_string(cmd_project.cmnd_project, None, ["--help"]))
     strings.append(
         dedent(
             """\
-        Staged notebooks are recorded as pointers to their URI,
+        A project consist of a set of notebooks to be executed.
+
+        Notebooks are recorded as pointers to their URI (e.g. file path),
         i.e. no physical copying takes place until execution time.
 
-        If you stage some notebooks for execution, then
-        you can list them to see which have existing records in the cache (by hash),
+        You can list the notebooks to see which have existing records in the cache (by hash),
         and which will require execution:"""
         )
     )
     strings.append(
         get_string(
-            cmd_stage.stage_nbs,
-            stage_name,
+            cmd_project.add_notebooks,
+            project_cmd_name,
             [
                 "tests/notebooks/basic.ipynb",
                 "tests/notebooks/basic_failing.ipynb",
@@ -191,9 +191,9 @@ def main():
             ],
         )
     )
-    strings.append(get_string(cmd_stage.list_staged, stage_name))
-    strings.append("You can remove a staged notebook by its URI or ID:")
-    strings.append(get_string(cmd_stage.unstage_nbs_id, stage_name, ["4"]))
+    strings.append(get_string(cmd_project.list_nbs_in_project, project_cmd_name))
+    strings.append("You can remove a notebook from the project by its URI or ID:")
+    strings.append(get_string(cmd_project.remove_nbs_id, project_cmd_name, ["4"]))
     strings.append("You can then run a basic execution of the required notebooks:")
     strings.append(get_string(cmd_cache.remove_caches, cache_name, ["6", "2"]))
     strings.append(get_string(cmd_exec.execute_nbs, None))
@@ -205,16 +205,16 @@ def main():
         that are inside the notebook folder, and data supplied by the executor."""
         )
     )
-    strings.append(get_string(cmd_stage.list_staged, stage_name))
+    strings.append(get_string(cmd_project.list_nbs_in_project, project_cmd_name))
     strings.append(
         "Execution data (such as execution time) will be stored in the cache record:"
     )
     strings.append(get_string(cmd_cache.show_cache, cache_name, ["6"]))
     strings.append(
         "Failed notebooks will not be cached, "
-        "but the exception traceback will be added to the stage record:"
+        "but the exception traceback will be added to the notebook's project record:"
     )
-    strings.append(get_string(cmd_stage.show_staged, stage_name, ["2"]))
+    strings.append(get_string(cmd_project.show_project_record, project_cmd_name, ["2"]))
     strings.append(
         dedent(
             """\
@@ -225,18 +225,18 @@ def main():
         )
     )
     strings.append(
-        "Once executed you may leave staged notebooks, "
+        "Once executed you may leave notebooks in the project, "
         "for later re-execution, or remove them:"
     )
     strings.append(
-        get_string(cmd_stage.unstage_nbs_id, stage_name, ["--all"], input="y")
+        get_string(cmd_project.remove_nbs_id, project_cmd_name, ["--all"], input="y")
     )
 
     # assets
     strings.append(
         dedent(
             """\
-        You can also stage notebooks with assets;
+        You can also add notebooks to the projects with assets;
         external files that are required by the notebook during execution.
         As with artefacts, these files must be in the same folder as the notebook,
         or a sub-folder."""
@@ -244,8 +244,8 @@ def main():
     )
     strings.append(
         get_string(
-            cmd_stage.stage_nb,
-            stage_name,
+            cmd_project.add_notebook,
+            project_cmd_name,
             [
                 "-nb",
                 "tests/notebooks/basic.ipynb",
@@ -253,7 +253,7 @@ def main():
             ],
         )
     )
-    strings.append(get_string(cmd_stage.show_staged, stage_name, ["1"]))
+    strings.append(get_string(cmd_project.show_project_record, project_cmd_name, ["1"]))
 
     return "\n\n".join(strings)
 

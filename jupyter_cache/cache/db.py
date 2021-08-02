@@ -17,7 +17,7 @@ OrmBase = declarative_base()
 
 # TODO store this in the database so we can check for updates
 DB_VERSION = 2
-# v2 added reader field to nbstage
+# v2: nbstage -> nbproject, and added reader field to nbproject
 
 
 def create_db(path, name="global.db") -> Engine:
@@ -226,10 +226,10 @@ class NbCacheRecord(OrmBase):
         return pks_to_delete
 
 
-class NbStageRecord(OrmBase):
-    """A record of a notebook staged for execution."""
+class NbProjectRecord(OrmBase):
+    """A record of a notebook within the project."""
 
-    __tablename__ = "nbstage"
+    __tablename__ = "nbproject"
 
     pk = Column(Integer(), primary_key=True)
     uri = Column(String(255), nullable=False, unique=True)
@@ -287,76 +287,76 @@ class NbStageRecord(OrmBase):
         *,
         reader: str = "nbformat",
         assets=(),
-    ) -> "NbStageRecord":
-        assets = NbStageRecord.validate_assets(assets, uri)
+    ) -> "NbProjectRecord":
+        assets = NbProjectRecord.validate_assets(assets, uri)
         with session_context(db) as session:  # type: Session
-            record = NbStageRecord(uri=uri, reader=reader, assets=assets)
+            record = NbProjectRecord(uri=uri, reader=reader, assets=assets)
             session.add(record)
             try:
                 session.commit()
             except IntegrityError:
                 if raise_on_exists:
-                    raise ValueError(f"uri already staged: {uri}")
-                return NbStageRecord.record_from_uri(uri, db)
+                    raise ValueError(f"URI already in project: {uri}")
+                return NbProjectRecord.record_from_uri(uri, db)
             session.refresh(record)
             session.expunge(record)
         return record
 
     def remove_pks(pks: List[int], db: Engine):
         with session_context(db) as session:  # type: Session
-            session.query(NbStageRecord).filter(NbStageRecord.pk.in_(pks)).delete(
+            session.query(NbProjectRecord).filter(NbProjectRecord.pk.in_(pks)).delete(
                 synchronize_session=False
             )
             session.commit()
 
     def remove_uris(uris: List[str], db: Engine):
         with session_context(db) as session:  # type: Session
-            session.query(NbStageRecord).filter(NbStageRecord.uri.in_(uris)).delete(
+            session.query(NbProjectRecord).filter(NbProjectRecord.uri.in_(uris)).delete(
                 synchronize_session=False
             )
             session.commit()
 
     @staticmethod
-    def record_from_pk(pk: int, db: Engine) -> "NbStageRecord":
+    def record_from_pk(pk: int, db: Engine) -> "NbProjectRecord":
         with session_context(db) as session:  # type: Session
-            result = session.query(NbStageRecord).filter_by(pk=pk).one_or_none()
+            result = session.query(NbProjectRecord).filter_by(pk=pk).one_or_none()
             if result is None:
-                raise KeyError("Staging record not found for NB with PK: {}".format(pk))
+                raise KeyError("Project record not found for NB with PK: {}".format(pk))
             session.expunge(result)
         return result
 
     @staticmethod
-    def record_from_uri(uri: str, db: Engine) -> "NbStageRecord":
+    def record_from_uri(uri: str, db: Engine) -> "NbProjectRecord":
         with session_context(db) as session:  # type: Session
-            result = session.query(NbStageRecord).filter_by(uri=uri).one_or_none()
+            result = session.query(NbProjectRecord).filter_by(uri=uri).one_or_none()
             if result is None:
                 raise KeyError(
-                    "Staging record not found for NB with URI: {}".format(uri)
+                    "Project record not found for NB with URI: {}".format(uri)
                 )
             session.expunge(result)
         return result
 
     @staticmethod
-    def records_all(db: Engine) -> "NbStageRecord":
+    def records_all(db: Engine) -> "NbProjectRecord":
         with session_context(db) as session:  # type: Session
-            results = session.query(NbStageRecord).all()
+            results = session.query(NbProjectRecord).all()
             session.expunge_all()
         return results
 
     def remove_tracebacks(pks, db: Engine):
         """Remove all tracebacks."""
         with session_context(db) as session:  # type: Session
-            session.query(NbStageRecord).filter(NbStageRecord.pk.in_(pks)).update(
-                {NbStageRecord.traceback: None}, synchronize_session=False
+            session.query(NbProjectRecord).filter(NbProjectRecord.pk.in_(pks)).update(
+                {NbProjectRecord.traceback: None}, synchronize_session=False
             )
             session.commit()
 
     def set_traceback(uri: str, traceback: Optional[str], db: Engine):
         with session_context(db) as session:  # type: Session
-            result = session.query(NbStageRecord).filter_by(uri=uri).one_or_none()
+            result = session.query(NbProjectRecord).filter_by(uri=uri).one_or_none()
             if result is None:
                 raise KeyError(
-                    "Staging record not found for NB with URI: {}".format(uri)
+                    "Project record not found for NB with URI: {}".format(uri)
                 )
             result.traceback = traceback
             try:

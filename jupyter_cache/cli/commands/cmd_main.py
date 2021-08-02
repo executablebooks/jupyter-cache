@@ -16,11 +16,15 @@ def jcache(*args, **kwargs):
 
 @jcache.command("clear")
 @options.CACHE_PATH
-def clear_cache(cache_path):
+@options.FORCE
+def clear_cache(cache_path, force):
     """Clear the cache completely."""
     from jupyter_cache.cache.main import JupyterCacheBase
 
     db = JupyterCacheBase(cache_path)
-    click.confirm("Are you sure you want to permanently clear the cache!?", abort=True)
+    if not force:
+        click.confirm(
+            "Are you sure you want to permanently clear the cache!?", abort=True
+        )
     db.clear_cache()
     click.secho("Cache cleared!", fg="green")

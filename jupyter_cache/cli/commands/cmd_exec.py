@@ -20,32 +20,31 @@ click_log.basic_config(logger)
 @options.CACHE_PATH
 @click_log.simple_verbosity_option(logger)
 def execute_nbs(cache_path, executor, pk_paths, timeout):
-    """Execute notebooks that are not in the cache or outdated."""
+    """Execute all or specific outdated notebooks in the project."""
     import yaml
 
     from jupyter_cache.executors import load_executor
 
     db = get_cache(cache_path)
     records = []
-    unstaged = []
+    not_in_project = []
     for pk_path in pk_paths:
         if pk_path.isdigit():
             pk_path = int(pk_path)
-            record = db.get_staged_record(int(pk_path))
+            record = db.get_project_record(int(pk_path))
             records.append(record)
         else:
             try:
-                record = db.get_staged_record(str(Path(pk_path).absolute()))
+                record = db.get_project_record(str(Path(pk_path).absolute()))
                 records.append(record)
             except KeyError:
                 if not Path(pk_path).exists():
                     raise FileNotFoundError(f"'{pk_path}' does not exist.")
-                unstaged.append(pk_path)
-    if unstaged:
-        # ask to stage, select reader
-        unstaged_string = "\n - ".join(unstaged)
-        click.echo(f"Unstaged notebooks specified:\n - {unstaged_string}")
-        if not click.confirm("Continue (staging these notebooks first)?"):
+                not_in_project.append(pk_path)
+    if not_in_project:
+        not_in_project_string = "\n - ".join(not_in_project)
+        click.echo(f"Notebooks not in project:\n - {not_in_project_string}")
+        if not click.confirm("Continue (adding these files to the project)?"):
             click.secho("Aborted!", bold=True, fg="red")
             raise SystemExit(1)
         reader = click.prompt(
@@ -55,8 +54,8 @@ def execute_nbs(cache_path, executor, pk_paths, timeout):
             default="nbformat",
             show_default=True,
         )
-        for pk_path in unstaged:
-            record = db.stage_notebook_file(pk_path, reader=reader)
+        for pk_path in not_in_project:
+            record = db.add_nb_to_project(pk_path, reader=reader)
             records.append(record)
     try:
         executor = load_executor(executor, db, logger=logger)

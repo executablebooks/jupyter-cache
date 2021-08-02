@@ -13,7 +13,7 @@ import nbformat as nbf
 from attr.validators import instance_of, optional
 
 # TODO make these abstract
-from jupyter_cache.cache.db import NbCacheRecord, NbStageRecord
+from jupyter_cache.cache.db import NbCacheRecord, NbProjectRecord
 
 NB_VERSION = 4
 
@@ -242,10 +242,10 @@ class JupyterCacheAbstract(ABC):
         return self.diff_nbnode_with_cache(pk, nb, uri=path, as_str=as_str, **kwargs)
 
     @abstractmethod
-    def stage_notebook_file(
-        self, uri: str, *, reader: Optional[str] = None, assets: List[str] = ()
-    ) -> NbStageRecord:
-        """Stage a single notebook for execution.
+    def add_nb_to_project(
+        self, uri: str, *, reader: str = "nbformat", assets: List[str] = ()
+    ) -> NbProjectRecord:
+        """Add a single notebook to the project.
 
         :param uri: The path to the file
         :param reader: A key for the reader function, to read the uri and return a NotebookNode
@@ -254,37 +254,30 @@ class JupyterCacheAbstract(ABC):
         """
 
     @abstractmethod
-    def discard_staged_notebook(self, uri_or_pk: Union[int, str]):
-        """Discard a staged notebook."""
+    def remove_nb_from_project(self, uri_or_pk: Union[int, str]):
+        """Remove a notebook from the project."""
 
     @abstractmethod
-    def list_staged_records(self) -> List[NbStageRecord]:
-        """list staged notebook URI's in the cache."""
+    def nb_project_records(self) -> List[NbProjectRecord]:
+        """Return a list of the notebook URI's in the project."""
 
     @abstractmethod
-    def get_staged_record(self, uri_or_pk: Union[int, str]) -> NbStageRecord:
-        """Return the record of a staged notebook, by its primary key or URI."""
+    def get_project_record(self, uri_or_pk: Union[int, str]) -> NbProjectRecord:
+        """Return the record of a notebook in the project, by its primary key or URI."""
 
     @abstractmethod
-    def get_staged_notebook(self, uri_or_pk: Union[int, str]) -> NbBundleIn:
-        """Return a single staged notebook, by its primary key or URI."""
+    def get_project_notebook(self, uri_or_pk: Union[int, str]) -> NbBundleIn:
+        """Return a single notebook in the project, by its primary key or URI."""
 
     @abstractmethod
-    def get_cache_record_of_staged(
+    def get_cached_project_nb(
         self, uri_or_pk: Union[int, str]
     ) -> Optional[NbCacheRecord]:
-        """Get cache record from staged notebook."""
+        """Get cache record for a notebook in the project.
+
+        :param uri_or_pk: The URI of pk of the file in the project
+        """
 
     @abstractmethod
-    def list_staged_unexecuted(self) -> List[NbStageRecord]:
-        """List staged notebooks, whose hash is not present in the cache."""
-
-    # removed until defined use case
-    # @abstractmethod
-    # def get_cache_codecell(self, pk: int, index: int) -> nbf.NotebookNode:
-    #     """Return a code cell from a cached notebook.
-
-    #     NOTE: the index **only** refers to the list of code cells, e.g.
-    #     `[codecell_0, textcell_1, codecell_2]`
-    #     would map {0: codecell_0, 1: codecell_2}
-    #     """
+    def list_unexecuted(self) -> List[NbProjectRecord]:
+        """List notebooks in the project, whose hash is not present in the cache."""

@@ -26,6 +26,15 @@ extensions = [
     # "sphinx.ext.viewcode",
 ]
 jupyter_execute_notebooks = "off"
+html_theme_options = {
+    "repository_url": "https://github.com/executablebooks/jupyter-cache",
+    "use_repository_button": True,
+    "use_edit_page_button": True,
+    "use_issues_button": True,
+    "repository_branch": "master",
+    "path_to_docs": "docs",
+    "home_page_in_toc": True,
+}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]

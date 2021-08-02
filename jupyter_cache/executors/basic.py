@@ -3,7 +3,7 @@ import tempfile
 from pathlib import Path
 from typing import Optional
 
-from jupyter_cache.cache.db import NbStageRecord
+from jupyter_cache.cache.db import NbProjectRecord
 from jupyter_cache.cache.main import NbArtifacts, NbBundleIn
 from jupyter_cache.executors.base import ExecutorRunResult, JupyterExecutorAbstract
 from jupyter_cache.executors.utils import single_nb_execution
@@ -39,14 +39,16 @@ class JupyterExecutorLocalSerial(JupyterExecutorAbstract):
     ) -> ExecutorRunResult:
         """This function interfaces with the cache, deferring execution to `execute`."""
         # Get the notebook tha require re-execution
-        stage_records = self.cache.list_staged_unexecuted()
+        execute_records = self.cache.list_unexecuted()
         if filter_uris is not None:
-            stage_records = [r for r in stage_records if r.uri in filter_uris]
+            execute_records = [r for r in execute_records if r.uri in filter_uris]
         if filter_pks is not None:
-            stage_records = [r for r in stage_records if r.pk in filter_pks]
+            execute_records = [r for r in execute_records if r.pk in filter_pks]
 
         # remove any tracebacks from previous executions
-        NbStageRecord.remove_tracebacks([r.pk for r in stage_records], self.cache.db)
+        NbProjectRecord.remove_tracebacks(
+            [r.pk for r in execute_records], self.cache.db
+        )
 
         # setup an dictionary to categorise all executed notebook uris:
         # excepted are where the actual notebook execution raised an exception;
@@ -56,16 +58,17 @@ class JupyterExecutorLocalSerial(JupyterExecutorAbstract):
         # so that we don't have to read all notebooks before execution
 
         def _iterator():
-            for stage_record in stage_records:
+            for execute_record in execute_records:
                 try:
-                    nb_bundle = self.cache.get_staged_notebook(stage_record.pk)
+                    nb_bundle = self.cache.get_project_notebook(execute_record.pk)
                 except Exception:
                     self.logger.error(
-                        "Failed Retrieving: {}".format(stage_record.uri), exc_info=True
+                        "Failed Retrieving: {}".format(execute_record.uri),
+                        exc_info=True,
                     )
-                    result.errored.append(stage_record.uri)
+                    result.errored.append(execute_record.uri)
                 else:
-                    yield stage_record, nb_bundle
+                    yield execute_record, nb_bundle
 
         # The execute method yields notebook bundles, or ExecutionError
         for bundle_or_exc in self.execute(
@@ -81,7 +84,7 @@ class JupyterExecutorLocalSerial(JupyterExecutorAbstract):
                 # The notebook raised an exception during execution
                 # TODO store excepted bundles
                 result.excepted.append(bundle_or_exc.uri)
-                NbStageRecord.set_traceback(
+                NbProjectRecord.set_traceback(
                     bundle_or_exc.uri, bundle_or_exc.traceback, self.cache.db
                 )
                 continue
@@ -101,10 +104,10 @@ class JupyterExecutorLocalSerial(JupyterExecutorAbstract):
         # TODO it would also be ideal to tag all notebooks
         # that were executed at the same time (just part of `data` or separate column?).
         # TODO maybe the status of success/failure could be explicitly stored on
-        # the stage record (cache_status=Enum('OK', 'FAILED', 'MISSING'))
+        # the project record (cache_status=Enum('OK', 'FAILED', 'MISSING'))
         # although now traceback is so this is an implicit sign of failure,
         # TODO failed notebooks could be stored in the cache, which would be
-        # accessed by stage pk (and would be deleted when removing the stage record)
+        # accessed by the project pk (and would be deleted when removing the project record)
         # see: https://python.quantecon.org/status.html
 
         return result
@@ -140,8 +143,8 @@ class JupyterExecutorLocalSerial(JupyterExecutorAbstract):
     def execute(self, input_iterator, timeout=30, allow_errors=False):
         """This function is isolated from the cache, and is responsible for execution.
 
-        The method is only supplied with the staged record and input notebook bundle,
-        it then yield results for caching
+        The method is only supplied with the project record and input notebook bundle,
+        it then yields results for caching
         """
         for _, nb_bundle in input_iterator:
             try:
@@ -167,10 +170,10 @@ class JupyterExecutorTempSerial(JupyterExecutorLocalSerial):
     def execute(self, input_iterator, timeout=30, allow_errors=False):
         """This function is isolated from the cache, and is responsible for execution.
 
-        The method is only supplied with the staged record and input notebook bundle,
-        it then yield results for caching
+        The method is only supplied with the project record and input notebook bundle,
+        it then yields results for caching.
         """
-        for stage_record, nb_bundle in input_iterator:
+        for execute_record, nb_bundle in input_iterator:
             try:
                 uri = nb_bundle.uri
                 self.logger.info("Executing: {}".format(uri))
@@ -178,7 +181,7 @@ class JupyterExecutorTempSerial(JupyterExecutorLocalSerial):
                 with tempfile.TemporaryDirectory() as tmpdirname:
 
                     try:
-                        asset_files = _copy_assets(stage_record, tmpdirname)
+                        asset_files = _copy_assets(execute_record, tmpdirname)
                     except Exception as err:
                         yield ExecutionError("Assets Retrieval Error", uri, err)
                         continue

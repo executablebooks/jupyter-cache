@@ -75,19 +75,19 @@ def test_basic_workflow(tmp_path):
         check_validity=False,
     )
     with pytest.raises(ValueError):
-        cache.stage_notebook_file(os.path.join(NB_PATH, "basic.ipynb"), assets=[""])
-    cache.stage_notebook_file(
+        cache.add_nb_to_project(os.path.join(NB_PATH, "basic.ipynb"), assets=[""])
+    cache.add_nb_to_project(
         os.path.join(NB_PATH, "basic.ipynb"),
         assets=[os.path.join(NB_PATH, "basic.ipynb")],
     )
-    assert [r.pk for r in cache.list_staged_records()] == [1]
-    assert [r.pk for r in cache.list_staged_unexecuted()] == []
+    assert [r.pk for r in cache.nb_project_records()] == [1]
+    assert [r.pk for r in cache.list_unexecuted()] == []
 
-    cache.stage_notebook_file(os.path.join(NB_PATH, "basic_failing.ipynb"))
-    assert [r.pk for r in cache.list_staged_records()] == [1, 2]
-    assert [r.pk for r in cache.list_staged_unexecuted()] == [2]
+    cache.add_nb_to_project(os.path.join(NB_PATH, "basic_failing.ipynb"))
+    assert [r.pk for r in cache.nb_project_records()] == [1, 2]
+    assert [r.pk for r in cache.list_unexecuted()] == [2]
 
-    bundle = cache.get_staged_notebook(os.path.join(NB_PATH, "basic_failing.ipynb"))
+    bundle = cache.get_project_notebook(os.path.join(NB_PATH, "basic_failing.ipynb"))
     assert bundle.nb.metadata
 
     cache.clear_cache()
@@ -189,9 +189,9 @@ def test_execution(tmp_path, executor_key):
     db = JupyterCacheBase(str(tmp_path / "cache"))
     temp_nb_path = tmp_path / "notebooks"
     shutil.copytree(NB_PATH, temp_nb_path)
-    db.stage_notebook_file(path=os.path.join(temp_nb_path, "basic_unrun.ipynb"))
-    db.stage_notebook_file(path=os.path.join(temp_nb_path, "basic_failing.ipynb"))
-    db.stage_notebook_file(
+    db.add_nb_to_project(path=os.path.join(temp_nb_path, "basic_unrun.ipynb"))
+    db.add_nb_to_project(path=os.path.join(temp_nb_path, "basic_failing.ipynb"))
+    db.add_nb_to_project(
         path=os.path.join(temp_nb_path, "external_output.ipynb"),
         assets=(os.path.join(temp_nb_path, "basic.ipynb"),),
     )
@@ -221,9 +221,9 @@ def test_execution(tmp_path, executor_key):
             paths = [str(p.relative_to(path)) for p in path.glob("**/*") if p.is_file()]
             assert paths == ["artifact.txt"]
             assert path.joinpath("artifact.txt").read_text(encoding="utf8") == "hi"
-    stage_record = db.get_staged_record(2)
-    assert stage_record.traceback is not None
-    assert "Exception: oopsie!" in stage_record.traceback
+    project_record = db.get_project_record(2)
+    assert project_record.traceback is not None
+    assert "Exception: oopsie!" in project_record.traceback
 
 
 def test_execution_jupytext(tmp_path):
@@ -233,9 +233,7 @@ def test_execution_jupytext(tmp_path):
     db = JupyterCacheBase(str(tmp_path / "cache"))
     temp_nb_path = tmp_path / "notebooks"
     shutil.copytree(NB_PATH, temp_nb_path)
-    db.stage_notebook_file(
-        path=os.path.join(temp_nb_path, "basic.md"), reader="jupytext"
-    )
+    db.add_nb_to_project(path=os.path.join(temp_nb_path, "basic.md"), reader="jupytext")
     executor = load_executor("local-serial", db)
     result = executor.run_and_cache()
     print(result)
@@ -254,7 +252,7 @@ def test_execution_timeout_config(tmp_path):
     from jupyter_cache.executors import load_executor
 
     db = JupyterCacheBase(str(tmp_path))
-    db.stage_notebook_file(path=os.path.join(NB_PATH, "sleep_2.ipynb"))
+    db.add_nb_to_project(path=os.path.join(NB_PATH, "sleep_2.ipynb"))
     executor = load_executor("local-serial", db)
     result = executor.run_and_cache(timeout=10)
     assert result.as_json() == {
@@ -264,7 +262,7 @@ def test_execution_timeout_config(tmp_path):
     }
     db.clear_cache()
 
-    db.stage_notebook_file(path=os.path.join(NB_PATH, "sleep_2.ipynb"))
+    db.add_nb_to_project(path=os.path.join(NB_PATH, "sleep_2.ipynb"))
     executor = load_executor("local-serial", db)
     result = executor.run_and_cache(timeout=1)
     assert result.as_json() == {
@@ -279,7 +277,7 @@ def test_execution_timeout_metadata(tmp_path):
     from jupyter_cache.executors import load_executor
 
     db = JupyterCacheBase(str(tmp_path))
-    db.stage_notebook_file(path=os.path.join(NB_PATH, "sleep_2_timeout_1.ipynb"))
+    db.add_nb_to_project(path=os.path.join(NB_PATH, "sleep_2_timeout_1.ipynb"))
     executor = load_executor("local-serial", db)
     result = executor.run_and_cache()
     assert result.as_json() == {
@@ -294,7 +292,7 @@ def test_execution_allow_errors_config(tmp_path):
     from jupyter_cache.executors import load_executor
 
     db = JupyterCacheBase(str(tmp_path))
-    db.stage_notebook_file(path=os.path.join(NB_PATH, "basic_failing.ipynb"))
+    db.add_nb_to_project(path=os.path.join(NB_PATH, "basic_failing.ipynb"))
     executor = load_executor("local-serial", db)
     result = executor.run_and_cache(allow_errors=True)
     assert result.as_json() == {
@@ -309,7 +307,7 @@ def test_run_in_temp_false(tmp_path):
     from jupyter_cache.executors import load_executor
 
     db = JupyterCacheBase(str(tmp_path))
-    db.stage_notebook_file(path=os.path.join(NB_PATH, "basic.ipynb"))
+    db.add_nb_to_project(path=os.path.join(NB_PATH, "basic.ipynb"))
     executor = load_executor("temp-serial", db)
     result = executor.run_and_cache()
     assert result.as_json() == {

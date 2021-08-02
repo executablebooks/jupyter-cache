@@ -155,6 +155,24 @@ def cache_nbs(cache_path, nbpaths, validate, overwrite):
         click.secho("Success!", fg="green")
 
 
+@cmnd_cache.command("clear")
+@options.CACHE_PATH
+@options.FORCE
+def clear_cache_cmd(cache_path, force):
+    """Remove all executed notebooks from the cache."""
+    db = get_cache(cache_path)
+    if not force:
+        click.confirm(
+            "Are you sure you want to permanently clear the cache!?", abort=True
+        )
+    for pk in db.list_cache_records():
+        try:
+            db.remove_cache(pk)
+        except Exception:
+            pass
+    click.secho("Cache cleared!", fg="green")
+
+
 @cmnd_cache.command("remove")
 @arguments.PKS
 @options.CACHE_PATH

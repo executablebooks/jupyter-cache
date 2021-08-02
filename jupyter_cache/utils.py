@@ -91,10 +91,10 @@ def tabulate_cache_records(records: list, hashkeys=False, path_length=None) -> s
     )
 
 
-def tabulate_stage_records(records: list, path_length=None, cache=None) -> str:
+def tabulate_project_records(records: list, path_length=None, cache=None) -> str:
     """Tabulate cache records.
 
-    :param records: list of ``NbStageRecord``
+    :param records: list of ``NbProjectRecord``
     :param path_length: truncate URI paths to x components
     :param cache: If the cache is given,
         we use it to add a column of matched cached pk (if available)
@@ -105,7 +105,7 @@ def tabulate_stage_records(records: list, path_length=None, cache=None) -> str:
     for record in sorted(records, key=lambda r: r.created, reverse=True):
         cache_record = None
         if cache is not None:
-            cache_record = cache.get_cache_record_of_staged(record.uri)
+            cache_record = cache.get_cached_project_nb(record.uri)
         rows.append(
             record.format_dict(cache_record=cache_record, path_length=path_length)
         )
