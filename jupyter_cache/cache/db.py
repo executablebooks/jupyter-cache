@@ -6,7 +6,7 @@ from typing import List, Optional
 
 from sqlalchemy import JSON, Column, DateTime, Integer, String, Text
 from sqlalchemy.engine import Engine, create_engine
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, sessionmaker, validates
 from sqlalchemy.sql.expression import desc
@@ -14,6 +14,10 @@ from sqlalchemy.sql.expression import desc
 from jupyter_cache.utils import shorten_path
 
 OrmBase = declarative_base()
+
+# TODO store this in the database so we can check for updates
+DB_VERSION = 2
+# v2 added reader field to nbstage
 
 
 def create_db(path, name="global.db") -> Engine:
@@ -28,6 +32,11 @@ def session_context(engine: Engine):
     session = sessionmaker(bind=engine)()
     try:
         yield session
+    except OperationalError as exc:
+        session.rollback()
+        raise RuntimeError(
+            "Unexpected error accessing jupyter cache, it may need to be cleared."
+        ) from exc
     except Exception:
         session.rollback()
         raise
@@ -224,6 +233,7 @@ class NbStageRecord(OrmBase):
 
     pk = Column(Integer(), primary_key=True)
     uri = Column(String(255), nullable=False, unique=True)
+    reader = Column(String(255), nullable=False)
     assets = Column(JSON(), nullable=False, default=list)
     traceback = Column(Text(), nullable=True, default="")
     created = Column(DateTime, nullable=False, default=datetime.utcnow)
@@ -238,6 +248,7 @@ class NbStageRecord(OrmBase):
         data = {
             "ID": self.pk,
             "URI": str(shorten_path(self.uri, path_length)),
+            "Reader": self.reader,
             "Created": self.created.isoformat(" ", "minutes"),
         }
         if assets:
@@ -270,11 +281,16 @@ class NbStageRecord(OrmBase):
 
     @staticmethod
     def create_record(
-        uri: str, db: Engine, raise_on_exists=True, assets=()
+        uri: str,
+        db: Engine,
+        raise_on_exists=True,
+        *,
+        reader: str = "nbformat",
+        assets=(),
     ) -> "NbStageRecord":
         assets = NbStageRecord.validate_assets(assets, uri)
         with session_context(db) as session:  # type: Session
-            record = NbStageRecord(uri=uri, assets=assets)
+            record = NbStageRecord(uri=uri, reader=reader, assets=assets)
             session.add(record)
             try:
                 session.commit()

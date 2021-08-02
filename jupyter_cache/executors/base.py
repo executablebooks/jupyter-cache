@@ -1,15 +1,15 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 import attr
 
-# TODO use importlib.metadata
-import pkg_resources
-
 from jupyter_cache.base import JupyterCacheAbstract
-
-ENTRY_POINT_GROUP = "jupyter_executors"
+from jupyter_cache.entry_points import (
+    ENTRY_POINT_GROUP_EXEC,
+    get_entry_point,
+    list_group_names,
+)
 
 base_logger = logging.getLogger(__name__)
 
@@ -66,7 +66,6 @@ class JupyterExecutorAbstract(ABC):
         *,
         filter_uris: Optional[List[str]] = None,
         filter_pks: Optional[List[int]] = None,
-        converter: Optional[Callable] = None,
         timeout: Optional[int] = 30,
         allow_errors: bool = False,
         **kwargs: Any
@@ -79,9 +78,6 @@ class JupyterExecutorAbstract(ABC):
             If specified filter the staged notebooks to execute by these URIs
         filter_pks: list
             If specified filter the staged notebooks to execute by these PKs
-        converter:
-            An optional converter for staged notebooks,
-            which takes the URI and returns a notebook node
         timeout: int
             Maximum time in seconds to wait for a single cell to run for
         allow_errors: bool
@@ -90,22 +86,18 @@ class JupyterExecutorAbstract(ABC):
         """
 
 
-def list_executors():
-    return list(pkg_resources.iter_entry_points(ENTRY_POINT_GROUP))
+def list_executors() -> Set[str]:
+    return list_group_names(ENTRY_POINT_GROUP_EXEC)
 
 
 def load_executor(
     entry_point: str, cache: JupyterCacheAbstract, logger=None
 ) -> JupyterExecutorAbstract:
     """Retrieve an initialised JupyterExecutor from an entry point."""
-    entry_points = list(pkg_resources.iter_entry_points(ENTRY_POINT_GROUP, entry_point))
-    if len(entry_points) == 0:
+    ep = get_entry_point(ENTRY_POINT_GROUP_EXEC, entry_point)
+    if ep is None:
         raise ImportError(
-            "Entry point not found: {}.{}".format(ENTRY_POINT_GROUP, entry_point)
+            "Entry point not found: {}:{}".format(ENTRY_POINT_GROUP_EXEC, entry_point)
         )
-    if len(entry_points) != 1:
-        raise ImportError(
-            "Multiple entry points found: {}.{}".format(ENTRY_POINT_GROUP, entry_point)
-        )
-    execute_cls = entry_points[0].load()
+    execute_cls = ep.load()
     return execute_cls(cache=cache, logger=logger)

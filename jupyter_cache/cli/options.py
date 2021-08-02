@@ -2,6 +2,9 @@ import os
 
 import click
 
+from jupyter_cache.entry_points import ENTRY_POINT_GROUP_EXEC, list_group_names
+from jupyter_cache.readers import list_readers
+
 
 def callback_autocomplete(ctx, param, value):
     if value and not ctx.resilient_parsing:
@@ -72,13 +75,22 @@ NB_PATH = click.option(
     type=click.Path(dir_okay=False, exists=True, readable=True, resolve_path=True),
 )
 
+READER_KEY = click.option(
+    "-r",
+    "--reader",
+    help="The notebook reader to use.",
+    default="nbformat",
+    type=click.Choice(list_readers()),
+    show_default=True,
+)
 
-EXEC_ENTRYPOINT = click.option(
+
+EXECUTOR_KEY = click.option(
     "-e",
-    "--entry-point",
-    # TODO list additional entry points
-    help="The entry-point from which to load the executor [local-serial|temp-serial].",
+    "--executor",
+    help="The executor to use.",
     default="local-serial",
+    type=click.Choice(list_group_names(ENTRY_POINT_GROUP_EXEC)),
     show_default=True,
 )
 

@@ -6,7 +6,7 @@ with no assumptions about the backend storage/retrieval mechanisms.
 import io
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Callable, Iterable, List, Optional, Tuple, Union
+from typing import Iterable, List, Optional, Tuple, Union
 
 import attr
 import nbformat as nbf
@@ -242,10 +242,13 @@ class JupyterCacheAbstract(ABC):
         return self.diff_nbnode_with_cache(pk, nb, uri=path, as_str=as_str, **kwargs)
 
     @abstractmethod
-    def stage_notebook_file(self, uri: str, assets: List[str] = ()) -> NbStageRecord:
+    def stage_notebook_file(
+        self, uri: str, *, reader: Optional[str] = None, assets: List[str] = ()
+    ) -> NbStageRecord:
         """Stage a single notebook for execution.
 
         :param uri: The path to the file
+        :param reader: A key for the reader function, to read the uri and return a NotebookNode
         :param assets: The path of files required by the notebook to run.
         :raises ValueError: assets not within the same folder as the notebook URI.
         """
@@ -263,30 +266,18 @@ class JupyterCacheAbstract(ABC):
         """Return the record of a staged notebook, by its primary key or URI."""
 
     @abstractmethod
-    def get_staged_notebook(
-        self, uri_or_pk: Union[int, str], converter: Optional[Callable] = None
-    ) -> NbBundleIn:
-        """Return a single staged notebook, by its primary key or URI.
-
-        :param converter: An optional converter for staged notebooks,
-            which takes the URI and returns a notebook node (default nbformat.read)
-        """
+    def get_staged_notebook(self, uri_or_pk: Union[int, str]) -> NbBundleIn:
+        """Return a single staged notebook, by its primary key or URI."""
 
     @abstractmethod
     def get_cache_record_of_staged(
-        self, uri_or_pk: Union[int, str], converter: Optional[Callable] = None
+        self, uri_or_pk: Union[int, str]
     ) -> Optional[NbCacheRecord]:
         """Get cache record from staged notebook."""
 
     @abstractmethod
-    def list_staged_unexecuted(
-        self, converter: Optional[Callable] = None
-    ) -> List[NbStageRecord]:
-        """List staged notebooks, whose hash is not present in the cache.
-
-        :param converter: An optional converter for staged notebooks,
-            which takes the URI and returns a notebook node (default nbformat.read)
-        """
+    def list_staged_unexecuted(self) -> List[NbStageRecord]:
+        """List staged notebooks, whose hash is not present in the cache."""
 
     # removed until defined use case
     # @abstractmethod

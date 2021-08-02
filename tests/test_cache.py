@@ -182,9 +182,6 @@ def test_artifacts(tmp_path):
         assert path.joinpath("artifact_folder").exists()
 
 
-# jupyter_client/session.py:371: DeprecationWarning:
-# Session._key_changed is deprecated in traitlets: use @observe and @unobserve instead
-@pytest.mark.filterwarnings("ignore")
 @pytest.mark.parametrize("executor_key", ["local-serial", "temp-serial"])
 def test_execution(tmp_path, executor_key):
     from jupyter_cache.executors import load_executor
@@ -229,7 +226,29 @@ def test_execution(tmp_path, executor_key):
     assert "Exception: oopsie!" in stage_record.traceback
 
 
-@pytest.mark.filterwarnings("ignore")
+def test_execution_jupytext(tmp_path):
+    """Test execution with the jupytext reader."""
+    from jupyter_cache.executors import load_executor
+
+    db = JupyterCacheBase(str(tmp_path / "cache"))
+    temp_nb_path = tmp_path / "notebooks"
+    shutil.copytree(NB_PATH, temp_nb_path)
+    db.stage_notebook_file(
+        path=os.path.join(temp_nb_path, "basic.md"), reader="jupytext"
+    )
+    executor = load_executor("local-serial", db)
+    result = executor.run_and_cache()
+    print(result)
+    assert result.as_json() == {
+        "succeeded": [
+            os.path.join(temp_nb_path, "basic.md"),
+        ],
+        "excepted": [],
+        "errored": [],
+    }
+    assert len(db.list_cache_records()) == 1
+
+
 def test_execution_timeout_config(tmp_path):
     """tests the timeout value passed to the executor"""
     from jupyter_cache.executors import load_executor
@@ -255,7 +274,6 @@ def test_execution_timeout_config(tmp_path):
     }
 
 
-@pytest.mark.filterwarnings("ignore")
 def test_execution_timeout_metadata(tmp_path):
     """tests the timeout metadata key in notebooks"""
     from jupyter_cache.executors import load_executor

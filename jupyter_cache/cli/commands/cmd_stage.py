@@ -16,25 +16,27 @@ def cmnd_stage():
 
 @cmnd_stage.command("add")
 @arguments.NB_PATHS
+@options.READER_KEY
 @options.CACHE_PATH
-def stage_nbs(cache_path, nbpaths):
+def stage_nbs(cache_path, nbpaths, reader):
     """Stage notebook(s) for execution."""
     db = get_cache(cache_path)
     for path in nbpaths:
         # TODO deal with errors (print all at end? or option to ignore)
         click.echo("Staging: {}".format(path))
-        db.stage_notebook_file(path)
+        db.stage_notebook_file(path, reader=reader)
     click.secho("Success!", fg="green")
 
 
 @cmnd_stage.command("add-with-assets")
 @arguments.ASSET_PATHS
 @options.NB_PATH
+@options.READER_KEY
 @options.CACHE_PATH
-def stage_nb(cache_path, nbpath, asset_paths):
+def stage_nb(cache_path, nbpath, reader, asset_paths):
     """Stage a notebook, with possible asset files."""
     db = get_cache(cache_path)
-    db.stage_notebook_file(nbpath, asset_paths)
+    db.stage_notebook_file(nbpath, reader=reader, assets=asset_paths)
     click.secho("Success!", fg="green")
 
 

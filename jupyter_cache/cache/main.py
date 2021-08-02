@@ -4,7 +4,7 @@ import io
 import shutil
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Callable, Iterable, List, Optional, Tuple, Union
+from typing import Iterable, List, Optional, Tuple, Union
 
 import nbformat as nbf
 
@@ -18,6 +18,7 @@ from jupyter_cache.base import (  # noqa: F401
     NbValidityError,
     RetrievalError,
 )
+from jupyter_cache.readers import get_reader
 from jupyter_cache.utils import to_relative_paths
 
 from .db import NbCacheRecord, NbStageRecord, Setting, create_db
@@ -398,15 +399,24 @@ class JupyterCacheBase(JupyterCacheAbstract):
         )
         return stream.getvalue()
 
-    def stage_notebook_file(self, path: str, assets=()) -> NbStageRecord:
+    def stage_notebook_file(
+        self, path: str, *, reader: str = "nbformat", assets=()
+    ) -> NbStageRecord:
         """Stage a single notebook for execution.
 
         :param uri: The path to the file
+        :param reader: A key for the reader function.
         :param assets: The path of files required by the notebook to run.
             These must be within the same folder as the notebook.
         """
+        _ = get_reader(reader)
+        # TODO should we test that the file can be read by the reader?
         return NbStageRecord.create_record(
-            str(Path(path).absolute()), self.db, raise_on_exists=False, assets=assets
+            str(Path(path).absolute()),
+            self.db,
+            raise_on_exists=False,
+            reader=reader,
+            assets=assets,
         )
         # TODO physically copy to cache?
         # TODO assets
@@ -430,43 +440,39 @@ class JupyterCacheBase(JupyterCacheAbstract):
 
     # TODO add discard all/multiple staged records method
 
-    def get_staged_notebook(
-        self, uri_or_pk: Union[int, str], converter: Optional[Callable] = None
-    ) -> NbBundleIn:
+    def get_staged_notebook(self, uri_or_pk: Union[int, str]) -> NbBundleIn:
         """Return a single staged notebook."""
         if isinstance(uri_or_pk, int):
-            uri_or_pk = NbStageRecord.record_from_pk(uri_or_pk, self.db).uri
-        if not Path(uri_or_pk).exists():
-            raise IOError(
-                "The URI of the staged record no longer exists: {}".format(uri_or_pk)
-            )
-        if converter is None:
-            notebook = nbf.read(uri_or_pk, nbf.NO_CONVERT)
+            record = NbStageRecord.record_from_pk(uri_or_pk, self.db)
         else:
-            notebook = converter(uri_or_pk)
-        return NbBundleIn(notebook, uri_or_pk)
+            record = NbStageRecord.record_from_uri(uri_or_pk, self.db)
+        if not Path(record.uri).exists():
+            raise IOError(
+                "The URI of the staged record no longer exists: {}".format(record.uri)
+            )
+        converter = get_reader(record.reader)
+        notebook = converter(record.uri)
+        return NbBundleIn(notebook, record.uri)
 
     def get_cache_record_of_staged(
-        self, uri_or_pk: Union[int, str], converter: Optional[Callable] = None
+        self, uri_or_pk: Union[int, str]
     ) -> Optional[NbCacheRecord]:
         if isinstance(uri_or_pk, int):
             record = NbStageRecord.record_from_pk(uri_or_pk, self.db)
         else:
             record = NbStageRecord.record_from_uri(uri_or_pk, self.db)
-        nb = self.get_staged_notebook(record.uri, converter=converter).nb
+        nb = self.get_staged_notebook(record.uri).nb
         _, hashkey = self.create_hashed_notebook(nb)
         try:
             return NbCacheRecord.record_from_hashkey(hashkey, self.db)
         except KeyError:
             return None
 
-    def list_staged_unexecuted(
-        self, converter: Optional[Callable] = None
-    ) -> List[NbStageRecord]:
+    def list_staged_unexecuted(self) -> List[NbStageRecord]:
         """List staged notebooks, whose hash is not present in the cached notebooks."""
         records = []
         for record in self.list_staged_records():
-            nb = self.get_staged_notebook(record.uri, converter).nb
+            nb = self.get_staged_notebook(record.uri).nb
             _, hashkey = self.create_hashed_notebook(nb)
             try:
                 NbCacheRecord.record_from_hashkey(hashkey, self.db)

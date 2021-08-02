@@ -1,6 +1,5 @@
 import os
 from datetime import datetime
-from glob import glob
 from textwrap import dedent
 
 from click.testing import CliRunner
@@ -19,10 +18,13 @@ def get_string(cli, group=None, args=(), input=None):
     runner = CliRunner()
     result = runner.invoke(cli, args, input=input)
     root_path = os.getcwd() + os.sep
+    output = result.output.replace(root_path, "../")
+    if result.exception:
+        output += "\n" + str(result.exception)
     return "```console\n$ {}{}\n{}```".format(
         command_str,
         (" " + " ".join(args)) if args else "",
-        result.output.replace(root_path, "../"),
+        output,
     )
 
 
@@ -30,7 +32,7 @@ def main():
 
     get_string(cmd_main.clear_cache, input="y")
 
-    strings = []
+    strings = ["(use/cli)=", "# Command-Line"]
     strings.append(
         "<!-- This section was auto-generated on {} by: {} -->".format(
             datetime.now().isoformat(" ", "minutes"), __file__
@@ -52,7 +54,7 @@ def main():
     )
 
     # cache
-    strings.append("### Caching Executed Notebooks")
+    strings.append("## Caching Executed Notebooks")
     cache_name = cmd_cache.cmnd_cache.name
     strings.append(get_string(cmd_cache.cmnd_cache, None, ["--help"]))
     strings.append("The first time the cache is required, it will be lazily created:")
@@ -75,7 +77,14 @@ def main():
         get_string(
             cmd_cache.cache_nbs,
             cache_name,
-            ["--no-validate"] + glob("tests/notebooks/*.ipynb"),
+            [
+                "--no-validate",
+                "tests/notebooks/basic.ipynb",
+                "tests/notebooks/basic_failing.ipynb",
+                "tests/notebooks/basic_unrun.ipynb",
+                "tests/notebooks/complex_outputs.ipynb",
+                "tests/notebooks/external_output.ipynb",
+            ],
         )
     )
     strings.append(
@@ -87,7 +96,7 @@ def main():
         Each notebook is hashed (code cells and kernel spec only),
         which is used to compare against 'staged' notebooks.
         Multiple hashes for the same URI can be added
-        (the URI is just there for inspetion) and the size of the cache is limited
+        (the URI is just there for inspection) and the size of the cache is limited
         (current default {}) so that, at this size,
         the last accessed records begin to be deleted.
         You can remove cached records by their ID.""".format(
@@ -155,7 +164,7 @@ def main():
     )
 
     # staging
-    strings.append("### Staging Notebooks for execution")
+    strings.append("## Staging Notebooks for execution")
     stage_name = cmd_stage.cmnd_stage.name
     strings.append(get_string(cmd_stage.cmnd_stage, None, ["--help"]))
     strings.append(
@@ -170,7 +179,17 @@ def main():
         )
     )
     strings.append(
-        get_string(cmd_stage.stage_nbs, stage_name, glob("tests/notebooks/*.ipynb"))
+        get_string(
+            cmd_stage.stage_nbs,
+            stage_name,
+            [
+                "tests/notebooks/basic.ipynb",
+                "tests/notebooks/basic_failing.ipynb",
+                "tests/notebooks/basic_unrun.ipynb",
+                "tests/notebooks/complex_outputs.ipynb",
+                "tests/notebooks/external_output.ipynb",
+            ],
+        )
     )
     strings.append(get_string(cmd_stage.list_staged, stage_name))
     strings.append("You can remove a staged notebook by its URI or ID:")
@@ -200,10 +219,9 @@ def main():
         dedent(
             """\
         ```{tip}
-        Code cells can be tagged with `raises-exception` to let the executor known that
-        a cell *may* raise an exception(see
-        [this issue on its behaviour](https://github.com/jupyter/nbconvert/issues/730)).
-        ```"""
+        Code cells can be tagged with `raises-exception` to let the executor known that a cell *may* raise an exception
+        (see [this issue on its behaviour](https://github.com/jupyter/nbconvert/issues/730)).
+        ```"""  # noqa: E501
         )
     )
     strings.append(

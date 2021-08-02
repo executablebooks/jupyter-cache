@@ -34,13 +34,12 @@ class JupyterExecutorLocalSerial(JupyterExecutorAbstract):
         *,
         filter_uris=None,
         filter_pks=None,
-        converter=None,
         timeout=30,
         allow_errors=False,
     ) -> ExecutorRunResult:
         """This function interfaces with the cache, deferring execution to `execute`."""
         # Get the notebook tha require re-execution
-        stage_records = self.cache.list_staged_unexecuted(converter=converter)
+        stage_records = self.cache.list_staged_unexecuted()
         if filter_uris is not None:
             stage_records = [r for r in stage_records if r.uri in filter_uris]
         if filter_pks is not None:
@@ -59,9 +58,7 @@ class JupyterExecutorLocalSerial(JupyterExecutorAbstract):
         def _iterator():
             for stage_record in stage_records:
                 try:
-                    nb_bundle = self.cache.get_staged_notebook(
-                        stage_record.pk, converter
-                    )
+                    nb_bundle = self.cache.get_staged_notebook(stage_record.pk)
                 except Exception:
                     self.logger.error(
                         "Failed Retrieving: {}".format(stage_record.uri), exc_info=True

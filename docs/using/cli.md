@@ -2,7 +2,7 @@
 
 # Command-Line
 
-<!-- This section was auto-generated on 2020-03-12 17:31 by: /Users/cjs14/GitHub/jupyter-cache/tests/make_cli_readme.py -->
+<!-- This section was auto-generated on 2021-08-01 17:43 by: tests/make_cli_readme.py -->
 
 From the checked-out repository folder:
 
@@ -22,7 +22,7 @@ Commands:
   cache    Commands for adding to and inspecting the cache.
   clear    Clear the cache completely.
   config   Commands for configuring the cache.
-  execute  Execute staged notebooks that are outdated.
+  execute  Execute notebooks that are not in the cache or outdated.
   stage    Commands for staging notebooks to be executed.
 ```
 
@@ -95,7 +95,7 @@ for what has been cached.
 Each notebook is hashed (code cells and kernel spec only),
 which is used to compare against 'staged' notebooks.
 Multiple hashes for the same URI can be added
-(the URI is just there for inspetion) and the size of the cache is limited
+(the URI is just there for inspection) and the size of the cache is limited
 (current default 1000) so that, at this size,
 the last accessed records begin to be deleted.
 You can remove cached records by their ID.
@@ -104,10 +104,10 @@ You can remove cached records by their ID.
 $ jcache cache list
   ID  Origin URI                             Created           Accessed
 ----  -------------------------------------  ----------------  ----------------
-   5  tests/notebooks/external_output.ipynb  2020-03-12 17:31  2020-03-12 17:31
-   4  tests/notebooks/complex_outputs.ipynb  2020-03-12 17:31  2020-03-12 17:31
-   3  tests/notebooks/basic_unrun.ipynb      2020-03-12 17:31  2020-03-12 17:31
-   2  tests/notebooks/basic_failing.ipynb    2020-03-12 17:31  2020-03-12 17:31
+   5  tests/notebooks/external_output.ipynb  2021-08-01 15:43  2021-08-01 15:43
+   4  tests/notebooks/complex_outputs.ipynb  2021-08-01 15:43  2021-08-01 15:43
+   3  tests/notebooks/basic_unrun.ipynb      2021-08-01 15:43  2021-08-01 15:43
+   2  tests/notebooks/basic_failing.ipynb    2021-08-01 15:43  2021-08-01 15:43
 ```
 
 ````{tip}
@@ -135,9 +135,9 @@ Show a full description of a cached notebook by referring to its ID
 $ jcache cache show 6
 ID: 6
 Origin URI: ../tests/notebooks/basic.ipynb
-Created: 2020-03-12 17:31
-Accessed: 2020-03-12 17:31
-Hashkey: 818f3412b998fcf4fe9ca3cca11a3fc3
+Created: 2021-08-01 15:43
+Accessed: 2021-08-01 15:43
+Hashkey: 94c17138f782c75df59e989fffa64e3a
 Artifacts:
 - artifact_folder/artifact.txt
 ```
@@ -234,13 +234,13 @@ Success!
 
 ```console
 $ jcache stage list
-  ID  URI                                    Created             Assets    Cache ID
-----  -------------------------------------  ----------------  --------  ----------
-   5  tests/notebooks/external_output.ipynb  2020-03-12 17:31         0           5
-   4  tests/notebooks/complex_outputs.ipynb  2020-03-12 17:31         0
-   3  tests/notebooks/basic_unrun.ipynb      2020-03-12 17:31         0           6
-   2  tests/notebooks/basic_failing.ipynb    2020-03-12 17:31         0           2
-   1  tests/notebooks/basic.ipynb            2020-03-12 17:31         0           6
+  ID  URI                                    Reader    Created             Assets    Cache ID
+----  -------------------------------------  --------  ----------------  --------  ----------
+   5  tests/notebooks/external_output.ipynb  nbformat  2021-08-01 15:43         0           5
+   4  tests/notebooks/complex_outputs.ipynb  nbformat  2021-08-01 15:43         0
+   3  tests/notebooks/basic_unrun.ipynb      nbformat  2021-08-01 15:43         0           6
+   2  tests/notebooks/basic_failing.ipynb    nbformat  2021-08-01 15:43         0           2
+   1  tests/notebooks/basic.ipynb            nbformat  2021-08-01 15:43         0           6
 ```
 
 You can remove a staged notebook by its URI or ID:
@@ -275,6 +275,7 @@ succeeded:
 excepted:
 - ../tests/notebooks/basic_failing.ipynb
 errored: []
+up-to-date: []
 
 ```
 
@@ -284,12 +285,12 @@ that are inside the notebook folder, and data supplied by the executor.
 
 ```console
 $ jcache stage list
-  ID  URI                                    Created             Assets    Cache ID
-----  -------------------------------------  ----------------  --------  ----------
-   5  tests/notebooks/external_output.ipynb  2020-03-12 17:31         0           5
-   3  tests/notebooks/basic_unrun.ipynb      2020-03-12 17:31         0           6
-   2  tests/notebooks/basic_failing.ipynb    2020-03-12 17:31         0
-   1  tests/notebooks/basic.ipynb            2020-03-12 17:31         0           6
+  ID  URI                                    Reader    Created             Assets    Cache ID
+----  -------------------------------------  --------  ----------------  --------  ----------
+   5  tests/notebooks/external_output.ipynb  nbformat  2021-08-01 15:43         0           5
+   3  tests/notebooks/basic_unrun.ipynb      nbformat  2021-08-01 15:43         0           6
+   2  tests/notebooks/basic_failing.ipynb    nbformat  2021-08-01 15:43         0
+   1  tests/notebooks/basic.ipynb            nbformat  2021-08-01 15:43         0           6
 ```
 
 Execution data (such as execution time) will be stored in the cache record:
@@ -298,11 +299,11 @@ Execution data (such as execution time) will be stored in the cache record:
 $ jcache cache show 6
 ID: 6
 Origin URI: ../tests/notebooks/basic_unrun.ipynb
-Created: 2020-03-12 17:31
-Accessed: 2020-03-12 17:31
-Hashkey: 818f3412b998fcf4fe9ca3cca11a3fc3
+Created: 2021-08-01 15:43
+Accessed: 2021-08-01 15:43
+Hashkey: 94c17138f782c75df59e989fffa64e3a
 Data:
-  execution_seconds: 1.0559415130000005
+  execution_seconds: 0.9876813249999996
 
 ```
 
@@ -312,27 +313,34 @@ Failed notebooks will not be cached, but the exception traceback will be added t
 $ jcache stage show 2
 ID: 2
 URI: ../tests/notebooks/basic_failing.ipynb
-Created: 2020-03-12 17:31
+Reader: nbformat
+Created: 2021-08-01 15:43
 Failed Last Execution!
 Traceback (most recent call last):
-  File "../jupyter_cache/executors/basic.py", line 152, in execute
-    executenb(nb_bundle.nb, cwd=tmpdirname)
-  File "/anaconda/envs/mistune/lib/python3.7/site-packages/nbconvert/preprocessors/execute.py", line 737, in executenb
-    return ep.preprocess(nb, resources, km=km)[0]
-  File "/anaconda/envs/mistune/lib/python3.7/site-packages/nbconvert/preprocessors/execute.py", line 405, in preprocess
-    nb, resources = super(ExecutePreprocessor, self).preprocess(nb, resources)
-  File "/anaconda/envs/mistune/lib/python3.7/site-packages/nbconvert/preprocessors/base.py", line 69, in preprocess
-    nb.cells[index], resources = self.preprocess_cell(cell, resources, index)
-  File "/anaconda/envs/mistune/lib/python3.7/site-packages/nbconvert/preprocessors/execute.py", line 448, in preprocess_cell
-    raise CellExecutionError.from_cell_and_msg(cell, out)
-nbconvert.preprocessors.execute.CellExecutionError: An error occurred while executing the following cell:
+  File "../jupyter_cache/executors/utils.py", line 55, in single_nb_execution
+    record_timing=False,
+  File "../.tox/create_cli_doc/lib/python3.7/site-packages/nbclient/client.py", line 1112, in execute
+    return NotebookClient(nb=nb, resources=resources, km=km, **kwargs).execute()
+  File "../.tox/create_cli_doc/lib/python3.7/site-packages/nbclient/util.py", line 74, in wrapped
+    return just_run(coro(*args, **kwargs))
+  File "../.tox/create_cli_doc/lib/python3.7/site-packages/nbclient/util.py", line 53, in just_run
+    return loop.run_until_complete(coro)
+  File "../.tox/create_cli_doc/lib/python3.7/asyncio/base_events.py", line 587, in run_until_complete
+    return future.result()
+  File "../.tox/create_cli_doc/lib/python3.7/site-packages/nbclient/client.py", line 554, in async_execute
+    cell, index, execution_count=self.code_cells_executed + 1
+  File "../.tox/create_cli_doc/lib/python3.7/site-packages/nbclient/client.py", line 857, in async_execute_cell
+    self._check_raise_for_error(cell, exec_reply)
+  File "../.tox/create_cli_doc/lib/python3.7/site-packages/nbclient/client.py", line 760, in _check_raise_for_error
+    raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
+nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
 ------------------
 raise Exception('oopsie!')
 ------------------
 
 ---------------------------------------------------------------------------
 Exception                                 Traceback (most recent call last)
-<ipython-input-1-714b2b556897> in <module>
+/var/folders/t2/xbl15_3n4tsb1vr_ccmmtmbr0000gn/T/ipykernel_39409/340246212.py in <module>
 ----> 1 raise Exception('oopsie!')
 
 Exception: oopsie!
@@ -342,8 +350,8 @@ Exception: oopsie!
 ```
 
 ```{tip}
-Code cells can be tagged with `raises-exception` to let the executor known that
-a cell *may* raise an exception (see [this issue on its behaviour](https://github.com/jupyter/nbconvert/issues/730)).
+Code cells can be tagged with `raises-exception` to let the executor known that a cell *may* raise an exception
+(see [this issue on its behaviour](https://github.com/jupyter/nbconvert/issues/730)).
 ```
 
 Once executed you may leave staged notebooks, for later re-execution, or remove them:
@@ -372,7 +380,8 @@ Success!
 $ jcache stage show 1
 ID: 1
 URI: ../tests/notebooks/basic.ipynb
-Created: 2020-03-12 17:31
+Reader: nbformat
+Created: 2021-08-01 15:43
 Cache ID: 6
 Assets:
 - ../tests/notebooks/artifact_folder/artifact.txt
