@@ -159,7 +159,7 @@ def test_add_nbs_to_project(tmp_path):
     assert result.exception is None, result.output
     assert result.exit_code == 0, result.output
     assert "basic.ipynb" in result.output.strip(), result.output
-    assert db.nb_project_records()[0].uri == path
+    assert db.list_project_records()[0].uri == path
 
 
 def test_remove_nbs_from_project(tmp_path):
@@ -167,11 +167,11 @@ def test_remove_nbs_from_project(tmp_path):
     path = os.path.join(NB_PATH, "basic.ipynb")
     runner = CliRunner()
     result = runner.invoke(cmd_project.add_notebooks, ["-p", tmp_path, path])
-    result = runner.invoke(cmd_project.remove_nbs_uri, ["-p", tmp_path, path])
+    result = runner.invoke(cmd_project.remove_nbs, ["-p", tmp_path, path])
     assert result.exception is None, result.output
     assert result.exit_code == 0, result.output
     assert "basic.ipynb" in result.output.strip(), result.output
-    assert db.nb_project_records() == []
+    assert db.list_project_records() == []
 
 
 def test_list_nbs_in_project(tmp_path):

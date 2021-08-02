@@ -258,7 +258,7 @@ class JupyterCacheAbstract(ABC):
         """Remove a notebook from the project."""
 
     @abstractmethod
-    def nb_project_records(self) -> List[NbProjectRecord]:
+    def list_project_records(self) -> List[NbProjectRecord]:
         """Return a list of the notebook URI's in the project."""
 
     @abstractmethod

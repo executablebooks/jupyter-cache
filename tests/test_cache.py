@@ -80,11 +80,11 @@ def test_basic_workflow(tmp_path):
         os.path.join(NB_PATH, "basic.ipynb"),
         assets=[os.path.join(NB_PATH, "basic.ipynb")],
     )
-    assert [r.pk for r in cache.nb_project_records()] == [1]
+    assert [r.pk for r in cache.list_project_records()] == [1]
     assert [r.pk for r in cache.list_unexecuted()] == []
 
     cache.add_nb_to_project(os.path.join(NB_PATH, "basic_failing.ipynb"))
-    assert [r.pk for r in cache.nb_project_records()] == [1, 2]
+    assert [r.pk for r in cache.list_project_records()] == [1, 2]
     assert [r.pk for r in cache.list_unexecuted()] == [2]
 
     bundle = cache.get_project_notebook(os.path.join(NB_PATH, "basic_failing.ipynb"))

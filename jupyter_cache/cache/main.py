@@ -415,7 +415,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         # TODO physically copy to cache?
         # TODO assets
 
-    def nb_project_records(self) -> List[NbProjectRecord]:
+    def list_project_records(self) -> List[NbProjectRecord]:
         return NbProjectRecord.records_all(self.db)
 
     def get_project_record(self, uri_or_pk: Union[int, str]) -> NbProjectRecord:
@@ -462,7 +462,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
 
     def list_unexecuted(self) -> List[NbProjectRecord]:
         records = []
-        for record in self.nb_project_records():
+        for record in self.list_project_records():
             nb = self.get_project_notebook(record.uri).nb
             _, hashkey = self.create_hashed_notebook(nb)
             try:

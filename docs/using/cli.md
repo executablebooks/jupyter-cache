@@ -2,7 +2,7 @@
 
 # Command-Line
 
-<!-- This section was auto-generated on 2021-08-02 03:51 by: tests/make_cli_readme.py -->
+<!-- This section was auto-generated on 2021-08-02 05:12 by: tests/make_cli_readme.py -->
 
 From the checked-out repository folder:
 
@@ -105,10 +105,10 @@ You can remove cached records by their ID.
 $ jcache cache list
   ID  Origin URI                             Created           Accessed
 ----  -------------------------------------  ----------------  ----------------
-   5  tests/notebooks/external_output.ipynb  2021-08-02 01:51  2021-08-02 01:51
-   4  tests/notebooks/complex_outputs.ipynb  2021-08-02 01:51  2021-08-02 01:51
-   3  tests/notebooks/basic_unrun.ipynb      2021-08-02 01:51  2021-08-02 01:51
-   2  tests/notebooks/basic_failing.ipynb    2021-08-02 01:51  2021-08-02 01:51
+   5  tests/notebooks/external_output.ipynb  2021-08-02 03:12  2021-08-02 03:12
+   4  tests/notebooks/complex_outputs.ipynb  2021-08-02 03:12  2021-08-02 03:12
+   3  tests/notebooks/basic_unrun.ipynb      2021-08-02 03:12  2021-08-02 03:12
+   2  tests/notebooks/basic_failing.ipynb    2021-08-02 03:12  2021-08-02 03:12
 ```
 
 ````{tip}
@@ -136,8 +136,8 @@ Show a full description of a cached notebook by referring to its ID
 $ jcache cache show 6
 ID: 6
 Origin URI: ../tests/notebooks/basic.ipynb
-Created: 2021-08-02 01:51
-Accessed: 2021-08-02 01:51
+Created: 2021-08-02 03:12
+Accessed: 2021-08-02 03:12
 Hashkey: 94c17138f782c75df59e989fffa64e3a
 Artifacts:
 - artifact_folder/artifact.txt
@@ -202,7 +202,7 @@ Success!
 $ jcache project --help
 Usage: project [OPTIONS] COMMAND [ARGS]...
 
-  Commands for creating/interacting with a project of notebooks.
+  Commands for interacting with a project.
 
 Options:
   --help  Show this message and exit.
@@ -210,9 +210,9 @@ Options:
 Commands:
   add              Add notebook(s) to the project.
   add-with-assets  Add notebook(s) to the project, with possible asset files.
+  clear            Remove all notebooks from the project.
   list             List notebooks in the project.
-  remove-ids       Remove notebook(s) from the project, by ID.
-  remove-uris      Remove notebook(s) from the project, by URI.
+  remove           Remove notebook(s) from the project, by ID/URI.
   show             Show details of a notebook.
 ```
 
@@ -238,17 +238,17 @@ Success!
 $ jcache project list
   ID  URI                                    Reader    Created             Assets    Cache ID
 ----  -------------------------------------  --------  ----------------  --------  ----------
-   5  tests/notebooks/external_output.ipynb  nbformat  2021-08-02 01:51         0           5
-   4  tests/notebooks/complex_outputs.ipynb  nbformat  2021-08-02 01:51         0
-   3  tests/notebooks/basic_unrun.ipynb      nbformat  2021-08-02 01:51         0           6
-   2  tests/notebooks/basic_failing.ipynb    nbformat  2021-08-02 01:51         0           2
-   1  tests/notebooks/basic.ipynb            nbformat  2021-08-02 01:51         0           6
+   5  tests/notebooks/external_output.ipynb  nbformat  2021-08-02 03:12         0           5
+   4  tests/notebooks/complex_outputs.ipynb  nbformat  2021-08-02 03:12         0
+   3  tests/notebooks/basic_unrun.ipynb      nbformat  2021-08-02 03:12         0           6
+   2  tests/notebooks/basic_failing.ipynb    nbformat  2021-08-02 03:12         0           2
+   1  tests/notebooks/basic.ipynb            nbformat  2021-08-02 03:12         0           6
 ```
 
 You can remove a notebook from the project by its URI or ID:
 
 ```console
-$ jcache project remove-ids 4
+$ jcache project remove 4
 Removing: 4
 Success!
 ```
@@ -270,12 +270,15 @@ Executing: ../tests/notebooks/basic_failing.ipynb
 error: Execution Failed: ../tests/notebooks/basic_failing.ipynb
 Executing: ../tests/notebooks/basic_unrun.ipynb
 Execution Succeeded: ../tests/notebooks/basic_unrun.ipynb
+Executing: ../tests/notebooks/complex_outputs.ipynb
+error: Execution Failed: ../tests/notebooks/complex_outputs.ipynb
 Finished! Successfully executed notebooks have been cached.
 succeeded:
 - ../tests/notebooks/basic.ipynb
 - ../tests/notebooks/basic_unrun.ipynb
 excepted:
 - ../tests/notebooks/basic_failing.ipynb
+- ../tests/notebooks/complex_outputs.ipynb
 errored: []
 up-to-date: []
 
@@ -289,10 +292,11 @@ that are inside the notebook folder, and data supplied by the executor.
 $ jcache project list
   ID  URI                                    Reader    Created             Assets    Cache ID
 ----  -------------------------------------  --------  ----------------  --------  ----------
-   5  tests/notebooks/external_output.ipynb  nbformat  2021-08-02 01:51         0           5
-   3  tests/notebooks/basic_unrun.ipynb      nbformat  2021-08-02 01:51         0           6
-   2  tests/notebooks/basic_failing.ipynb    nbformat  2021-08-02 01:51         0
-   1  tests/notebooks/basic.ipynb            nbformat  2021-08-02 01:51         0           6
+   5  tests/notebooks/external_output.ipynb  nbformat  2021-08-02 03:12         0           5
+   4  tests/notebooks/complex_outputs.ipynb  nbformat  2021-08-02 03:12         0
+   3  tests/notebooks/basic_unrun.ipynb      nbformat  2021-08-02 03:12         0           6
+   2  tests/notebooks/basic_failing.ipynb    nbformat  2021-08-02 03:12         0
+   1  tests/notebooks/basic.ipynb            nbformat  2021-08-02 03:12         0           6
 ```
 
 Execution data (such as execution time) will be stored in the cache record:
@@ -301,11 +305,11 @@ Execution data (such as execution time) will be stored in the cache record:
 $ jcache cache show 6
 ID: 6
 Origin URI: ../tests/notebooks/basic_unrun.ipynb
-Created: 2021-08-02 01:51
-Accessed: 2021-08-02 01:51
+Created: 2021-08-02 03:12
+Accessed: 2021-08-02 03:12
 Hashkey: 94c17138f782c75df59e989fffa64e3a
 Data:
-  execution_seconds: 2.027238027
+  execution_seconds: 1.639128618
 
 ```
 
@@ -316,7 +320,7 @@ $ jcache project show 2
 ID: 2
 URI: ../tests/notebooks/basic_failing.ipynb
 Reader: nbformat
-Created: 2021-08-02 01:51
+Created: 2021-08-02 03:12
 Failed Last Execution!
 Traceback (most recent call last):
   File "../jupyter_cache/executors/utils.py", line 55, in single_nb_execution
@@ -342,7 +346,7 @@ raise Exception('oopsie!')
 
 ---------------------------------------------------------------------------
 Exception                                 Traceback (most recent call last)
-/var/folders/t2/xbl15_3n4tsb1vr_ccmmtmbr0000gn/T/ipykernel_76025/340246212.py in <module>
+/var/folders/t2/xbl15_3n4tsb1vr_ccmmtmbr0000gn/T/ipykernel_86857/340246212.py in <module>
 ----> 1 raise Exception('oopsie!')
 
 Exception: oopsie!
@@ -359,13 +363,9 @@ Code cells can be tagged with `raises-exception` to let the executor known that 
 Once executed you may leave notebooks in the project, for later re-execution, or remove them:
 
 ```console
-$ jcache project remove-ids --all
-Are you sure you want to remove all? [y/N]: y
-Removing: 1
-Removing: 2
-Removing: 3
-Removing: 5
-Success!
+$ jcache project clear
+Are you sure you want to permanently clear the project!? [y/N]: y
+Project cleared!
 ```
 
 You can also add notebooks to the projects with assets;
@@ -383,7 +383,7 @@ $ jcache project show 1
 ID: 1
 URI: ../tests/notebooks/basic.ipynb
 Reader: nbformat
-Created: 2021-08-02 01:51
+Created: 2021-08-02 03:12
 Cache ID: 6
 Assets:
 - ../tests/notebooks/artifact_folder/artifact.txt

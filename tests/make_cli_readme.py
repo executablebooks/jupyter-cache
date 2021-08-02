@@ -20,7 +20,7 @@ def get_string(cli, group=None, args=(), input=None):
     root_path = os.getcwd() + os.sep
     output = result.output.replace(root_path, "../")
     if result.exception:
-        output += "\n" + str(result.exception)
+        output += "\n" + str(result.exception) + "\n"
     return "```console\n$ {}{}\n{}```".format(
         command_str,
         (" " + " ".join(args)) if args else "",
@@ -193,7 +193,7 @@ def main():
     )
     strings.append(get_string(cmd_project.list_nbs_in_project, project_cmd_name))
     strings.append("You can remove a notebook from the project by its URI or ID:")
-    strings.append(get_string(cmd_project.remove_nbs_id, project_cmd_name, ["4"]))
+    strings.append(get_string(cmd_project.remove_nbs, project_cmd_name, ["4"]))
     strings.append("You can then run a basic execution of the required notebooks:")
     strings.append(get_string(cmd_cache.remove_caches, cache_name, ["6", "2"]))
     strings.append(get_string(cmd_exec.execute_nbs, None))
@@ -228,9 +228,7 @@ def main():
         "Once executed you may leave notebooks in the project, "
         "for later re-execution, or remove them:"
     )
-    strings.append(
-        get_string(cmd_project.remove_nbs_id, project_cmd_name, ["--all"], input="y")
-    )
+    strings.append(get_string(cmd_project.clear_nbs, project_cmd_name, [], input="y"))
 
     # assets
     strings.append(

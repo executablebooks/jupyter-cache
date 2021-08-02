@@ -39,35 +39,31 @@ def add_notebook(cache_path, nbpath, reader, asset_paths):
     click.secho("Success!", fg="green")
 
 
-@cmnd_project.command("remove-uris")
-@arguments.NB_PATHS
+@cmnd_project.command("clear")
 @options.CACHE_PATH
-@options.REMOVE_ALL
-def remove_nbs_uri(cache_path, nbpaths, remove_all):
-    """Remove notebook(s) from the project, by URI."""
+@options.FORCE
+def clear_nbs(cache_path, force):
+    """Remove all notebooks from the project."""
     db = get_cache(cache_path)
-    if remove_all:
-        nbpaths = [record.uri for record in db.nb_project_records()]
-    for path in nbpaths:
+    if not force:
+        click.confirm(
+            "Are you sure you want to permanently clear the project!?", abort=True
+        )
+    for record in db.list_project_records():
+        db.remove_nb_from_project(record.pk)
+    click.secho("Project cleared!", fg="green")
+
+
+@cmnd_project.command("remove")
+@arguments.PK_OR_PATHS
+@options.CACHE_PATH
+def remove_nbs(cache_path, pk_paths):
+    """Remove notebook(s) from the project, by ID/URI."""
+    db = get_cache(cache_path)
+    for path in pk_paths:
         # TODO deal with errors (print all at end? or option to ignore)
         click.echo("Removing: {}".format(path))
         db.remove_nb_from_project(path)
-    click.secho("Success!", fg="green")
-
-
-@cmnd_project.command("remove-ids")
-@arguments.PKS
-@options.CACHE_PATH
-@options.REMOVE_ALL
-def remove_nbs_id(cache_path, pks, remove_all):
-    """Remove notebook(s) from the project, by ID."""
-    db = get_cache(cache_path)
-    if remove_all:
-        pks = [record.pk for record in db.nb_project_records()]
-    for pk in pks:
-        # TODO deal with errors (print all at end? or option to ignore)
-        click.echo("Removing: {}".format(pk))
-        db.remove_nb_from_project(pk)
     click.secho("Success!", fg="green")
 
 
@@ -83,7 +79,7 @@ def remove_nbs_id(cache_path, pks, remove_all):
 def list_nbs_in_project(cache_path, path_length):
     """List notebooks in the project."""
     db = get_cache(cache_path)
-    records = db.nb_project_records()
+    records = db.list_project_records()
     if not records:
         click.secho("No notebooks in project", fg="blue")
     click.echo(tabulate_project_records(records, path_length=path_length, cache=db))

@@ -165,11 +165,8 @@ def clear_cache_cmd(cache_path, force):
         click.confirm(
             "Are you sure you want to permanently clear the cache!?", abort=True
         )
-    for pk in db.list_cache_records():
-        try:
-            db.remove_cache(pk)
-        except Exception:
-            pass
+    for record in db.list_cache_records():
+        db.remove_cache(record.pk)
     click.secho("Cache cleared!", fg="green")
 
 
