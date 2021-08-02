@@ -1,6 +1,7 @@
 import sys
 
 import click
+import nbformat
 
 from jupyter_cache import get_cache
 from jupyter_cache.cli import arguments, options
@@ -58,12 +59,12 @@ def clear_nbs(cache_path, force):
 @arguments.PK_OR_PATHS
 @options.CACHE_PATH
 def remove_nbs(cache_path, pk_paths):
-    """Remove notebook(s) from the project, by ID/URI."""
+    """Remove notebook(s) from the project (by ID/URI)."""
     db = get_cache(cache_path)
-    for path in pk_paths:
+    for pk_path in pk_paths:
         # TODO deal with errors (print all at end? or option to ignore)
-        click.echo("Removing: {}".format(path))
-        db.remove_nb_from_project(path)
+        click.echo("Removing: {}".format(pk_path))
+        db.remove_nb_from_project(int(pk_path) if pk_path.isdigit() else pk_path)
     click.secho("Success!", fg="green")
 
 
@@ -95,7 +96,7 @@ def list_nbs_in_project(cache_path, path_length):
     help="Show traceback, if last execution failed.",
 )
 def show_project_record(cache_path, pk, tb):
-    """Show details of a notebook."""
+    """Show details of a notebook (by ID)."""
     import yaml
 
     db = get_cache(cache_path)
@@ -115,3 +116,17 @@ def show_project_record(cache_path, pk, tb):
         click.secho("Failed Last Execution!", fg="red")
         if tb:
             click.echo(record.traceback)
+
+
+@cmnd_project.command("merge")
+@arguments.PK_OR_PATH
+@arguments.OUTPUT_PATH
+@options.CACHE_PATH
+def merge_executed(cache_path, pk_path, outpath):
+    """Write notebook merged with cached outputs (by ID/URI)."""
+    db = get_cache(cache_path)
+    bundle = db.get_project_notebook(int(pk_path) if pk_path.isdigit() else pk_path)
+    cached_pk, nb = db.merge_match_into_notebook(bundle.nb)
+    nbformat.write(nb, outpath)
+    click.echo(f"Merged with cache PK {cached_pk}")
+    click.secho("Success!", fg="green")

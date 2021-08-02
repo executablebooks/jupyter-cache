@@ -174,6 +174,17 @@ def test_remove_nbs_from_project(tmp_path):
     assert db.list_project_records() == []
 
 
+def test_clear_project(tmp_path):
+    db = JupyterCacheBase(str(tmp_path))
+    path = os.path.join(NB_PATH, "basic.ipynb")
+    runner = CliRunner()
+    result = runner.invoke(cmd_project.add_notebooks, ["-p", tmp_path, path])
+    result = runner.invoke(cmd_project.clear_nbs, ["-p", tmp_path], input="y")
+    assert result.exception is None, result.output
+    assert result.exit_code == 0, result.output
+    assert db.list_project_records() == []
+
+
 def test_list_nbs_in_project(tmp_path):
     db = JupyterCacheBase(str(tmp_path))
     db.cache_notebook_file(
@@ -201,3 +212,21 @@ def test_show_project_record(tmp_path):
     assert result.exception is None, result.output
     assert result.exit_code == 0, result.output
     assert "basic.ipynb" in result.output.strip(), result.output
+
+
+def test_project_merge(tmp_path):
+    db = JupyterCacheBase(str(tmp_path))
+    record = db.add_nb_to_project(path=os.path.join(NB_PATH, "basic_unrun.ipynb"))
+    db.cache_notebook_file(
+        path=os.path.join(NB_PATH, "basic.ipynb"),
+        uri="basic.ipynb",
+        check_validity=False,
+    )
+    runner = CliRunner()
+    result = runner.invoke(
+        cmd_project.merge_executed,
+        ["-p", tmp_path, str(record.pk), str(tmp_path / "output.ipynb")],
+    )
+    assert result.exception is None, result.output
+    assert result.exit_code == 0, result.output
+    assert (tmp_path / "output.ipynb").exists()

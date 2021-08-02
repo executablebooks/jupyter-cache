@@ -1,5 +1,7 @@
 import os
+import sys
 from datetime import datetime
+from pathlib import Path
 from textwrap import dedent
 
 from click.testing import CliRunner
@@ -253,8 +255,11 @@ def main():
     )
     strings.append(get_string(cmd_project.show_project_record, project_cmd_name, ["1"]))
 
-    return "\n\n".join(strings)
+    return "\n\n".join(strings).rstrip() + "\n"
 
 
 if __name__ == "__main__":
-    print(main())
+    outpath = Path(sys.argv[1])
+    output = main()
+    outpath.write_text(output)
+    print(f"Written to {outpath.absolute()}")

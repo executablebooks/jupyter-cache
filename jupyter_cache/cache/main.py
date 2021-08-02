@@ -449,11 +449,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
     def get_cached_project_nb(
         self, uri_or_pk: Union[int, str]
     ) -> Optional[NbCacheRecord]:
-        if isinstance(uri_or_pk, int):
-            record = NbProjectRecord.record_from_pk(uri_or_pk, self.db)
-        else:
-            record = NbProjectRecord.record_from_uri(uri_or_pk, self.db)
-        nb = self.get_project_notebook(record.uri).nb
+        nb = self.get_project_notebook(uri_or_pk).nb
         _, hashkey = self.create_hashed_notebook(nb)
         try:
             return NbCacheRecord.record_from_hashkey(hashkey, self.db)

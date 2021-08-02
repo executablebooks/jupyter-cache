@@ -2,7 +2,7 @@
 
 # Command-Line
 
-<!-- This section was auto-generated on 2021-08-02 05:12 by: tests/make_cli_readme.py -->
+<!-- This section was auto-generated on 2021-08-02 08:06 by: tests/make_cli_readme.py -->
 
 From the checked-out repository folder:
 
@@ -19,7 +19,7 @@ Options:
   -h, --help          Show this message and exit.
 
 Commands:
-  cache    Commands for adding to and inspecting the cache.
+  cache    Commands for interacting with cached executions.
   clear    Clear the cache completely.
   config   Commands for configuring the cache.
   execute  Execute all or specific outdated notebooks in the project.
@@ -40,7 +40,7 @@ eval "$(_JCACHE_COMPLETE=source jcache)"
 $ jcache cache --help
 Usage: cache [OPTIONS] COMMAND [ARGS]...
 
-  Commands for adding to and inspecting the cache.
+  Commands for interacting with cached executions.
 
 Options:
   --help  Show this message and exit.
@@ -105,10 +105,10 @@ You can remove cached records by their ID.
 $ jcache cache list
   ID  Origin URI                             Created           Accessed
 ----  -------------------------------------  ----------------  ----------------
-   5  tests/notebooks/external_output.ipynb  2021-08-02 03:12  2021-08-02 03:12
-   4  tests/notebooks/complex_outputs.ipynb  2021-08-02 03:12  2021-08-02 03:12
-   3  tests/notebooks/basic_unrun.ipynb      2021-08-02 03:12  2021-08-02 03:12
-   2  tests/notebooks/basic_failing.ipynb    2021-08-02 03:12  2021-08-02 03:12
+   5  tests/notebooks/external_output.ipynb  2021-08-02 06:06  2021-08-02 06:06
+   4  tests/notebooks/complex_outputs.ipynb  2021-08-02 06:06  2021-08-02 06:06
+   3  tests/notebooks/basic_unrun.ipynb      2021-08-02 06:06  2021-08-02 06:06
+   2  tests/notebooks/basic_failing.ipynb    2021-08-02 06:06  2021-08-02 06:06
 ```
 
 ````{tip}
@@ -136,8 +136,8 @@ Show a full description of a cached notebook by referring to its ID
 $ jcache cache show 6
 ID: 6
 Origin URI: ../tests/notebooks/basic.ipynb
-Created: 2021-08-02 03:12
-Accessed: 2021-08-02 03:12
+Created: 2021-08-02 06:06
+Accessed: 2021-08-02 06:06
 Hashkey: 94c17138f782c75df59e989fffa64e3a
 Artifacts:
 - artifact_folder/artifact.txt
@@ -212,8 +212,9 @@ Commands:
   add-with-assets  Add notebook(s) to the project, with possible asset files.
   clear            Remove all notebooks from the project.
   list             List notebooks in the project.
-  remove           Remove notebook(s) from the project, by ID/URI.
-  show             Show details of a notebook.
+  merge            Write notebook merged with cached outputs (by ID/URI).
+  remove           Remove notebook(s) from the project (by ID/URI).
+  show             Show details of a notebook (by ID).
 ```
 
 A project consist of a set of notebooks to be executed.
@@ -238,11 +239,11 @@ Success!
 $ jcache project list
   ID  URI                                    Reader    Created             Assets    Cache ID
 ----  -------------------------------------  --------  ----------------  --------  ----------
-   5  tests/notebooks/external_output.ipynb  nbformat  2021-08-02 03:12         0           5
-   4  tests/notebooks/complex_outputs.ipynb  nbformat  2021-08-02 03:12         0
-   3  tests/notebooks/basic_unrun.ipynb      nbformat  2021-08-02 03:12         0           6
-   2  tests/notebooks/basic_failing.ipynb    nbformat  2021-08-02 03:12         0           2
-   1  tests/notebooks/basic.ipynb            nbformat  2021-08-02 03:12         0           6
+   5  tests/notebooks/external_output.ipynb  nbformat  2021-08-02 06:06         0           5
+   4  tests/notebooks/complex_outputs.ipynb  nbformat  2021-08-02 06:06         0
+   3  tests/notebooks/basic_unrun.ipynb      nbformat  2021-08-02 06:06         0           6
+   2  tests/notebooks/basic_failing.ipynb    nbformat  2021-08-02 06:06         0           2
+   1  tests/notebooks/basic.ipynb            nbformat  2021-08-02 06:06         0           6
 ```
 
 You can remove a notebook from the project by its URI or ID:
@@ -270,15 +271,12 @@ Executing: ../tests/notebooks/basic_failing.ipynb
 error: Execution Failed: ../tests/notebooks/basic_failing.ipynb
 Executing: ../tests/notebooks/basic_unrun.ipynb
 Execution Succeeded: ../tests/notebooks/basic_unrun.ipynb
-Executing: ../tests/notebooks/complex_outputs.ipynb
-error: Execution Failed: ../tests/notebooks/complex_outputs.ipynb
 Finished! Successfully executed notebooks have been cached.
 succeeded:
 - ../tests/notebooks/basic.ipynb
 - ../tests/notebooks/basic_unrun.ipynb
 excepted:
 - ../tests/notebooks/basic_failing.ipynb
-- ../tests/notebooks/complex_outputs.ipynb
 errored: []
 up-to-date: []
 
@@ -292,11 +290,10 @@ that are inside the notebook folder, and data supplied by the executor.
 $ jcache project list
   ID  URI                                    Reader    Created             Assets    Cache ID
 ----  -------------------------------------  --------  ----------------  --------  ----------
-   5  tests/notebooks/external_output.ipynb  nbformat  2021-08-02 03:12         0           5
-   4  tests/notebooks/complex_outputs.ipynb  nbformat  2021-08-02 03:12         0
-   3  tests/notebooks/basic_unrun.ipynb      nbformat  2021-08-02 03:12         0           6
-   2  tests/notebooks/basic_failing.ipynb    nbformat  2021-08-02 03:12         0
-   1  tests/notebooks/basic.ipynb            nbformat  2021-08-02 03:12         0           6
+   5  tests/notebooks/external_output.ipynb  nbformat  2021-08-02 06:06         0           5
+   3  tests/notebooks/basic_unrun.ipynb      nbformat  2021-08-02 06:06         0           6
+   2  tests/notebooks/basic_failing.ipynb    nbformat  2021-08-02 06:06         0
+   1  tests/notebooks/basic.ipynb            nbformat  2021-08-02 06:06         0           6
 ```
 
 Execution data (such as execution time) will be stored in the cache record:
@@ -305,11 +302,11 @@ Execution data (such as execution time) will be stored in the cache record:
 $ jcache cache show 6
 ID: 6
 Origin URI: ../tests/notebooks/basic_unrun.ipynb
-Created: 2021-08-02 03:12
-Accessed: 2021-08-02 03:12
+Created: 2021-08-02 06:06
+Accessed: 2021-08-02 06:06
 Hashkey: 94c17138f782c75df59e989fffa64e3a
 Data:
-  execution_seconds: 1.639128618
+  execution_seconds: 0.887201879
 
 ```
 
@@ -320,7 +317,7 @@ $ jcache project show 2
 ID: 2
 URI: ../tests/notebooks/basic_failing.ipynb
 Reader: nbformat
-Created: 2021-08-02 03:12
+Created: 2021-08-02 06:06
 Failed Last Execution!
 Traceback (most recent call last):
   File "../jupyter_cache/executors/utils.py", line 55, in single_nb_execution
@@ -346,7 +343,7 @@ raise Exception('oopsie!')
 
 ---------------------------------------------------------------------------
 Exception                                 Traceback (most recent call last)
-/var/folders/t2/xbl15_3n4tsb1vr_ccmmtmbr0000gn/T/ipykernel_86857/340246212.py in <module>
+/var/folders/t2/xbl15_3n4tsb1vr_ccmmtmbr0000gn/T/ipykernel_3944/340246212.py in <module>
 ----> 1 raise Exception('oopsie!')
 
 Exception: oopsie!
@@ -383,7 +380,7 @@ $ jcache project show 1
 ID: 1
 URI: ../tests/notebooks/basic.ipynb
 Reader: nbformat
-Created: 2021-08-02 03:12
+Created: 2021-08-02 06:06
 Cache ID: 6
 Assets:
 - ../tests/notebooks/artifact_folder/artifact.txt

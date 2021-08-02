@@ -10,7 +10,7 @@ from jupyter_cache.utils import tabulate_cache_records
 
 @jcache.group("cache")
 def cmnd_cache():
-    """Commands for adding to and inspecting the cache."""
+    """Commands for interacting with cached executions."""
     pass
 
 
