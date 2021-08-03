@@ -2,28 +2,20 @@
 
 # Command-Line
 
-<!-- This section was auto-generated on 2021-08-02 08:06 by: tests/make_cli_readme.py -->
+```{jcache-clear}
+```
 
 From the checked-out repository folder:
 
-```console
-$ jcache --help
-Usage: jcache [OPTIONS] COMMAND [ARGS]...
+```{jcache-cli} jupyter_cache.cli.commands.cmd_main:jcache
+:args: --help
+```
 
-  The command line interface of jupyter-cache.
+The first time the cache is required, it will be lazily created:
 
-Options:
-  -v, --version       Show the version and exit.
-  -p, --cache-path    Print the current cache path and exit.
-  -a, --autocomplete  Print the autocompletion command and exit.
-  -h, --help          Show this message and exit.
-
-Commands:
-  cache    Commands for interacting with cached executions.
-  clear    Clear the cache completely.
-  config   Commands for configuring the cache.
-  execute  Execute all or specific outdated notebooks in the project.
-  project  Commands for interacting with a project.
+```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+:command: list
+:input: y
 ```
 
 ````{tip}
@@ -36,58 +28,31 @@ eval "$(_JCACHE_COMPLETE=source jcache)"
 
 ## Caching Executed Notebooks
 
-```console
-$ jcache cache --help
-Usage: cache [OPTIONS] COMMAND [ARGS]...
-
-  Commands for interacting with cached executions.
-
-Options:
-  --help  Show this message and exit.
-
-Commands:
-  add                 Cache notebook(s) that have already been executed.
-  add-with-artefacts  Cache a notebook, with possible artefact files.
-  cat-artifact        Print the contents of a cached artefact.
-  clear               Remove all executed notebooks from the cache.
-  diff-nb             Print a diff of a notebook to one stored in the cache.
-  list                List cached notebook records in the cache.
-  remove              Remove notebooks stored in the cache.
-  show                Show details of a cached notebook in the cache.
+```{jcache-cli} jupyter_cache.cli.commands.cmd_cache:cmnd_cache
+:args: --help
 ```
 
-The first time the cache is required, it will be lazily created:
+Initially there will be no cached notebooks:
 
-```console
-$ jcache cache list
-Cache path: ../.jupyter_cache
-The cache does not yet exist, do you want to create it? [y/N]: y
-No Cached Notebooks
-
+```{jcache-cli} jupyter_cache.cli.commands.cmd_cache:cmnd_cache
+:command: list
 ```
 
 You can add notebooks straight into the cache.
 When caching, a check will be made that the notebooks look to have been executed
 correctly, i.e. the cell execution counts go sequentially up from 1.
 
-```console
-$ jcache cache add tests/notebooks/basic.ipynb
-Caching: ../tests/notebooks/basic.ipynb
-Validity Error: Expected cell 1 to have execution_count 1 not 2
-The notebook may not have been executed, continue caching? [y/N]: y
-Success!
+```{jcache-cli} jupyter_cache.cli.commands.cmd_cache:cmnd_cache
+:command: add
+:args: tests/notebooks/basic.ipynb
+:input: y
 ```
 
 Or to skip validation:
 
-```console
-$ jcache cache add --no-validate tests/notebooks/basic.ipynb tests/notebooks/basic_failing.ipynb tests/notebooks/basic_unrun.ipynb tests/notebooks/complex_outputs.ipynb tests/notebooks/external_output.ipynb
-Caching: ../tests/notebooks/basic.ipynb
-Caching: ../tests/notebooks/basic_failing.ipynb
-Caching: ../tests/notebooks/basic_unrun.ipynb
-Caching: ../tests/notebooks/complex_outputs.ipynb
-Caching: ../tests/notebooks/external_output.ipynb
-Success!
+```{jcache-cli} jupyter_cache.cli.commands.cmd_cache:cmnd_cache
+:command: add
+:args: --no-validate tests/notebooks/basic.ipynb tests/notebooks/basic_failing.ipynb tests/notebooks/basic_unrun.ipynb tests/notebooks/complex_outputs.ipynb tests/notebooks/external_output.ipynb
 ```
 
 Once you've cached some notebooks, you can look at the 'cache records'
@@ -101,14 +66,8 @@ Multiple hashes for the same URI can be added
 the last accessed records begin to be deleted.
 You can remove cached records by their ID.
 
-```console
-$ jcache cache list
-  ID  Origin URI                             Created           Accessed
-----  -------------------------------------  ----------------  ----------------
-   5  tests/notebooks/external_output.ipynb  2021-08-02 06:06  2021-08-02 06:06
-   4  tests/notebooks/complex_outputs.ipynb  2021-08-02 06:06  2021-08-02 06:06
-   3  tests/notebooks/basic_unrun.ipynb      2021-08-02 06:06  2021-08-02 06:06
-   2  tests/notebooks/basic_failing.ipynb    2021-08-02 06:06  2021-08-02 06:06
+```{jcache-cli} jupyter_cache.cli.commands.cmd_cache:cmnd_cache
+:command: list
 ```
 
 ````{tip}
@@ -122,99 +81,51 @@ $ jcache cache list --latest-only
 You can also cache notebooks with artefacts
 (external outputs of the notebook execution).
 
-```console
-$ jcache cache add-with-artefacts -nb tests/notebooks/basic.ipynb tests/notebooks/artifact_folder/artifact.txt
-Caching: ../tests/notebooks/basic.ipynb
-Validity Error: Expected cell 1 to have execution_count 1 not 2
-The notebook may not have been executed, continue caching? [y/N]: y
-Success!
+```{jcache-cli} jupyter_cache.cli.commands.cmd_cache:cmnd_cache
+:command: add-with-artefacts
+:args: --no-validate -nb tests/notebooks/basic.ipynb tests/notebooks/artifact_folder/artifact.txt
+:input: y
 ```
 
 Show a full description of a cached notebook by referring to its ID
 
-```console
-$ jcache cache show 6
-ID: 6
-Origin URI: ../tests/notebooks/basic.ipynb
-Created: 2021-08-02 06:06
-Accessed: 2021-08-02 06:06
-Hashkey: 94c17138f782c75df59e989fffa64e3a
-Artifacts:
-- artifact_folder/artifact.txt
+```{jcache-cli} jupyter_cache.cli.commands.cmd_cache:cmnd_cache
+:command: show
+:args: 6
 ```
 
 Note artefact paths must be 'upstream' of the notebook folder:
 
-```console
-$ jcache cache add-with-artefacts -nb tests/notebooks/basic.ipynb tests/test_db.py
-Caching: ../tests/notebooks/basic.ipynb
-Artifact Error: Path '../tests/test_db.py' is not in folder '../tests/notebooks''
+```{jcache-cli} jupyter_cache.cli.commands.cmd_cache:cmnd_cache
+:command: add-with-artefacts
+:args: -nb tests/notebooks/basic.ipynb tests/test_db.py
 ```
 
 To view the contents of an execution artefact:
 
-```console
-$ jcache cache cat-artifact 6 artifact_folder/artifact.txt
-An artifact
-
+```{jcache-cli} jupyter_cache.cli.commands.cmd_cache:cmnd_cache
+:command: cat-artifact
+:args: 6 artifact_folder/artifact.txt
 ```
 
 You can directly remove a cached notebook by its ID:
 
-```console
-$ jcache cache remove 4
-Removing Cache ID = 4
-Success!
+```{jcache-cli} jupyter_cache.cli.commands.cmd_cache:cmnd_cache
+:command: remove
+:args: 4
 ```
 
 You can also diff any of the cached notebooks with any (external) notebook:
 
-```console
-$ jcache cache diff-nb 2 tests/notebooks/basic.ipynb
-nbdiff
---- cached pk=2
-+++ other: ../tests/notebooks/basic.ipynb
-## inserted before nb/cells/0:
-+  code cell:
-+    execution_count: 2
-+    source:
-+      a=1
-+      print(a)
-+    outputs:
-+      output 0:
-+        output_type: stream
-+        name: stdout
-+        text:
-+          1
-
-## deleted nb/cells/0:
--  code cell:
--    source:
--      raise Exception('oopsie!')
-
-
-Success!
+```{jcache-cli} jupyter_cache.cli.commands.cmd_cache:cmnd_cache
+:command: diff-nb
+:args: 2 tests/notebooks/basic.ipynb
 ```
 
 ## Adding notebooks to the project
 
-```console
-$ jcache project --help
-Usage: project [OPTIONS] COMMAND [ARGS]...
-
-  Commands for interacting with a project.
-
-Options:
-  --help  Show this message and exit.
-
-Commands:
-  add              Add notebook(s) to the project.
-  add-with-assets  Add notebook(s) to the project, with possible asset files.
-  clear            Remove all notebooks from the project.
-  list             List notebooks in the project.
-  merge            Write notebook merged with cached outputs (by ID/URI).
-  remove           Remove notebook(s) from the project (by ID/URI).
-  show             Show details of a notebook (by ID).
+```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+:args: --help
 ```
 
 A project consist of a set of notebooks to be executed.
@@ -225,131 +136,53 @@ i.e. no physical copying takes place until execution time.
 You can list the notebooks to see which have existing records in the cache (by hash),
 and which will require execution:
 
-```console
-$ jcache project add tests/notebooks/basic.ipynb tests/notebooks/basic_failing.ipynb tests/notebooks/basic_unrun.ipynb tests/notebooks/complex_outputs.ipynb tests/notebooks/external_output.ipynb
-Adding: ../tests/notebooks/basic.ipynb
-Adding: ../tests/notebooks/basic_failing.ipynb
-Adding: ../tests/notebooks/basic_unrun.ipynb
-Adding: ../tests/notebooks/complex_outputs.ipynb
-Adding: ../tests/notebooks/external_output.ipynb
-Success!
+```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+:command: add
+:args: tests/notebooks/basic.ipynb tests/notebooks/basic_failing.ipynb tests/notebooks/basic_unrun.ipynb tests/notebooks/complex_outputs.ipynb tests/notebooks/external_output.ipynb
 ```
 
-```console
-$ jcache project list
-  ID  URI                                    Reader    Created             Assets    Cache ID
-----  -------------------------------------  --------  ----------------  --------  ----------
-   5  tests/notebooks/external_output.ipynb  nbformat  2021-08-02 06:06         0           5
-   4  tests/notebooks/complex_outputs.ipynb  nbformat  2021-08-02 06:06         0
-   3  tests/notebooks/basic_unrun.ipynb      nbformat  2021-08-02 06:06         0           6
-   2  tests/notebooks/basic_failing.ipynb    nbformat  2021-08-02 06:06         0           2
-   1  tests/notebooks/basic.ipynb            nbformat  2021-08-02 06:06         0           6
+```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+:command: list
 ```
 
 You can remove a notebook from the project by its URI or ID:
 
-```console
-$ jcache project remove 4
-Removing: 4
-Success!
+```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+:command: remove
+:args: 4
 ```
 
 You can then run a basic execution of the required notebooks:
 
-```console
-$ jcache cache remove 6 2
-Removing Cache ID = 6
-Removing Cache ID = 2
-Success!
+```{jcache-cli} jupyter_cache.cli.commands.cmd_cache:cmnd_cache
+:command: remove
+:args: 6 2
 ```
 
-```console
-$ jcache execute
-Executing: ../tests/notebooks/basic.ipynb
-Execution Succeeded: ../tests/notebooks/basic.ipynb
-Executing: ../tests/notebooks/basic_failing.ipynb
-error: Execution Failed: ../tests/notebooks/basic_failing.ipynb
-Executing: ../tests/notebooks/basic_unrun.ipynb
-Execution Succeeded: ../tests/notebooks/basic_unrun.ipynb
-Finished! Successfully executed notebooks have been cached.
-succeeded:
-- ../tests/notebooks/basic.ipynb
-- ../tests/notebooks/basic_unrun.ipynb
-excepted:
-- ../tests/notebooks/basic_failing.ipynb
-errored: []
-up-to-date: []
-
+```{jcache-cli} jupyter_cache.cli.commands.cmd_main:jcache
+:command: execute
 ```
 
 Successfully executed notebooks will be cached to the cache,
 along with any 'artefacts' created by the execution,
 that are inside the notebook folder, and data supplied by the executor.
 
-```console
-$ jcache project list
-  ID  URI                                    Reader    Created             Assets    Cache ID
-----  -------------------------------------  --------  ----------------  --------  ----------
-   5  tests/notebooks/external_output.ipynb  nbformat  2021-08-02 06:06         0           5
-   3  tests/notebooks/basic_unrun.ipynb      nbformat  2021-08-02 06:06         0           6
-   2  tests/notebooks/basic_failing.ipynb    nbformat  2021-08-02 06:06         0
-   1  tests/notebooks/basic.ipynb            nbformat  2021-08-02 06:06         0           6
+```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+:command: list
 ```
 
 Execution data (such as execution time) will be stored in the cache record:
 
-```console
-$ jcache cache show 6
-ID: 6
-Origin URI: ../tests/notebooks/basic_unrun.ipynb
-Created: 2021-08-02 06:06
-Accessed: 2021-08-02 06:06
-Hashkey: 94c17138f782c75df59e989fffa64e3a
-Data:
-  execution_seconds: 0.887201879
-
+```{jcache-cli} jupyter_cache.cli.commands.cmd_cache:cmnd_cache
+:command: show
+:args: 6
 ```
 
 Failed notebooks will not be cached, but the exception traceback will be added to the notebook's project record:
 
-```console
-$ jcache project show 2
-ID: 2
-URI: ../tests/notebooks/basic_failing.ipynb
-Reader: nbformat
-Created: 2021-08-02 06:06
-Failed Last Execution!
-Traceback (most recent call last):
-  File "../jupyter_cache/executors/utils.py", line 55, in single_nb_execution
-    record_timing=False,
-  File "../.tox/create_cli_doc/lib/python3.7/site-packages/nbclient/client.py", line 1112, in execute
-    return NotebookClient(nb=nb, resources=resources, km=km, **kwargs).execute()
-  File "../.tox/create_cli_doc/lib/python3.7/site-packages/nbclient/util.py", line 74, in wrapped
-    return just_run(coro(*args, **kwargs))
-  File "../.tox/create_cli_doc/lib/python3.7/site-packages/nbclient/util.py", line 53, in just_run
-    return loop.run_until_complete(coro)
-  File "../.tox/create_cli_doc/lib/python3.7/asyncio/base_events.py", line 587, in run_until_complete
-    return future.result()
-  File "../.tox/create_cli_doc/lib/python3.7/site-packages/nbclient/client.py", line 554, in async_execute
-    cell, index, execution_count=self.code_cells_executed + 1
-  File "../.tox/create_cli_doc/lib/python3.7/site-packages/nbclient/client.py", line 857, in async_execute_cell
-    self._check_raise_for_error(cell, exec_reply)
-  File "../.tox/create_cli_doc/lib/python3.7/site-packages/nbclient/client.py", line 760, in _check_raise_for_error
-    raise CellExecutionError.from_cell_and_msg(cell, exec_reply_content)
-nbclient.exceptions.CellExecutionError: An error occurred while executing the following cell:
-------------------
-raise Exception('oopsie!')
-------------------
-
----------------------------------------------------------------------------
-Exception                                 Traceback (most recent call last)
-/var/folders/t2/xbl15_3n4tsb1vr_ccmmtmbr0000gn/T/ipykernel_3944/340246212.py in <module>
-----> 1 raise Exception('oopsie!')
-
-Exception: oopsie!
-Exception: oopsie!
-
-
+```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+:command: show
+:args: 2
 ```
 
 ```{tip}
@@ -359,10 +192,9 @@ Code cells can be tagged with `raises-exception` to let the executor known that 
 
 Once executed you may leave notebooks in the project, for later re-execution, or remove them:
 
-```console
-$ jcache project clear
-Are you sure you want to permanently clear the project!? [y/N]: y
-Project cleared!
+```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+:command: clear
+:input: y
 ```
 
 You can also add notebooks to the projects with assets;
@@ -370,18 +202,12 @@ external files that are required by the notebook during execution.
 As with artefacts, these files must be in the same folder as the notebook,
 or a sub-folder.
 
-```console
-$ jcache project add-with-assets -nb tests/notebooks/basic.ipynb tests/notebooks/artifact_folder/artifact.txt
-Success!
+```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+:command: add-with-assets
+:args: -nb tests/notebooks/basic.ipynb tests/notebooks/artifact_folder/artifact.txt
 ```
 
-```console
-$ jcache project show 1
-ID: 1
-URI: ../tests/notebooks/basic.ipynb
-Reader: nbformat
-Created: 2021-08-02 06:06
-Cache ID: 6
-Assets:
-- ../tests/notebooks/artifact_folder/artifact.txt
+```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+:command: show
+:args: 1
 ```

@@ -17,7 +17,9 @@ OrmBase = declarative_base()
 
 # TODO store this in the database so we can check for updates
 DB_VERSION = 2
-# v2: nbstage -> nbproject, and added reader field to nbproject
+# v2:
+#   - table: nbstage -> nbproject
+#   - added reader field to nbproject
 
 
 def create_db(path, name="global.db") -> Engine:
