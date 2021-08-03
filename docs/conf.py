@@ -34,6 +34,7 @@ html_theme_options = {
     "repository_branch": "master",
     "path_to_docs": "docs",
     "home_page_in_toc": True,
+    "logo_only": True,
 }
 
 # Add any paths that contain templates here, relative to this directory.
@@ -58,7 +59,9 @@ exclude_patterns = [
 # a list of builtin themes.
 #
 html_theme = "sphinx_book_theme"
-html_logo = "_static/logo_small.jpg"
+html_title = "Jupyter Cache"
+html_logo = "_static/logo_wide.svg"
+html_favicon = "_static/logo_square.svg"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
