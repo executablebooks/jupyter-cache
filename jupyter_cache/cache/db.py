@@ -247,16 +247,20 @@ class NbProjectRecord(OrmBase):
         return {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
 
     def format_dict(self, cache_record=None, path_length=None, assets=True):
+        status = "-"
+        if cache_record:
+            status = f"✅ [{cache_record.pk}]"
+        elif self.traceback:
+            status = "❌"
         data = {
             "ID": self.pk,
             "URI": str(shorten_path(self.uri, path_length)),
             "Reader": self.reader,
             "Added": self.created.isoformat(" ", "minutes"),
+            "Status": status,
         }
         if assets:
             data["Assets"] = len(self.assets)
-        if cache_record is not None:
-            data["Cache ID"] = cache_record.pk
         return data
 
     @validates("assets")
@@ -341,7 +345,7 @@ class NbProjectRecord(OrmBase):
     @staticmethod
     def records_all(db: Engine) -> "NbProjectRecord":
         with session_context(db) as session:  # type: Session
-            results = session.query(NbProjectRecord).all()
+            results = session.query(NbProjectRecord).order_by(NbProjectRecord.pk).all()
             session.expunge_all()
         return results
 

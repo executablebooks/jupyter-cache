@@ -105,7 +105,7 @@ def tabulate_project_records(
     import tabulate
 
     rows = []
-    for record in sorted(records, key=lambda r: r.created, reverse=True):
+    for record in records:
         cache_record = None
         if cache is not None:
             cache_record = cache.get_cached_project_nb(record.uri)

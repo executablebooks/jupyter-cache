@@ -35,7 +35,7 @@ Add one or more source notebook files to the "project":
 
 ```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
 :command: add
-:args: tests/notebooks/basic_unrun.ipynb
+:args: tests/notebooks/basic_unrun.ipynb tests/notebooks/basic_failing.ipynb
 :input: y
 ```
 
