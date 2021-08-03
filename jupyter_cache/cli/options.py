@@ -1,3 +1,4 @@
+import logging
 import os
 
 import click
@@ -143,3 +144,25 @@ REMOVE_ALL = click.option(
     help="Remove all notebooks.",
     callback=confirm_remove_all,
 )
+
+
+def set_log_level(logger):
+    """Set the log level of the logger."""
+
+    def _callback(ctx, param, value):
+        """Set logging level."""
+        level = getattr(logging, value.upper(), None)
+        if level is None:
+            raise click.BadParameter(f"Unknown log level: {value.upper()}")
+        logger.setLevel(level)
+
+    return click.option(
+        "-v",
+        "--verbosity",
+        type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]),
+        default="INFO",
+        show_default=True,
+        expose_value=False,
+        callback=_callback,
+        help="Set logging verbosity.",
+    )

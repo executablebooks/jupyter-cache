@@ -2,15 +2,14 @@ import logging
 from pathlib import Path
 
 import click
-import click_log
 
 from jupyter_cache import get_cache
-from jupyter_cache.cli import arguments, options
+from jupyter_cache.cli import arguments, options, utils
 from jupyter_cache.cli.commands.cmd_main import jcache
 from jupyter_cache.readers import list_readers
 
 logger = logging.getLogger(__name__)
-click_log.basic_config(logger)
+utils.setup_logger(logger)
 
 
 @jcache.command("execute")
@@ -18,7 +17,7 @@ click_log.basic_config(logger)
 @options.EXECUTOR_KEY
 @options.EXEC_TIMEOUT
 @options.CACHE_PATH
-@click_log.simple_verbosity_option(logger)
+@options.set_log_level(logger)
 def execute_nbs(cache_path, executor, pk_paths, timeout):
     """Execute all or specific outdated notebooks in the project."""
     import yaml
