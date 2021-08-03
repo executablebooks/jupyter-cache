@@ -3,7 +3,7 @@ import os
 from click.testing import CliRunner
 
 from jupyter_cache.cache.main import JupyterCacheBase
-from jupyter_cache.cli.commands import cmd_cache, cmd_main, cmd_project
+from jupyter_cache.cli.commands import cmd_cache, cmd_exec, cmd_main, cmd_project
 
 NB_PATH = os.path.join(os.path.realpath(os.path.dirname(__file__)), "notebooks")
 
@@ -212,6 +212,16 @@ def test_show_project_record(tmp_path):
     assert result.exception is None, result.output
     assert result.exit_code == 0, result.output
     assert "basic.ipynb" in result.output.strip(), result.output
+
+
+def test_execute(tmp_path):
+    db = JupyterCacheBase(str(tmp_path))
+    db.add_nb_to_project(path=os.path.join(NB_PATH, "basic.ipynb"))
+    runner = CliRunner()
+    result = runner.invoke(cmd_exec.execute_nbs, ["-p", tmp_path])
+    assert result.exception is None, result.output
+    assert result.exit_code == 0, result.output
+    assert len(db.list_cache_records()) == 1
 
 
 def test_project_merge(tmp_path):
