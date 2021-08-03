@@ -77,13 +77,22 @@ def remove_nbs(cache_path, pk_paths):
 #     help="Compare to cached notebooks (to find cache ID).",
 # )
 @options.PATH_LENGTH
-def list_nbs_in_project(cache_path, path_length):
+@click.option(
+    "--assets",
+    is_flag=True,
+    help="Show the number of assets associated with each notebook",
+)
+def list_nbs_in_project(cache_path, path_length, assets):
     """List notebooks in the project."""
     db = get_cache(cache_path)
     records = db.list_project_records()
     if not records:
         click.secho("No notebooks in project", fg="blue")
-    click.echo(tabulate_project_records(records, path_length=path_length, cache=db))
+    click.echo(
+        tabulate_project_records(
+            records, path_length=path_length, cache=db, assets=assets
+        )
+    )
 
 
 @cmnd_project.command("show")

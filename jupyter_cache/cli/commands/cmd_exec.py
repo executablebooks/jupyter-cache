@@ -69,7 +69,8 @@ def execute_nbs(cache_path, executor, pk_paths, timeout):
         "Finished! Successfully executed notebooks have been cached.", fg="green"
     )
     output = result.as_json()
-    output["up-to-date"] = list(
-        {record.uri for record in records}.difference(result.all())
-    )
+    if records:
+        output["up-to-date"] = list(
+            {record.uri for record in records}.difference(result.all())
+        )
     click.echo(yaml.safe_dump(output, sort_keys=False))

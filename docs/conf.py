@@ -25,6 +25,7 @@ extensions = [
     # "sphinx.ext.autodoc",
     # "sphinx.ext.viewcode",
 ]
+myst_enable_extensions = ["colon_fence", "deflist"]
 jupyter_execute_notebooks = "off"
 html_theme_options = {
     "repository_url": "https://github.com/executablebooks/jupyter-cache",
@@ -109,6 +110,7 @@ def setup(app):
             "command": directives.unchanged_required,
             "args": directives.unchanged_required,
             "input": directives.unchanged_required,
+            "allow-exception": directives.flag,
         }
 
         def run(self):
@@ -156,9 +158,11 @@ def setup(app):
             finally:
                 os.chdir(old_cwd)
 
+            if result.exception and "allow-exception" not in self.options:
+                raise self.error(
+                    f"CLI raised exception: {result.exception}\n---\n{result.output}\n---\n"
+                )
             text = f"$ {' '.join(cmd_string)} {args}\n{result.output}"
-            if result.exception:
-                text += "\n" + str(result.exception) + "\n"
             text = text.replace(root_path + os.sep, "../")
             node = nodes.literal_block(text, text, language="console")
             return [node]

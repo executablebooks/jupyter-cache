@@ -134,3 +134,4 @@ _archive/
 .DS_Store
 .vscode/
 ~$*
+_*.ipynb

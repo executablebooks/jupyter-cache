@@ -251,7 +251,7 @@ class NbProjectRecord(OrmBase):
             "ID": self.pk,
             "URI": str(shorten_path(self.uri, path_length)),
             "Reader": self.reader,
-            "Created": self.created.isoformat(" ", "minutes"),
+            "Added": self.created.isoformat(" ", "minutes"),
         }
         if assets:
             data["Assets"] = len(self.assets)

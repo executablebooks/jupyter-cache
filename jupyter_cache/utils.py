@@ -91,13 +91,16 @@ def tabulate_cache_records(records: list, hashkeys=False, path_length=None) -> s
     )
 
 
-def tabulate_project_records(records: list, path_length=None, cache=None) -> str:
+def tabulate_project_records(
+    records: list, path_length=None, cache=None, assets=False
+) -> str:
     """Tabulate cache records.
 
     :param records: list of ``NbProjectRecord``
     :param path_length: truncate URI paths to x components
     :param cache: If the cache is given,
         we use it to add a column of matched cached pk (if available)
+    :param assets: Show the number of assets
     """
     import tabulate
 
@@ -107,6 +110,8 @@ def tabulate_project_records(records: list, path_length=None, cache=None) -> str
         if cache is not None:
             cache_record = cache.get_cached_project_nb(record.uri)
         rows.append(
-            record.format_dict(cache_record=cache_record, path_length=path_length)
+            record.format_dict(
+                cache_record=cache_record, path_length=path_length, assets=assets
+            )
         )
     return tabulate.tabulate(rows, headers="keys")
