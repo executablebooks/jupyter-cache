@@ -158,14 +158,15 @@ def setup(app):
             finally:
                 os.chdir(old_cwd)
 
-            if result.exit_code != 0 and "allow-exception" not in self.options:
-                raise self.error(
-                    f"CLI non-zero exit code: {result.exit_code}\n---\n{result.output}\n---\n"
-                )
             if result.exception and "allow-exception" not in self.options:
                 raise self.error(
                     f"CLI raised exception: {result.exception}\n---\n{result.output}\n---\n"
                 )
+            if result.exit_code != 0 and "allow-exception" not in self.options:
+                raise self.error(
+                    f"CLI non-zero exit code: {result.exit_code}\n---\n{result.output}\n---\n"
+                )
+
             text = f"$ {' '.join(cmd_string)} {args}\n{result.output}"
             text = text.replace(root_path + os.sep, "../")
             node = nodes.literal_block(text, text, language="console")

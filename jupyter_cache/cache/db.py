@@ -245,7 +245,13 @@ class NbProjectRecord(OrmBase):
     def to_dict(self):
         return {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
 
-    def format_dict(self, cache_record=None, path_length=None, assets=True):
+    def format_dict(
+        self,
+        cache_record: Optional[NbCacheRecord] = None,
+        path_length: Optional[int] = None,
+        assets: bool = True,
+    ) -> dict:
+        """Return data for display."""
         status = "-"
         if cache_record:
             status = f"✅ [{cache_record.pk}]"

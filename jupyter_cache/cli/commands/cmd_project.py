@@ -1,3 +1,4 @@
+import os
 import sys
 
 import click
@@ -64,7 +65,9 @@ def remove_nbs(cache_path, pk_paths):
     for pk_path in pk_paths:
         # TODO deal with errors (print all at end? or option to ignore)
         click.echo("Removing: {}".format(pk_path))
-        db.remove_nb_from_project(int(pk_path) if pk_path.isdigit() else pk_path)
+        db.remove_nb_from_project(
+            int(pk_path) if pk_path.isdigit() else os.path.abspath(pk_path)
+        )
     click.secho("Success!", fg="green")
 
 
@@ -97,22 +100,24 @@ def list_nbs_in_project(cache_path, path_length, assets):
 
 @cmnd_project.command("show")
 @options.CACHE_PATH
-@arguments.PK
+@arguments.PK_OR_PATH
 @click.option(
     "--tb/--no-tb",
     default=True,
     show_default=True,
     help="Show traceback, if last execution failed.",
 )
-def show_project_record(cache_path, pk, tb):
+def show_project_record(cache_path, pk_path, tb):
     """Show details of a notebook (by ID)."""
     import yaml
 
     db = get_cache(cache_path)
     try:
-        record = db.get_project_record(pk)
+        record = db.get_project_record(
+            int(pk_path) if pk_path.isdigit() else os.path.abspath(pk_path)
+        )
     except KeyError:
-        click.secho("ID {} does not exist, Aborting!".format(pk), fg="red")
+        click.secho("ID {} does not exist, Aborting!".format(pk_path), fg="red")
         sys.exit(1)
     cache_record = db.get_cached_project_nb(record.uri)
     data = record.format_dict(cache_record=cache_record, path_length=None, assets=False)
@@ -134,7 +139,9 @@ def show_project_record(cache_path, pk, tb):
 def merge_executed(cache_path, pk_path, outpath):
     """Write notebook merged with cached outputs (by ID/URI)."""
     db = get_cache(cache_path)
-    nb = db.get_project_notebook(int(pk_path) if pk_path.isdigit() else pk_path).nb
+    nb = db.get_project_notebook(
+        int(pk_path) if pk_path.isdigit() else os.path.abspath(pk_path)
+    ).nb
     cached_pk, nb = db.merge_match_into_notebook(nb)
     nbformat.write(nb, outpath)
     click.echo(f"Merged with cache PK {cached_pk}")

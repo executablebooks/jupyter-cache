@@ -183,7 +183,7 @@ def test_artifacts(tmp_path):
 
 
 @pytest.mark.parametrize(
-    "executor_key", ["local-serial", "temp-serial", "local-mproc", "temp-mproc"]
+    "executor_key", ["local-serial", "temp-serial", "local-parallel", "temp-parallel"]
 )
 def test_execution(tmp_path, executor_key):
     from jupyter_cache.executors import load_executor

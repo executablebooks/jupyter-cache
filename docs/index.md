@@ -100,7 +100,12 @@ Some desired requirements (not yet all implemented):
 ## Contents
 
 ```{toctree}
+:caption: Tutorials
 using/cli
 using/api
+```
+
+```{toctree}
+:caption: Development
 develop/contributing
 ```
