@@ -1,33 +1,194 @@
-import shutil
+import logging
+import multiprocessing as mproc
+import os
 import tempfile
 from pathlib import Path
-from typing import Optional
+from typing import NamedTuple, Tuple
 
+from jupyter_cache.base import JupyterCacheAbstract, ProjectNb
 from jupyter_cache.cache.db import NbProjectRecord
-from jupyter_cache.cache.main import NbArtifacts, NbBundleIn
 from jupyter_cache.executors.base import ExecutorRunResult, JupyterExecutorAbstract
-from jupyter_cache.executors.utils import single_nb_execution
-from jupyter_cache.utils import to_relative_paths
+from jupyter_cache.executors.utils import (
+    ExecutionResult,
+    copy_assets,
+    create_cache_bundle,
+    single_nb_execution,
+)
 
-# from jupyter_client.kernelspec import get_kernel_spec, NoSuchKernel
+REPORT_LEVEL = logging.INFO + 1
+logging.addLevelName(REPORT_LEVEL, "REPORT")
 
 
-class ExecutionError(Exception):
-    """An exception to signify a error during execution of a specific URI."""
+class ProcessData(NamedTuple):
+    """Data for the process worker."""
 
-    def __init__(self, message, uri, exc):
-        self.uri = uri
-        self.exc = exc
-        return super().__init__(message)
+    pk: int
+    uri: str
+    cache: JupyterCacheAbstract
+    timeout: int
+    allow_errors: bool
+
+
+class ExecutionWorkerBase:
+    """Base execution worker.
+
+    Note this must be pickleable.
+    """
+
+    @property
+    def logger(self) -> logging.Logger:
+        raise NotImplementedError
+
+    def log_info(self, msg: str):
+        self.logger.info(msg)
+
+    def execute(self, project_nb: ProjectNb, data: ProcessData) -> ExecutionResult:
+        raise NotImplementedError
+
+    def __call__(self, data: ProcessData) -> Tuple[int, str]:
+
+        try:
+            project_nb = data.cache.get_project_notebook(data.pk)
+        except Exception:
+            self.logger.error(
+                "Failed Retrieving: %s" % data.uri,
+                exc_info=True,
+            )
+            return (2, data.uri)
+
+        try:
+            self.log_info("Executing: %s" % project_nb.uri)
+            result = self.execute(project_nb, data)
+        except Exception:
+            self.logger.error(
+                "Failed Executing: %s" % data.uri,
+                exc_info=True,
+            )
+            return (2, data.uri)
+
+        if result.err:
+            self.logger.warning(
+                "Execution Excepted: %s\n%s: %s"
+                % (project_nb.uri, type(result.err).__name__, str(result.err))
+            )
+            NbProjectRecord.set_traceback(
+                project_nb.uri, result.exc_string, data.cache.db
+            )
+            return (1, data.uri)
+
+        self.log_info("Execution Successful: %s" % project_nb.uri)
+        try:
+            # TODO deal with artifact retrieval
+            bundle = create_cache_bundle(
+                project_nb, result.cwd, None, result.time, result.exc_string
+            )
+            data.cache.cache_notebook_bundle(
+                bundle, check_validity=False, overwrite=True
+            )
+        except Exception:
+            self.logger.error(
+                "Failed Caching: %s" % data.uri,
+                exc_info=True,
+            )
+            return (2, data.uri)
+
+        return (0, data.uri)
+
+
+class ExecutionWorkerLocalSerial(ExecutionWorkerBase):
+    """Execution worker, that executes in local folder."""
+
+    def __init__(self, logger: logging.Logger) -> None:
+        super().__init__()
+        self._logger = logger
+
+    @property
+    def logger(self) -> logging.Logger:
+        return self._logger
+
+    @staticmethod
+    def execute(project_nb: ProjectNb, data: ProcessData) -> ExecutionResult:
+        cwd = str(Path(project_nb.uri).parent)
+        return single_nb_execution(
+            project_nb.nb,
+            cwd=cwd,
+            timeout=data.timeout,
+            allow_errors=data.allow_errors,
+        )
+
+
+class ExecutionWorkerTempSerial(ExecutionWorkerBase):
+    """Execution worker, that executes in temporary folder."""
+
+    def __init__(self, logger: logging.Logger) -> None:
+        super().__init__()
+        self._logger = logger
+
+    @property
+    def logger(self) -> logging.Logger:
+        return self._logger
+
+    @staticmethod
+    def execute(project_nb: ProjectNb, data: ProcessData) -> ExecutionResult:
+        with tempfile.TemporaryDirectory() as cwd:
+            copy_assets(project_nb.uri, project_nb.assets, cwd)
+            return single_nb_execution(
+                project_nb.nb,
+                cwd=cwd,
+                timeout=data.timeout,
+                allow_errors=data.allow_errors,
+            )
+
+
+class ExecutionWorkerLocalMProc(ExecutionWorkerBase):
+    """Execution worker, that executes in local folder."""
+
+    @property
+    def logger(self) -> logging.Logger:
+        return mproc.get_logger()
+
+    def log_info(self, msg: str):
+        # multiprocessing logs a lot at info level that we do not want to see
+        self.logger.log(REPORT_LEVEL, msg)
+
+    @staticmethod
+    def execute(project_nb: ProjectNb, data: ProcessData) -> ExecutionResult:
+        cwd = str(Path(project_nb.uri).parent)
+        return single_nb_execution(
+            project_nb.nb,
+            cwd=cwd,
+            timeout=data.timeout,
+            allow_errors=data.allow_errors,
+        )
+
+
+class ExecutionWorkerTempMProc(ExecutionWorkerBase):
+    """Execution worker, that executes in temporary folder."""
+
+    @property
+    def logger(self) -> logging.Logger:
+        return mproc.get_logger()
+
+    def log_info(self, msg: str):
+        # multiprocessing logs a lot at info level that we do not want to see
+        self.logger.log(REPORT_LEVEL, msg)
+
+    @staticmethod
+    def execute(project_nb: ProjectNb, data: ProcessData) -> ExecutionResult:
+        with tempfile.TemporaryDirectory() as cwd:
+            copy_assets(project_nb.uri, project_nb.assets, cwd)
+            return single_nb_execution(
+                project_nb.nb,
+                cwd=cwd,
+                timeout=data.timeout,
+                allow_errors=data.allow_errors,
+            )
 
 
 class JupyterExecutorLocalSerial(JupyterExecutorAbstract):
-    """A basic implementation of an executor; executing locally in serial.
+    """An implementation of an executor; executing locally in serial."""
 
-    The execution is split into two methods: `run` and `execute`.
-    In this way access to the cache can be synchronous, but the execution can be
-    multi/async processed. Takes timeout parameter in seconds for execution
-    """
+    _EXECUTION_WORKER = ExecutionWorkerLocalSerial
 
     def run_and_cache(
         self,
@@ -37,192 +198,77 @@ class JupyterExecutorLocalSerial(JupyterExecutorAbstract):
         timeout=30,
         allow_errors=False,
     ) -> ExecutorRunResult:
-        """This function interfaces with the cache, deferring execution to `execute`."""
-        # Get the notebook tha require re-execution
-        execute_records = self.cache.list_unexecuted()
-        if filter_uris is not None:
-            execute_records = [r for r in execute_records if r.uri in filter_uris]
-        if filter_pks is not None:
-            execute_records = [r for r in execute_records if r.pk in filter_pks]
-
-        # remove any tracebacks from previous executions
-        NbProjectRecord.remove_tracebacks(
-            [r.pk for r in execute_records], self.cache.db
+        # Get the notebook that require re-execution
+        execute_records = self.get_records(
+            filter_uris, filter_pks, clear_tracebacks=True
         )
 
-        # setup an dictionary to categorise all executed notebook uris:
-        # excepted are where the actual notebook execution raised an exception;
-        # errored is where any other exception was raised
-        result = ExecutorRunResult()
-        # we pass an iterator to the execute method,
-        # so that we don't have to read all notebooks before execution
+        self.logger.info("Executing %s notebook(s) in serial" % len(execute_records))
 
-        def _iterator():
-            for execute_record in execute_records:
-                try:
-                    nb_bundle = self.cache.get_project_notebook(execute_record.pk)
-                except Exception:
-                    self.logger.error(
-                        "Failed Retrieving: {}".format(execute_record.uri),
-                        exc_info=True,
-                    )
-                    result.errored.append(execute_record.uri)
-                else:
-                    yield execute_record, nb_bundle
-
-        # The execute method yields notebook bundles, or ExecutionError
-        for bundle_or_exc in self.execute(
-            _iterator(),
-            int(timeout),
-            allow_errors,
-        ):
-            if isinstance(bundle_or_exc, ExecutionError):
-                self.logger.error(bundle_or_exc.uri, exc_info=bundle_or_exc.exc)
-                result.errored.append(bundle_or_exc.uri)
-                continue
-            elif bundle_or_exc.traceback is not None:
-                # The notebook raised an exception during execution
-                # TODO store excepted bundles
-                result.excepted.append(bundle_or_exc.uri)
-                NbProjectRecord.set_traceback(
-                    bundle_or_exc.uri, bundle_or_exc.traceback, self.cache.db
-                )
-                continue
-            try:
-                # cache a successfully executed notebook
-                self.cache.cache_notebook_bundle(
-                    bundle_or_exc, check_validity=False, overwrite=True
-                )
-            except Exception:
-                self.logger.error(
-                    "Failed Caching: {}".format(bundle_or_exc.uri), exc_info=True
-                )
-                result.errored.append(bundle_or_exc.uri)
-            else:
-                result.succeeded.append(bundle_or_exc.uri)
-
-        # TODO it would also be ideal to tag all notebooks
-        # that were executed at the same time (just part of `data` or separate column?).
-        # TODO maybe the status of success/failure could be explicitly stored on
-        # the project record (cache_status=Enum('OK', 'FAILED', 'MISSING'))
-        # although now traceback is so this is an implicit sign of failure,
-        # TODO failed notebooks could be stored in the cache, which would be
-        # accessed by the project pk (and would be deleted when removing the project record)
-        # see: https://python.quantecon.org/status.html
-
-        return result
-
-    def execute_single(
-        self,
-        nb_bundle,
-        uri: str,
-        cwd: Optional[str],
-        timeout: Optional[int],
-        allow_errors: bool,
-        asset_files,
-    ):
-        result = single_nb_execution(
-            nb_bundle.nb,
-            cwd=cwd,
-            timeout=timeout,
-            allow_errors=allow_errors,
-        )
-        if result.err:
-            self.logger.error("Execution Failed: {}".format(uri))
-            return _create_bundle(
-                nb_bundle,
-                cwd,
-                asset_files,
-                result.time,
-                result.exc_string,
+        results = [
+            self._EXECUTION_WORKER(self.logger)(
+                ProcessData(record.pk, record.uri, self.cache, timeout, allow_errors)
             )
+            for record in execute_records
+        ]
 
-        self.logger.info("Execution Succeeded: {}".format(uri))
-        return _create_bundle(nb_bundle, cwd, asset_files, result.time, None)
-
-    def execute(self, input_iterator, timeout=30, allow_errors=False):
-        """This function is isolated from the cache, and is responsible for execution.
-
-        The method is only supplied with the project record and input notebook bundle,
-        it then yields results for caching
-        """
-        for _, nb_bundle in input_iterator:
-            try:
-                uri = nb_bundle.uri
-                self.logger.info("Executing: {}".format(uri))
-
-                yield self.execute_single(
-                    nb_bundle,
-                    uri,
-                    str(Path(uri).parent),
-                    timeout,
-                    allow_errors,
-                    None,
-                )
-
-            except Exception as err:
-                yield ExecutionError("Unexpected Error", uri, err)
+        return ExecutorRunResult(
+            succeeded=[p for i, p in results if i == 0],
+            excepted=[p for i, p in results if i == 1],
+            errored=[p for i, p in results if i == 2],
+        )
 
 
 class JupyterExecutorTempSerial(JupyterExecutorLocalSerial):
     """An implementation of an executor; executing in a temporary folder in serial."""
 
-    def execute(self, input_iterator, timeout=30, allow_errors=False):
-        """This function is isolated from the cache, and is responsible for execution.
-
-        The method is only supplied with the project record and input notebook bundle,
-        it then yields results for caching.
-        """
-        for execute_record, nb_bundle in input_iterator:
-            try:
-                uri = nb_bundle.uri
-                self.logger.info("Executing: {}".format(uri))
-
-                with tempfile.TemporaryDirectory() as tmpdirname:
-
-                    try:
-                        asset_files = _copy_assets(execute_record, tmpdirname)
-                    except Exception as err:
-                        yield ExecutionError("Assets Retrieval Error", uri, err)
-                        continue
-
-                    yield self.execute_single(
-                        nb_bundle,
-                        uri,
-                        tmpdirname,
-                        timeout,
-                        allow_errors,
-                        asset_files,
-                    )
-
-            except Exception as err:
-                yield ExecutionError("Unexpected Error", uri, err)
+    _EXECUTION_WORKER = ExecutionWorkerTempSerial
 
 
-def _copy_assets(record, folder):
-    """Copy notebook assets to the folder the notebook will be executed in."""
-    asset_files = []
-    relative_paths = to_relative_paths(record.assets, Path(record.uri).parent)
-    for path, rel_path in zip(record.assets, relative_paths):
-        temp_file = Path(folder).joinpath(rel_path)
-        temp_file.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(path, temp_file)
-        asset_files.append(temp_file)
-    return asset_files
+class JupyterExecutorLocalMproc(JupyterExecutorAbstract):
+    """An implementation of an executor; executing locally in parallel."""
 
+    _EXECUTION_WORKER = ExecutionWorkerLocalMProc
 
-def _create_bundle(nb_bundle, tmpdirname, asset_files, exec_time, exec_tb):
-    """Create a cache bundle."""
-    return NbBundleIn(
-        nb_bundle.nb,
-        nb_bundle.uri,
-        # TODO retrieve assets that have changed file mtime?
-        artifacts=NbArtifacts(
-            [p for p in Path(tmpdirname).glob("**/*") if p not in asset_files],
-            tmpdirname,
+    def run_and_cache(
+        self,
+        *,
+        filter_uris=None,
+        filter_pks=None,
+        timeout=30,
+        allow_errors=False,
+    ) -> ExecutorRunResult:
+        # Get the notebook that require re-execution
+        execute_records = self.get_records(
+            filter_uris, filter_pks, clear_tracebacks=True
         )
-        if asset_files is not None
-        else None,
-        data={"execution_seconds": exec_time},
-        traceback=exec_tb,
-    )
+
+        self.logger.info(
+            "Executing %s notebook(s) over pool of %s processors"
+            % (len(execute_records), os.cpu_count())
+        )
+        mproc.log_to_stderr(
+            REPORT_LEVEL if self.logger.level == logging.INFO else self.logger.level
+        )
+
+        with mproc.Pool() as pool:
+            results = pool.map(
+                self._EXECUTION_WORKER(),
+                [
+                    ProcessData(
+                        record.pk, record.uri, self.cache, timeout, allow_errors
+                    )
+                    for record in execute_records
+                ],
+            )
+        return ExecutorRunResult(
+            succeeded=[p for i, p in results if i == 0],
+            excepted=[p for i, p in results if i == 1],
+            errored=[p for i, p in results if i == 2],
+        )
+
+
+class JupyterExecutorTempMproc(JupyterExecutorLocalMproc):
+    """An implementation of an executor; executing in a temporary directory and in parallel."""
+
+    _EXECUTION_WORKER = ExecutionWorkerTempMProc

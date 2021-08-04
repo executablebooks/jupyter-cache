@@ -37,6 +37,30 @@ class NbValidityError(Exception):
         super().__init__(message, *args, **kwargs)
 
 
+@attr.s(frozen=True, slots=True)
+class ProjectNb:
+    """A notebook read from a project"""
+
+    pk: int = attr.ib(
+        validator=instance_of(int),
+        metadata={"help": "the ID of the notebook"},
+    )
+    uri: str = attr.ib(
+        converter=str,
+        validator=instance_of(str),
+        metadata={"help": "the URI of the notebook"},
+    )
+    nb: nbf.NotebookNode = attr.ib(
+        validator=instance_of(nbf.NotebookNode),
+        repr=lambda nb: "Notebook(cells={0})".format(len(nb.cells)),
+        metadata={"help": "the notebook"},
+    )
+    assets: List[Path] = attr.ib(
+        factory=list,
+        metadata={"help": "File paths required to run the notebook"},
+    )
+
+
 class NbArtifactsAbstract(ABC):
     """Container for artefacts of a notebook execution."""
 
@@ -56,7 +80,7 @@ class NbArtifactsAbstract(ABC):
 
 
 @attr.s(frozen=True, slots=True)
-class NbBundleIn:
+class CacheBundleIn:
     """A container for notebooks and their associated data to cache."""
 
     nb: nbf.NotebookNode = attr.ib(
@@ -89,7 +113,7 @@ class NbBundleIn:
 
 
 @attr.s(frozen=True, slots=True)
-class NbBundleOut:
+class CacheBundleOut:
     """A container for notebooks and their associated data that have been cached."""
 
     nb: nbf.NotebookNode = attr.ib(
@@ -105,7 +129,10 @@ class NbBundleOut:
 
 
 class JupyterCacheAbstract(ABC):
-    """An abstract cache for storing pre/post executed notebooks."""
+    """An abstract cache for storing pre/post executed notebooks.
+
+    Note: class instances should be pickleable.
+    """
 
     @abstractmethod
     def clear_cache(self) -> None:
@@ -113,7 +140,10 @@ class JupyterCacheAbstract(ABC):
 
     @abstractmethod
     def cache_notebook_bundle(
-        self, bundle: NbBundleIn, check_validity: bool = True, overwrite: bool = False
+        self,
+        bundle: CacheBundleIn,
+        check_validity: bool = True,
+        overwrite: bool = False,
     ) -> NbCacheRecord:
         """Commit an executed notebook, returning its cache record.
 
@@ -160,7 +190,7 @@ class JupyterCacheAbstract(ABC):
         """Return the record of a cache, by its primary key"""
 
     @abstractmethod
-    def get_cache_bundle(self, pk: int) -> NbBundleOut:
+    def get_cache_bundle(self, pk: int) -> CacheBundleOut:
         """Return an executed notebook bundle, by its primary key"""
 
     @abstractmethod
@@ -266,7 +296,7 @@ class JupyterCacheAbstract(ABC):
         """Return the record of a notebook in the project, by its primary key or URI."""
 
     @abstractmethod
-    def get_project_notebook(self, uri_or_pk: Union[int, str]) -> NbBundleIn:
+    def get_project_notebook(self, uri_or_pk: Union[int, str]) -> ProjectNb:
         """Return a single notebook in the project, by its primary key or URI."""
 
     @abstractmethod

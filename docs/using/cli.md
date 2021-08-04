@@ -104,7 +104,7 @@ Note artefact paths must be 'upstream' of the notebook folder:
 To view the contents of an execution artefact:
 
 ```{jcache-cli} jupyter_cache.cli.commands.cmd_cache:cmnd_cache
-:command: cat-artifact
+:command: cat-artefact
 :args: 6 artifact_folder/artifact.txt
 ```
 

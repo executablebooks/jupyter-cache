@@ -71,7 +71,7 @@ def show_cache(cache_path, pk):
             click.echo(f"- {path}")
 
 
-@cmnd_cache.command("cat-artifact")
+@cmnd_cache.command("cat-artefact")
 @options.CACHE_PATH
 @arguments.PK
 @arguments.ARTIFACT_RPATH

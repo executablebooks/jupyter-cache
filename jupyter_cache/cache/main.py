@@ -10,12 +10,13 @@ import nbformat as nbf
 
 from jupyter_cache.base import (  # noqa: F401
     NB_VERSION,
+    CacheBundleIn,
+    CacheBundleOut,
     CachingError,
     JupyterCacheAbstract,
     NbArtifactsAbstract,
-    NbBundleIn,
-    NbBundleOut,
     NbValidityError,
+    ProjectNb,
     RetrievalError,
 )
 from jupyter_cache.readers import get_reader
@@ -172,7 +173,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
 
         return (nb, hash_string)
 
-    def _validate_nb_bundle(self, nb_bundle: NbBundleIn):
+    def _validate_nb_bundle(self, nb_bundle: CacheBundleIn):
         """Validate that a notebook bundle should be cached.
 
         We check that the notebook has been executed correctly,
@@ -195,7 +196,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
 
     def cache_notebook_bundle(
         self,
-        bundle: NbBundleIn,
+        bundle: CacheBundleIn,
         check_validity: bool = True,
         overwrite: bool = False,
         description="",
@@ -267,7 +268,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         """
         notebook = nbf.read(str(path), nbf.NO_CONVERT)
         return self.cache_notebook_bundle(
-            NbBundleIn(
+            CacheBundleIn(
                 notebook,
                 uri or str(path),
                 artifacts=NbArtifacts(artifacts, in_folder=Path(path).parent),
@@ -283,7 +284,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
     def get_cache_record(self, pk: int) -> NbCacheRecord:
         return NbCacheRecord.record_from_pk(pk, self.db)
 
-    def get_cache_bundle(self, pk: int) -> NbBundleOut:
+    def get_cache_bundle(self, pk: int) -> CacheBundleOut:
         record = NbCacheRecord.record_from_pk(pk, self.db)
         NbCacheRecord.touch(pk, self.db)
         path = self._get_notebook_path_cache(record.hashkey)
@@ -293,7 +294,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
                 "Notebook file does not exist for cache record PK: {}".format(pk)
             )
 
-        return NbBundleOut(
+        return CacheBundleOut(
             nbf.reads(path.read_text(encoding="utf8"), nbf.NO_CONVERT),
             record=record,
             artifacts=NbArtifacts(
@@ -433,7 +434,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
 
     # TODO add discard all/multiple project records method
 
-    def get_project_notebook(self, uri_or_pk: Union[int, str]) -> NbBundleIn:
+    def get_project_notebook(self, uri_or_pk: Union[int, str]) -> ProjectNb:
         if isinstance(uri_or_pk, int):
             record = NbProjectRecord.record_from_pk(uri_or_pk, self.db)
         else:
@@ -444,7 +445,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
             )
         converter = get_reader(record.reader)
         notebook = converter(record.uri)
-        return NbBundleIn(notebook, record.uri)
+        return ProjectNb(record.pk, record.uri, notebook, record.assets)
 
     def get_cached_project_nb(
         self, uri_or_pk: Union[int, str]

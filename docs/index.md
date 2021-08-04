@@ -94,7 +94,7 @@ Some desired requirements (not yet all implemented):
 - Allow parallel access to notebooks (for execution)
 - Store execution statistics/reports.
 - Store external assets: Notebooks being executed often require external assets: importing scripts/data/etc. These are prepared by the users.
-- Store execution artifacts: created during execution
+- Store execution artefacts: created during execution
 - A transparent and robust cache invalidation: imagine the user updating an external dependency or a Python module, or checking out a different git branch.
 
 ## Contents

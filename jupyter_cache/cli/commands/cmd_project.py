@@ -134,8 +134,8 @@ def show_project_record(cache_path, pk, tb):
 def merge_executed(cache_path, pk_path, outpath):
     """Write notebook merged with cached outputs (by ID/URI)."""
     db = get_cache(cache_path)
-    bundle = db.get_project_notebook(int(pk_path) if pk_path.isdigit() else pk_path)
-    cached_pk, nb = db.merge_match_into_notebook(bundle.nb)
+    nb = db.get_project_notebook(int(pk_path) if pk_path.isdigit() else pk_path).nb
+    cached_pk, nb = db.merge_match_into_notebook(nb)
     nbformat.write(nb, outpath)
     click.echo(f"Merged with cache PK {cached_pk}")
     click.secho("Success!", fg="green")

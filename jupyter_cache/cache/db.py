@@ -79,7 +79,6 @@ class Setting(OrmBase):
             result = session.query(Setting.value).filter_by(key=key).one_or_none()
             if result is None:
                 if default is not None:
-                    Setting.set_value(key, default, db)
                     result = [default]
                 else:
                     raise KeyError("Setting not found in DB: {}".format(key))

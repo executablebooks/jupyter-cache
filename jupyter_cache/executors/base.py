@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, Set
 import attr
 
 from jupyter_cache.base import JupyterCacheAbstract
+from jupyter_cache.cache.db import NbProjectRecord
 from jupyter_cache.entry_points import (
     ENTRY_POINT_GROUP_EXEC,
     get_entry_point,
@@ -59,6 +60,27 @@ class JupyterExecutorAbstract(ABC):
     @property
     def logger(self):
         return self._logger
+
+    def get_records(
+        self,
+        filter_uris: Optional[List[str]] = None,
+        filter_pks: Optional[List[int]] = None,
+        clear_tracebacks: bool = True,
+    ) -> List[NbProjectRecord]:
+        """Return records to execute.
+
+        :param clear_tracebacks: Remove any tracebacks from previous executions
+        """
+        execute_records = self.cache.list_unexecuted()
+        if filter_uris is not None:
+            execute_records = [r for r in execute_records if r.uri in filter_uris]
+        if filter_pks is not None:
+            execute_records = [r for r in execute_records if r.pk in filter_pks]
+        if clear_tracebacks:
+            NbProjectRecord.remove_tracebacks(
+                [r.pk for r in execute_records], self.cache.db
+            )
+        return execute_records
 
     @abstractmethod
     def run_and_cache(
