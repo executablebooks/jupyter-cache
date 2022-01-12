@@ -49,7 +49,6 @@ Now run the execution:
 
 ```{jcache-cli} jupyter_cache.cli.commands.cmd_main:jcache
 :command: execute
-:args: --executor local-serial
 ```
 
 Successfully executed files will now be associated with a record in the cache:
