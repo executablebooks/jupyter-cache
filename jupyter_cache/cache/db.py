@@ -2,7 +2,7 @@ import os
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from sqlalchemy import JSON, Column, DateTime, Integer, String, Text
 from sqlalchemy.engine import Engine, create_engine
@@ -11,20 +11,25 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, sessionmaker, validates
 from sqlalchemy.sql.expression import desc
 
+from jupyter_cache import __version__
 from jupyter_cache.utils import shorten_path
 
 OrmBase = declarative_base()
 
-# TODO store this in the database so we can check for updates
 DB_VERSION = 2
-# v2:
+# 0.5.0:
 #   - table: nbstage -> nbproject
 #   - added read_data field to nbproject
 
 
-def create_db(path, name="global.db") -> Engine:
+def create_db(path: Union[str, Path], name="global.db") -> Engine:
+    """Get or create a database at the given path."""
+    exists = (Path(path) / name).exists()
     engine = create_engine("sqlite:///{}".format(os.path.join(path, name)))
-    OrmBase.metadata.create_all(engine)
+    if not exists:
+        OrmBase.metadata.create_all(engine)
+        Setting.set_value("__version__", __version__, engine)
+
     return engine
 
 

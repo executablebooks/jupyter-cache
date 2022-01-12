@@ -74,6 +74,26 @@ def remove_nbs(cache_path, pk_paths):
     click.secho("Success!", fg="green")
 
 
+@cmnd_project.command("invalidate")
+@arguments.PK_OR_PATHS
+@options.INVALIDATE_ALL
+@options.CACHE_PATH
+def invalidate_nbs(cache_path, pk_paths, invalidate_all):
+    """Invalidate notebook cache(s) (by ID/URI)."""
+    db = get_cache(cache_path)
+    if invalidate_all:
+        pk_paths = [str(record.pk) for record in db.list_project_records()]
+    for pk_path in pk_paths:
+        # TODO deal with errors (print all at end? or option to ignore)
+        click.echo("Invalidating: {}".format(pk_path))
+        record = db.get_cached_project_nb(
+            int(pk_path) if pk_path.isdigit() else os.path.abspath(pk_path)
+        )
+        if record is not None:
+            db.remove_cache(record.pk)
+    click.secho("Success!", fg="green")
+
+
 @cmnd_project.command("list")
 @options.CACHE_PATH
 # @click.option(

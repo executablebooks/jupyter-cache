@@ -146,6 +146,23 @@ REMOVE_ALL = click.option(
 )
 
 
+def confirm_invalidate_all(ctx, param, remove_all):
+    if remove_all and not click.confirm("Are you sure you want to invalidate all?"):
+        click.secho("Aborted!", bold=True, fg="red")
+        ctx.exit()
+    return remove_all
+
+
+INVALIDATE_ALL = click.option(
+    "-a",
+    "--all",
+    "invalidate_all",
+    is_flag=True,
+    help="Invalidate all notebooks.",
+    callback=confirm_invalidate_all,
+)
+
+
 def set_log_level(logger):
     """Set the log level of the logger."""
 

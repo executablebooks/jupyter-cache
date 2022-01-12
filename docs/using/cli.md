@@ -78,6 +78,8 @@ or clear all notebooks from the project:
 :input: y
 ```
 
+## Add a custom reader to read notebook files
+
 By default, notebook files are read using the [nbformat reader](https://nbformat.readthedocs.io/en/latest/api.html#nbformat.read).
 However, you can also specify a custom reader, defined by an entry point in the `jcache.readers` group.
 Included with jupyter_cache is the [jupytext](https://jupytext.readthedocs.io) reader, for formats like MyST Markdown:
@@ -183,6 +185,21 @@ You can merge the cached outputs into a source notebook with:
 ```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
 :command: merge
 :args: tests/notebooks/basic.md _executed_notebook.ipynb
+```
+
+## Invalidating cached notebooks
+
+If you want to invalidate a notebook's cached execution,
+for example if you have changed the notebook's execution environment,
+you can do so by calling the `invalidate` command:
+
+```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+:command: invalidate
+:args: tests/notebooks/basic.ipynb
+```
+
+```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+:command: list
 ```
 
 ## Specifying notebooks with assets

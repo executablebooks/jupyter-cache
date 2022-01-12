@@ -240,3 +240,18 @@ def test_project_merge(tmp_path):
     assert result.exception is None, result.output
     assert result.exit_code == 0, result.output
     assert (tmp_path / "output.ipynb").exists()
+
+
+def test_project_invalidate(tmp_path):
+    db = JupyterCacheBase(str(tmp_path))
+    db.cache_notebook_file(
+        path=os.path.join(NB_PATH, "basic.ipynb"), check_validity=False
+    )
+    db.add_nb_to_project(path=os.path.join(NB_PATH, "basic.ipynb"))
+
+    runner = CliRunner()
+    result = runner.invoke(cmd_project.invalidate_nbs, ["-p", tmp_path, "1"])
+    assert result.exception is None, result.output
+    assert result.exit_code == 0, result.output
+    assert db.list_project_records()
+    assert not db.list_cache_records()
