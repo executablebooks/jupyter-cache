@@ -384,7 +384,12 @@ class JupyterCacheBase(JupyterCacheAbstract):
 
         Note: this will not diff markdown content, since it is not stored in the cache.
         """
-        import nbdime
+        try:
+            import nbdime
+        except ImportError:
+            raise ImportError(
+                "nbdime is required to diff notebooks, install with `pip install nbdime`"
+            )
         from nbdime.prettyprint import PrettyPrintConfig, pretty_print_diff
 
         cached_nb = self.get_cache_bundle(pk).nb
