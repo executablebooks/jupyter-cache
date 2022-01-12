@@ -194,7 +194,7 @@ def remove_caches(cache_path, pks, remove_all):
     click.secho("Success!", fg="green")
 
 
-@cmnd_cache.command("diff-nb")
+@cmnd_cache.command("diff")
 @arguments.PK
 @arguments.NB_PATH
 @options.CACHE_PATH

@@ -5,7 +5,7 @@
 ```{jcache-clear}
 ```
 
-Note, you can follow this tutorial from the checked-out repository folder:
+Note, you can follow this tutorial by cloning <https://github.com/executablebooks/jupyter-cache>:
 
 ```{jcache-cli} jupyter_cache.cli.commands.cmd_main:jcache
 :args: --help
@@ -241,7 +241,11 @@ $ jcache cache list --latest-only
 
 You can diff any of the cached notebooks with any (external) notebook:
 
+```{warning}
+This requires `pip install nbdime`
+```
+
 ```{jcache-cli} jupyter_cache.cli.commands.cmd_cache:cmnd_cache
-:command: diff-nb
+:command: diff
 :args: 1 tests/notebooks/basic_unrun.ipynb
 ```
