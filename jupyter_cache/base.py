@@ -6,7 +6,7 @@ with no assumptions about the backend storage/retrieval mechanisms.
 import io
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Iterable, List, Optional, Tuple, Union
+from typing import Iterable, List, Mapping, Optional, Tuple, Union
 
 import attr
 import nbformat as nbf
@@ -14,6 +14,7 @@ from attr.validators import instance_of, optional
 
 # TODO make these abstract
 from jupyter_cache.cache.db import NbCacheRecord, NbProjectRecord
+from jupyter_cache.readers import DEFAULT_READ_DATA
 
 NB_VERSION = 4
 
@@ -273,12 +274,16 @@ class JupyterCacheAbstract(ABC):
 
     @abstractmethod
     def add_nb_to_project(
-        self, uri: str, *, reader: str = "nbformat", assets: List[str] = ()
+        self,
+        uri: str,
+        *,
+        read_data: Mapping = DEFAULT_READ_DATA,
+        assets: List[str] = ()
     ) -> NbProjectRecord:
         """Add a single notebook to the project.
 
         :param uri: The path to the file
-        :param reader: A key for the reader function, to read the uri and return a NotebookNode
+        :param read_data: Data to generate a function, to read the uri and return a NotebookNode
         :param assets: The path of files required by the notebook to run.
         :raises ValueError: assets not within the same folder as the notebook URI.
         """
@@ -297,7 +302,10 @@ class JupyterCacheAbstract(ABC):
 
     @abstractmethod
     def get_project_notebook(self, uri_or_pk: Union[int, str]) -> ProjectNb:
-        """Return a single notebook in the project, by its primary key or URI."""
+        """Return a single notebook in the project, by its primary key or URI.
+
+        :raises NbReadError: if the notebook cannot be read
+        """
 
     @abstractmethod
     def get_cached_project_nb(

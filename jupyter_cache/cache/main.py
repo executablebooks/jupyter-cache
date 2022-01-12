@@ -4,7 +4,7 @@ import io
 import shutil
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterable, List, Optional, Tuple, Union
+from typing import Iterable, List, Mapping, Optional, Tuple, Union
 
 import nbformat as nbf
 
@@ -19,7 +19,7 @@ from jupyter_cache.base import (  # noqa: F401
     ProjectNb,
     RetrievalError,
 )
-from jupyter_cache.readers import get_reader
+from jupyter_cache.readers import DEFAULT_READ_DATA, NbReadError, get_reader
 from jupyter_cache.utils import to_relative_paths
 
 from .db import NbCacheRecord, NbProjectRecord, Setting, create_db
@@ -406,16 +406,21 @@ class JupyterCacheBase(JupyterCacheAbstract):
         return stream.getvalue()
 
     def add_nb_to_project(
-        self, path: str, *, reader: str = "nbformat", assets: List[str] = ()
+        self,
+        path: str,
+        *,
+        read_data: Mapping = DEFAULT_READ_DATA,
+        assets: List[str] = (),
     ) -> NbProjectRecord:
         # check the reader can be loaded
-        _ = get_reader(reader)
+        read_data = dict(read_data)
+        _ = get_reader(read_data)
         # TODO should we test that the file can be read by the reader?
         return NbProjectRecord.create_record(
             str(Path(path).absolute()),
             self.db,
             raise_on_exists=False,
-            reader=reader,
+            read_data=read_data,
             assets=assets,
         )
         # TODO physically copy to cache?
@@ -448,8 +453,14 @@ class JupyterCacheBase(JupyterCacheAbstract):
             raise IOError(
                 "The URI of the project record no longer exists: {}".format(record.uri)
             )
-        converter = get_reader(record.reader)
-        notebook = converter(record.uri)
+        try:
+            reader = get_reader(record.read_data)
+            notebook = reader(record.uri)
+            assert isinstance(
+                notebook, nbf.NotebookNode
+            ), f"Reader did not return a v4 NotebookNode: {type(notebook)} {notebook}"
+        except Exception as exc:
+            raise NbReadError(f"Failed to read the notebook: {exc}") from exc
         return ProjectNb(record.pk, record.uri, notebook, record.assets)
 
     def get_cached_project_nb(

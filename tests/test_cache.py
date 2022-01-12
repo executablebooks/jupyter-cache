@@ -240,7 +240,10 @@ def test_execution_jupytext(tmp_path):
     db = JupyterCacheBase(str(tmp_path / "cache"))
     temp_nb_path = tmp_path / "notebooks"
     shutil.copytree(NB_PATH, temp_nb_path)
-    db.add_nb_to_project(path=os.path.join(temp_nb_path, "basic.md"), reader="jupytext")
+    db.add_nb_to_project(
+        path=os.path.join(temp_nb_path, "basic.md"),
+        read_data={"name": "jupytext", "type": "plugin"},
+    )
     executor = load_executor("local-serial", db)
     result = executor.run_and_cache()
     print(result)

@@ -2,7 +2,7 @@ import os
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy import JSON, Column, DateTime, Integer, String, Text
 from sqlalchemy.engine import Engine, create_engine
@@ -19,7 +19,7 @@ OrmBase = declarative_base()
 DB_VERSION = 2
 # v2:
 #   - table: nbstage -> nbproject
-#   - added reader field to nbproject
+#   - added read_data field to nbproject
 
 
 def create_db(path, name="global.db") -> Engine:
@@ -234,7 +234,7 @@ class NbProjectRecord(OrmBase):
 
     pk = Column(Integer(), primary_key=True)
     uri = Column(String(255), nullable=False, unique=True)
-    reader = Column(String(255), nullable=False)
+    read_data = Column(JSON(), nullable=False)
     assets = Column(JSON(), nullable=False, default=list)
     traceback = Column(Text(), nullable=True, default="")
     created = Column(DateTime, nullable=False, default=datetime.utcnow)
@@ -250,6 +250,8 @@ class NbProjectRecord(OrmBase):
         cache_record: Optional[NbCacheRecord] = None,
         path_length: Optional[int] = None,
         assets: bool = True,
+        read_error: Optional[str] = None,
+        read_name: bool = True,
     ) -> dict:
         """Return data for display."""
         status = "-"
@@ -257,16 +259,26 @@ class NbProjectRecord(OrmBase):
             status = f"✅ [{cache_record.pk}]"
         elif self.traceback:
             status = "❌"
+        elif read_error:
+            status = "❗️ (unreadable)"
         data = {
             "ID": self.pk,
             "URI": str(shorten_path(self.uri, path_length)),
-            "Reader": self.reader,
+            "Reader": self.read_data.get("name", "-") if read_name else self.read_data,
             "Added": self.created.isoformat(" ", "minutes"),
             "Status": status,
         }
         if assets:
             data["Assets"] = len(self.assets)
         return data
+
+    @validates("read_data")
+    def validate_read_data(self, key, value):
+        if not isinstance(value, dict):
+            raise ValueError("read_data must be a dict")
+        if "name" not in value:
+            raise ValueError("read_data must have a name")
+        return value
 
     @validates("assets")
     def validator_assets(self, key, value):
@@ -294,14 +306,14 @@ class NbProjectRecord(OrmBase):
     def create_record(
         uri: str,
         db: Engine,
+        read_data: Dict[str, Any],
         raise_on_exists=True,
         *,
-        reader: str = "nbformat",
         assets=(),
     ) -> "NbProjectRecord":
         assets = NbProjectRecord.validate_assets(assets, uri)
         with session_context(db) as session:  # type: Session
-            record = NbProjectRecord(uri=uri, reader=reader, assets=assets)
+            record = NbProjectRecord(uri=uri, read_data=read_data, assets=assets)
             session.add(record)
             try:
                 session.commit()

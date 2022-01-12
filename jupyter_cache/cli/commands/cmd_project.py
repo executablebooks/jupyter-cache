@@ -7,6 +7,7 @@ import nbformat
 from jupyter_cache import get_cache
 from jupyter_cache.cli import arguments, options
 from jupyter_cache.cli.commands.cmd_main import jcache
+from jupyter_cache.readers import NbReadError
 from jupyter_cache.utils import tabulate_project_records
 
 
@@ -25,7 +26,7 @@ def add_notebooks(cache_path, nbpaths, reader):
     for path in nbpaths:
         # TODO deal with errors (print all at end? or option to ignore)
         click.echo("Adding: {}".format(path))
-        db.add_nb_to_project(path, reader=reader)
+        db.add_nb_to_project(path, read_data={"name": reader, "type": "plugin"})
     click.secho("Success!", fg="green")
 
 
@@ -37,7 +38,9 @@ def add_notebooks(cache_path, nbpaths, reader):
 def add_notebook(cache_path, nbpath, reader, asset_paths):
     """Add notebook(s) to the project, with possible asset files."""
     db = get_cache(cache_path)
-    db.add_nb_to_project(nbpath, reader=reader, assets=asset_paths)
+    db.add_nb_to_project(
+        nbpath, read_data={"name": reader, "type": "plugin"}, assets=asset_paths
+    )
     click.secho("Success!", fg="green")
 
 
@@ -119,9 +122,15 @@ def show_project_record(cache_path, pk_path, tb):
     except KeyError:
         click.secho("ID {} does not exist, Aborting!".format(pk_path), fg="red")
         sys.exit(1)
-    cache_record = db.get_cached_project_nb(record.uri)
-    data = record.format_dict(cache_record=cache_record, path_length=None, assets=False)
-    click.echo(yaml.safe_dump(data, sort_keys=False).rstrip())
+    cache_record = None
+    try:
+        cache_record = db.get_cached_project_nb(record.uri)
+    except NbReadError as exc:
+        click.secho(f"File could not be read: {exc}", fg="red")
+    data = record.format_dict(
+        cache_record=cache_record, path_length=None, assets=False, read_name=False
+    )
+    click.echo(yaml.safe_dump(data, sort_keys=False, allow_unicode=True).rstrip())
     if record.assets:
         click.echo("Assets:")
         for path in record.assets:

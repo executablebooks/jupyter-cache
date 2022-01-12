@@ -54,7 +54,9 @@ def execute_nbs(cache_path, executor, pk_paths, timeout):
             show_default=True,
         )
         for pk_path in not_in_project:
-            record = db.add_nb_to_project(pk_path, reader=reader)
+            record = db.add_nb_to_project(
+                pk_path, read_data={"name": reader, "type": "plugin"}
+            )
             records.append(record)
     try:
         executor = load_executor(executor, db, logger=logger)
