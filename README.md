@@ -28,7 +28,7 @@ pip install jupyter-cache[cli]
 For development:
 
 ```bash
-git clone https://github.com/ExecutableBookProject/jupyter-cache
+git clone https://github.com/executablebooks/jupyter-cache
 cd jupyter-cache
 git checkout develop
 pip install -e .[cli,code_style,testing]
