@@ -31,7 +31,7 @@ conda install jupyter-cache
 ```{jcache-clear}
 ```
 
-Add one or more source notebook files to the "project":
+Add one or more source notebook files to the "project" (a folder containing a database and a cache of executed notebooks):
 
 ```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
 :command: add
