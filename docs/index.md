@@ -19,7 +19,7 @@ Execution reports
 Install `jupyter-cache`, via pip or Conda:
 
 ```bash
-pip install jupyter-cache[cli]
+pip install jupyter-cache
 ```
 
 ```bash

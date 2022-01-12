@@ -22,7 +22,7 @@ Some desired requirements (not yet all implemented):
 ## Install
 
 ```bash
-pip install jupyter-cache[cli]
+pip install jupyter-cache
 ```
 
 For development:
