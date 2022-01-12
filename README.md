@@ -24,7 +24,7 @@ Some desired requirements (not yet all implemented):
 ## Install
 
 ```bash
-pip install jupyter-cache[cli]
+pip install jupyter-cache
 ```
 
 For development:
@@ -33,7 +33,7 @@ For development:
 git clone https://github.com/ExecutableBookProject/jupyter-cache
 cd jupyter-cache
 git checkout develop
-pip install -e .[cli,code_style,testing]
+pip install -e .[code_style,testing]
 ```
 
 ## Example API usage
