@@ -1,6 +1,6 @@
 # Jupyter Cache
 
-This package provides an [API](use/api) and [CLI](use/cli) for executing and cacheing multiple Jupyter Notebook-like files.
+Execute and cache multiple Jupyter Notebook-like files via an [API](use/api) and [CLI](use/cli).
 
 Smart re-execution
 : Notebooks will only be re-executed when **code cells** have changed (or code related metadata), not Markdown/Raw cells.
