@@ -1,7 +1,7 @@
 import shutil
 import traceback
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Any, List, Optional, Union
 
 import attr
 from nbclient import execute as executenb
@@ -28,6 +28,8 @@ def single_nb_execution(
     timeout: Optional[int],
     allow_errors: bool,
     meta_override: bool = True,
+    record_timing: bool = False,
+    **kwargs: Any,
 ) -> ExecutionResult:
     """Execute notebook in place.
 
@@ -38,6 +40,7 @@ def single_nb_execution(
                 execution is stopped and a ``CellExecutionError`` is raised.
     :param meta_override: If ``True`` then timeout and allow_errors may be overridden
                 by equivalent keys in nb.metadata.execution
+    :param kwargs: Additional keyword arguments to pass to the ``NotebookClient``.
 
     :returns: The execution time in seconds
     """
@@ -57,7 +60,8 @@ def single_nb_execution(
                 cwd=cwd,
                 timeout=timeout,
                 allow_errors=allow_errors,
-                record_timing=False,
+                record_timing=record_timing,
+                **kwargs,
             )
         except (CellExecutionError, CellTimeoutError) as err:
             error = err
