@@ -13,7 +13,7 @@ Note, you can follow this tutorial by cloning <https://github.com/executablebook
 
 The first time the cache is required, it will be lazily created:
 
-```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
 :command: list
 :input: y
 ```
@@ -25,7 +25,7 @@ You can also clear it at any time:
 :input: y
 ```
 
-```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
 :command: list
 :input: y
 ```
@@ -40,7 +40,7 @@ eval "$(_JCACHE_COMPLETE=source jcache)"
 
 ## Adding notebooks to the project
 
-```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
 :args: --help
 ```
 
@@ -49,31 +49,31 @@ A project consist of a set of notebooks to be executed.
 When adding notebooks to the project, they are recorded by their URI (e.g. file path),
 i.e. no physical copying takes place until execution time.
 
-```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
 :command: add
 :args: tests/notebooks/basic.ipynb tests/notebooks/basic_failing.ipynb tests/notebooks/basic_unrun.ipynb tests/notebooks/complex_outputs.ipynb tests/notebooks/external_output.ipynb
 ```
 
 You can list the notebooks in the project, at present none have an existing execution record in the cache:
 
-```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
 :command: list
 ```
 
 You can remove a notebook from the project by its URI or ID:
 
-```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
 :command: remove
 :args: 4
 ```
 
-```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
 :command: list
 ```
 
 or clear all notebooks from the project:
 
-```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
 :command: clear
 :input: y
 ```
@@ -84,17 +84,17 @@ By default, notebook files are read using the [nbformat reader](https://nbformat
 However, you can also specify a custom reader, defined by an entry point in the `jcache.readers` group.
 Included with jupyter_cache is the [jupytext](https://jupytext.readthedocs.io) reader, for formats like MyST Markdown:
 
-```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
 :command: add
 :args: --reader nbformat tests/notebooks/basic.ipynb tests/notebooks/basic_failing.ipynb
 ```
 
-```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
 :command: add
 :args: --reader jupytext tests/notebooks/basic.md
 ```
 
-```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
 :command: list
 ```
 
@@ -129,7 +129,7 @@ Successfully executed notebooks will now have a record in the cache, uniquely id
 These records are then compared to the hashes of notebooks in the project, to find which have up-to-date executions.
 Note here both notebooks share the same cached notebook (denoted by `[1]` in the status):
 
-```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
 :command: list
 ```
 
@@ -166,7 +166,7 @@ You can see the elapsed execution time of a notebook via its ID in the cache:
 
 Failed execution tracebacks are also available on the project record:
 
-```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
 :command: show
 :args: --tb tests/notebooks/basic_failing.ipynb
 ```
@@ -180,11 +180,11 @@ Code cells can be tagged with `raises-exception` to let the executor known that 
 
 Notebooks added to the project are not modified in any way during or after execution:
 
-You can merge the cached outputs into a source notebook with:
+You can create a new "final" notebook, with the cached outputs merged into the source notebook with:
 
-```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
 :command: merge
-:args: tests/notebooks/basic.md _executed_notebook.ipynb
+:args: tests/notebooks/basic.md final_notebook.ipynb
 ```
 
 ## Invalidating cached notebooks
@@ -193,12 +193,12 @@ If you want to invalidate a notebook's cached execution,
 for example if you have changed the notebook's execution environment,
 you can do so by calling the `invalidate` command:
 
-```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
 :command: invalidate
 :args: tests/notebooks/basic.ipynb
 ```
 
-```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
 :command: list
 ```
 
@@ -206,17 +206,17 @@ you can do so by calling the `invalidate` command:
 
 When executing in a temporary directory, you may want to specify additional "asset" files that also need to be be copied to this directory for the notebook to run.
 
-```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
 :command: remove
 :args: tests/notebooks/basic.ipynb
 ```
 
-```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
 :command: add-with-assets
 :args: -nb tests/notebooks/basic.ipynb tests/notebooks/artifact_folder/artifact.txt
 ```
 
-```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
 :command: show
 :args: tests/notebooks/basic.ipynb
 ```

@@ -11,12 +11,12 @@ from jupyter_cache.readers import NbReadError
 from jupyter_cache.utils import tabulate_project_records
 
 
-@jcache.group("project")
-def cmnd_project():
+@jcache.group("notebook")
+def cmnd_notebook():
     """Commands for interacting with a project."""
 
 
-@cmnd_project.command("add")
+@cmnd_notebook.command("add")
 @arguments.NB_PATHS
 @options.READER_KEY
 @options.CACHE_PATH
@@ -30,7 +30,7 @@ def add_notebooks(cache_path, nbpaths, reader):
     click.secho("Success!", fg="green")
 
 
-@cmnd_project.command("add-with-assets")
+@cmnd_notebook.command("add-with-assets")
 @arguments.ASSET_PATHS
 @options.NB_PATH
 @options.READER_KEY
@@ -44,7 +44,7 @@ def add_notebook(cache_path, nbpath, reader, asset_paths):
     click.secho("Success!", fg="green")
 
 
-@cmnd_project.command("clear")
+@cmnd_notebook.command("clear")
 @options.CACHE_PATH
 @options.FORCE
 def clear_nbs(cache_path, force):
@@ -59,7 +59,7 @@ def clear_nbs(cache_path, force):
     click.secho("Project cleared!", fg="green")
 
 
-@cmnd_project.command("remove")
+@cmnd_notebook.command("remove")
 @arguments.PK_OR_PATHS
 @options.CACHE_PATH
 def remove_nbs(cache_path, pk_paths):
@@ -74,12 +74,12 @@ def remove_nbs(cache_path, pk_paths):
     click.secho("Success!", fg="green")
 
 
-@cmnd_project.command("invalidate")
+@cmnd_notebook.command("invalidate")
 @arguments.PK_OR_PATHS
 @options.INVALIDATE_ALL
 @options.CACHE_PATH
 def invalidate_nbs(cache_path, pk_paths, invalidate_all):
-    """Invalidate notebook cache(s) (by ID/URI)."""
+    """Invalidate notebook(s) cache (by ID/URI)."""
     db = get_cache(cache_path)
     if invalidate_all:
         pk_paths = [str(record.pk) for record in db.list_project_records()]
@@ -94,7 +94,7 @@ def invalidate_nbs(cache_path, pk_paths, invalidate_all):
     click.secho("Success!", fg="green")
 
 
-@cmnd_project.command("list")
+@cmnd_notebook.command("list")
 @options.CACHE_PATH
 # @click.option(
 #     "--compare/--no-compare",
@@ -121,7 +121,7 @@ def list_nbs_in_project(cache_path, path_length, assets):
     )
 
 
-@cmnd_project.command("show")
+@cmnd_notebook.command("show")
 @options.CACHE_PATH
 @arguments.PK_OR_PATH
 @click.option(
@@ -161,7 +161,7 @@ def show_project_record(cache_path, pk_path, tb):
             click.echo(record.traceback)
 
 
-@cmnd_project.command("merge")
+@cmnd_notebook.command("merge")
 @arguments.PK_OR_PATH
 @arguments.OUTPUT_PATH
 @options.CACHE_PATH

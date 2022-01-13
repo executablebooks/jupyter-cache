@@ -95,6 +95,8 @@ def setup(app):
     from sphinx.util.docutils import SphinxDirective
 
     class JcacheClear(SphinxDirective):
+        """A directive to clear the jupyter cache."""
+
         def run(self):
             path = os.path.join(os.path.dirname(self.env.app.srcdir), ".jupyter_cache")
             if os.path.exists(path):
@@ -102,6 +104,10 @@ def setup(app):
             return []
 
     class JcacheCli(SphinxDirective):
+        """A directive to run a CLI command,
+        and output a nicely formatted representation of the input command and its output.
+        """
+
         required_arguments = 1  # command
         final_argument_whitespace = False
         has_content = False

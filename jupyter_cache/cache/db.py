@@ -107,6 +107,7 @@ class NbCacheRecord(OrmBase):
     uri = Column(String(255), nullable=False, unique=False)
     description = Column(String(255), nullable=False, default="")
     data = Column(JSON())
+    """Extra data, such as the execution time."""
     created = Column(DateTime, nullable=False, default=datetime.utcnow)
     accessed = Column(
         DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow

@@ -135,3 +135,4 @@ _archive/
 .vscode/
 ~$*
 _*.ipynb
+final_notebook.ipynb

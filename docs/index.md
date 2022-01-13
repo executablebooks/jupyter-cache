@@ -33,7 +33,7 @@ conda install jupyter-cache
 
 Add one or more source notebook files to the "project" (a folder containing a database and a cache of executed notebooks):
 
-```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
 :command: add
 :args: tests/notebooks/basic_unrun.ipynb tests/notebooks/basic_failing.ipynb
 :input: y
@@ -41,7 +41,7 @@ Add one or more source notebook files to the "project" (a folder containing a da
 
 These files are now ready for execution:
 
-```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
 :command: list
 ```
 
@@ -53,7 +53,7 @@ Now run the execution:
 
 Successfully executed files will now be associated with a record in the cache:
 
-```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
 :command: list
 ```
 
@@ -71,11 +71,11 @@ Next time we execute, jupyter-cache will check which files require re-execution:
 ```
 
 The source files themselves will not be modified during/after execution.
-You can merge the cached outputs into a source notebook with:
+You can create a new "final" notebook, with the cached outputs merged into the source notebook with:
 
-```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
 :command: merge
-:args: 1 _executed_notebook.ipynb
+:args: 1 final_notebook.ipynb
 ```
 
 ## Design considerations
