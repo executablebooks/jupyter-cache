@@ -1,7 +1,7 @@
 """Non-core imports in this module are lazily loaded, in order to improve CLI speed """
 
-import time
 from pathlib import Path
+import time
 from typing import TYPE_CHECKING, List, Optional, Union
 
 from jupyter_cache.readers import NbReadError

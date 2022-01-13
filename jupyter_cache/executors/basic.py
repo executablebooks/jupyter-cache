@@ -1,8 +1,8 @@
 import logging
 import multiprocessing as mproc
 import os
-import tempfile
 from pathlib import Path
+import tempfile
 from typing import NamedTuple, Tuple
 
 from jupyter_cache.base import JupyterCacheAbstract, ProjectNb

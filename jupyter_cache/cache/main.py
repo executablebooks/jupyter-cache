@@ -1,9 +1,9 @@
+from contextlib import contextmanager
 import copy
 import hashlib
 import io
-import shutil
-from contextlib import contextmanager
 from pathlib import Path
+import shutil
 from typing import Iterable, List, Mapping, Optional, Tuple, Union
 
 import nbformat as nbf

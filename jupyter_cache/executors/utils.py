@@ -1,6 +1,6 @@
+from pathlib import Path
 import shutil
 import traceback
-from pathlib import Path
 from typing import Any, List, Optional, Union
 
 import attr

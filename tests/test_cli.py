@@ -1,8 +1,8 @@
 import os
 from pathlib import Path
 
-import pytest
 from click.testing import CliRunner
+import pytest
 
 from jupyter_cache.cache.main import JupyterCacheBase
 from jupyter_cache.cli import CacheContext
