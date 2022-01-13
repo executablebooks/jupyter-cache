@@ -2,16 +2,16 @@
 
 Execute and cache multiple Jupyter Notebook-like files via an [API](use/api) and [CLI](use/cli).
 
-Smart re-execution
+🤓 Smart re-execution
 : Notebooks will only be re-executed when **code cells** have changed (or code related metadata), not Markdown/Raw cells.
 
-Pluggable execution modes
+🧩 Pluggable execution modes
 : Select the executor for notebooks, including serial and parallel execution
 
-Execution reports
+📈 Execution reports
 : Timing statistics and exception tracebacks are stored for analysis
 
-[jupytext](https://jupytext.readthedocs.io) integration
+📖 [jupytext](https://jupytext.readthedocs.io) integration
 : Read and execute notebooks written in multiple formats
 
 ## Installation
