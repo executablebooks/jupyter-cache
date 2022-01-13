@@ -66,16 +66,16 @@ class JupyterExecutorAbstract(ABC):
         filter_uris: Optional[List[str]] = None,
         filter_pks: Optional[List[int]] = None,
         clear_tracebacks: bool = True,
+        force: bool = False,
     ) -> List[NbProjectRecord]:
         """Return records to execute.
 
         :param clear_tracebacks: Remove any tracebacks from previous executions
         """
-        execute_records = self.cache.list_unexecuted()
-        if filter_uris is not None:
-            execute_records = [r for r in execute_records if r.uri in filter_uris]
-        if filter_pks is not None:
-            execute_records = [r for r in execute_records if r.pk in filter_pks]
+        if force:
+            execute_records = self.cache.list_project_records(filter_uris, filter_pks)
+        else:
+            execute_records = self.cache.list_unexecuted(filter_uris, filter_pks)
         if clear_tracebacks:
             NbProjectRecord.remove_tracebacks(
                 [r.pk for r in execute_records], self.cache.db
@@ -90,6 +90,7 @@ class JupyterExecutorAbstract(ABC):
         filter_pks: Optional[List[int]] = None,
         timeout: Optional[int] = 30,
         allow_errors: bool = False,
+        force: bool = False,
         **kwargs: Any
     ) -> ExecutorRunResult:
         """Run execution, cache successfully executed notebooks and return their URIs
@@ -99,6 +100,8 @@ class JupyterExecutorAbstract(ABC):
         :param timeout: Maximum time in seconds to wait for a single cell to run for
         :param allow_errors: Whether to halt execution on the first cell exception
             (provided the cell is not tagged as an expected exception)
+        :param force: Whether to force execution of all notebooks, even if they are cached
+        :param kwargs: Additional keyword arguments to pass to the executor
         """
 
 

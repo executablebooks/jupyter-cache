@@ -143,6 +143,13 @@ Next time you execute the project, only notebooks which don't match a cached rec
 :args: --executor local-serial -v CRITICAL
 ```
 
+You can also `force` all notebooks to be re-executed:
+
+```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+:command: execute
+:args: --force
+```
+
 If you modify a code cell, the notebook will no longer match a cached notebook or, if you wish to re-execute unchanged notebook(s) (for example if the runtime environment has changed), you can remove their records from the cache (keeping the project record):
 
 ```{jcache-cli} jupyter_cache.cli.commands.cmd_cache:cmnd_cache

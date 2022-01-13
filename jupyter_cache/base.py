@@ -297,8 +297,12 @@ class JupyterCacheAbstract(ABC):
         """Remove a notebook from the project."""
 
     @abstractmethod
-    def list_project_records(self) -> List[NbProjectRecord]:
-        """Return a list of the notebook URI's in the project."""
+    def list_project_records(
+        self,
+        filter_uris: Optional[List[str]] = None,
+        filter_pks: Optional[List[int]] = None,
+    ) -> List[NbProjectRecord]:
+        """Return a list of all notebook records in the project."""
 
     @abstractmethod
     def get_project_record(self, uri_or_pk: Union[int, str]) -> NbProjectRecord:
@@ -321,5 +325,9 @@ class JupyterCacheAbstract(ABC):
         """
 
     @abstractmethod
-    def list_unexecuted(self) -> List[NbProjectRecord]:
+    def list_unexecuted(
+        self,
+        filter_uris: Optional[List[str]] = None,
+        filter_pks: Optional[List[int]] = None,
+    ) -> List[NbProjectRecord]:
         """List notebooks in the project, whose hash is not present in the cache."""

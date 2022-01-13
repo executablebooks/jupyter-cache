@@ -162,6 +162,12 @@ class NbCacheRecord(OrmBase):
             session.expunge(record)
         return record
 
+    def remove_record(pk: int, db: Engine):
+        with session_context(db) as session:  # type: Session
+            record = session.get(NbCacheRecord, pk)
+            session.delete(record)
+            session.commit()
+
     def remove_records(pks: List[int], db: Engine):
         with session_context(db) as session:  # type: Session
             session.query(NbCacheRecord).filter(NbCacheRecord.pk.in_(pks)).delete(

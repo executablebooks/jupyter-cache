@@ -219,9 +219,13 @@ class JupyterCacheBase(JupyterCacheAbstract):
                     "Notebook already exists in cache and overwrite=False."
                 )
             shutil.rmtree(path.parent)
+
+        try:
             record = NbCacheRecord.record_from_hashkey(hashkey, self.db)
-            # TODO record should be changed rather than deleted?
-            NbCacheRecord.remove_records([record.pk], self.db)
+        except KeyError:
+            pass
+        else:
+            NbCacheRecord.remove_record(record.pk, self.db)
 
         record = NbCacheRecord.create_record(
             uri=bundle.uri,
@@ -429,8 +433,17 @@ class JupyterCacheBase(JupyterCacheAbstract):
         # TODO physically copy to cache?
         # TODO assets
 
-    def list_project_records(self) -> List[NbProjectRecord]:
-        return NbProjectRecord.records_all(self.db)
+    def list_project_records(
+        self,
+        filter_uris: Optional[List[str]] = None,
+        filter_pks: Optional[List[int]] = None,
+    ) -> List[NbProjectRecord]:
+        records = NbProjectRecord.records_all(self.db)
+        if filter_uris is not None:
+            records = [r for r in records if r.uri in filter_uris]
+        if filter_pks is not None:
+            records = [r for r in records if r.pk in filter_pks]
+        return records
 
     def get_project_record(self, uri_or_pk: Union[int, str]) -> NbProjectRecord:
         if isinstance(uri_or_pk, int):
@@ -476,9 +489,13 @@ class JupyterCacheBase(JupyterCacheAbstract):
         except KeyError:
             return None
 
-    def list_unexecuted(self) -> List[NbProjectRecord]:
+    def list_unexecuted(
+        self,
+        filter_uris: Optional[List[str]] = None,
+        filter_pks: Optional[List[int]] = None,
+    ) -> List[NbProjectRecord]:
         records = []
-        for record in self.list_project_records():
+        for record in self.list_project_records(filter_uris, filter_pks):
             nb = self.get_project_notebook(record.uri).nb
             _, hashkey = self.create_hashed_notebook(nb)
             try:

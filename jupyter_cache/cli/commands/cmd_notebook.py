@@ -1,12 +1,16 @@
+import logging
 import os
 
 import click
 import nbformat
 
-from jupyter_cache.cli import arguments, options, pass_cache
+from jupyter_cache.cli import arguments, options, pass_cache, utils
 from jupyter_cache.cli.commands.cmd_main import jcache
 from jupyter_cache.readers import NbReadError
 from jupyter_cache.utils import tabulate_project_records
+
+logger = logging.getLogger(__name__)
+utils.setup_logger(logger)
 
 
 @jcache.group("notebook")
@@ -176,3 +180,35 @@ def merge_executed(cache, pk_path, outpath):
     nbformat.write(nb, outpath)
     click.echo(f"Merged with cache PK {cached_pk}")
     click.secho("Success!", fg="green")
+
+
+@cmnd_notebook.command("execute")
+@arguments.PK_OR_PATHS
+@options.EXECUTOR_KEY
+@options.EXEC_TIMEOUT
+@options.EXEC_FORCE(default=True)
+@options.set_log_level(logger)
+@pass_cache
+def execute_nbs(cache, pk_paths, executor, timeout, force):
+    """Execute specific notebooks in the project."""
+    import yaml
+
+    from jupyter_cache.executors import load_executor
+
+    uris = [os.path.abspath(p) for p in pk_paths if not p.isdigit()] or None
+    pks = [int(p) for p in pk_paths if p.isdigit()] or None
+
+    db = cache.get_cache()
+
+    try:
+        executor = load_executor(executor, db, logger=logger)
+    except ImportError as error:
+        logger.error(str(error))
+        return 1
+    result = executor.run_and_cache(
+        filter_pks=pks, filter_uris=uris, timeout=timeout, force=force
+    )
+    click.secho(
+        "Finished! Successfully executed notebooks have been cached.", fg="green"
+    )
+    click.echo(yaml.safe_dump(result.as_json(), sort_keys=False))

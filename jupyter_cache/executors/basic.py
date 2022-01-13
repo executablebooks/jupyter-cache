@@ -197,10 +197,11 @@ class JupyterExecutorLocalSerial(JupyterExecutorAbstract):
         filter_pks=None,
         timeout=30,
         allow_errors=False,
+        force=False,
     ) -> ExecutorRunResult:
         # Get the notebook that require re-execution
         execute_records = self.get_records(
-            filter_uris, filter_pks, clear_tracebacks=True
+            filter_uris, filter_pks, clear_tracebacks=True, force=force
         )
 
         self.logger.info("Executing %s notebook(s) in serial" % len(execute_records))
@@ -237,6 +238,7 @@ class JupyterExecutorLocalMproc(JupyterExecutorAbstract):
         filter_pks=None,
         timeout=30,
         allow_errors=False,
+        force=False,
     ) -> ExecutorRunResult:
         # Get the notebook that require re-execution
         execute_records = self.get_records(

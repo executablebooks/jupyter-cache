@@ -92,6 +92,17 @@ EXEC_TIMEOUT = click.option(
 )
 
 
+def EXEC_FORCE(default=False):
+    return click.option(
+        "-f",
+        "--force/--no-force",
+        help="Execute a notebook even if it is cached.",
+        is_flag=True,
+        default=default,
+        show_default=True,
+    )
+
+
 PATH_LENGTH = click.option(
     "-l", "--path-length", default=3, show_default=True, help="Maximum URI path."
 )
