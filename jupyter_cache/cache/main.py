@@ -74,7 +74,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         return self._db
 
     def __repr__(self):
-        return "{0}({1})".format(self.__class__.__name__, repr(str(self._path)))
+        return f"{self.__class__.__name__}({repr(str(self._path))})"
 
     def __getstate__(self):
         """For pickling instances, db must be removed."""
@@ -94,7 +94,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         """Retrieve a relative path in the cache to a notebook, from its hash."""
         path = self.path.joinpath(Path("executed", hashkey, "base.ipynb"))
         if not path.exists() and raise_on_missing:
-            raise RetrievalError("hashkey not in cache: {}".format(hashkey))
+            raise RetrievalError(f"hashkey not in cache: {hashkey}")
         return path
 
     def _get_artifact_path_cache(self, hashkey) -> Path:
@@ -297,9 +297,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         path = self._get_notebook_path_cache(record.hashkey)
         artifact_folder = self._get_artifact_path_cache(record.hashkey)
         if not path.exists():
-            raise KeyError(
-                "Notebook file does not exist for cache record PK: {}".format(pk)
-            )
+            raise KeyError(f"Notebook file does not exist for cache record PK: {pk}")
 
         return CacheBundleOut(
             nbf.reads(path.read_text(encoding="utf8"), nbf.NO_CONVERT),
@@ -327,9 +325,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         record = NbCacheRecord.record_from_pk(pk, self.db)
         path = self._get_notebook_path_cache(record.hashkey)
         if not path.exists():
-            raise KeyError(
-                "Notebook file does not exist for cache record PK: {}".format(pk)
-            )
+            raise KeyError(f"Notebook file does not exist for cache record PK: {pk}")
         shutil.rmtree(path.parent)
         NbCacheRecord.remove_records([pk], self.db)
 
@@ -466,8 +462,8 @@ class JupyterCacheBase(JupyterCacheAbstract):
         else:
             record = NbProjectRecord.record_from_uri(uri_or_pk, self.db)
         if not Path(record.uri).exists():
-            raise IOError(
-                "The URI of the project record no longer exists: {}".format(record.uri)
+            raise OSError(
+                f"The URI of the project record no longer exists: {record.uri}"
             )
         try:
             reader = get_reader(record.read_data)

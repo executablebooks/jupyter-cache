@@ -30,7 +30,7 @@ def add_notebooks(cache, nbpaths, reader):
     db = cache.get_cache()
     for path in nbpaths:
         # TODO deal with errors (print all at end? or option to ignore)
-        click.echo("Adding: {}".format(path))
+        click.echo(f"Adding: {path}")
         db.add_nb_to_project(path, read_data={"name": reader, "type": "plugin"})
     click.secho("Success!", fg="green")
 
@@ -72,7 +72,7 @@ def remove_nbs(cache, pk_paths):
     db = cache.get_cache()
     for pk_path in pk_paths:
         # TODO deal with errors (print all at end? or option to ignore)
-        click.echo("Removing: {}".format(pk_path))
+        click.echo(f"Removing: {pk_path}")
         db.remove_nb_from_project(
             int(pk_path) if pk_path.isdigit() else os.path.abspath(pk_path)
         )
@@ -90,7 +90,7 @@ def invalidate_nbs(cache, pk_paths, invalidate_all):
         pk_paths = [str(record.pk) for record in db.list_project_records()]
     for pk_path in pk_paths:
         # TODO deal with errors (print all at end? or option to ignore)
-        click.echo("Invalidating: {}".format(pk_path))
+        click.echo(f"Invalidating: {pk_path}")
         record = db.get_cached_project_nb(
             int(pk_path) if pk_path.isdigit() else os.path.abspath(pk_path)
         )
@@ -145,7 +145,7 @@ def show_project_record(cache, pk_path, tb):
             int(pk_path) if pk_path.isdigit() else os.path.abspath(pk_path)
         )
     except KeyError:
-        click.secho("ID {} does not exist, Aborting!".format(pk_path), fg="red")
+        click.secho(f"ID {pk_path} does not exist, Aborting!", fg="red")
         raise click.Abort()
     cache_record = None
     try:

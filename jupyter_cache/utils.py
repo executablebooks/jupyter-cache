@@ -29,13 +29,13 @@ def to_relative_paths(
     for path in paths:
         path = Path(path).absolute()
         if check_existence and not path.exists():
-            raise IOError(f"Path does not exist: {path}")
+            raise OSError(f"Path does not exist: {path}")
         if check_existence and not path.is_file():
-            raise IOError(f"Path is not a file: {path}")
+            raise OSError(f"Path is not a file: {path}")
         try:
             rel_path = path.relative_to(folder)
         except ValueError:
-            raise IOError(f"Path '{path}' is not in folder '{folder}''")
+            raise OSError(f"Path '{path}' is not in folder '{folder}''")
         rel_paths.append(rel_path)
     return rel_paths
 

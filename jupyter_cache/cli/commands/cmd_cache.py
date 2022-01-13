@@ -55,7 +55,7 @@ def cached_info(cache, pk):
     try:
         record = db.get_cache_record(pk)
     except KeyError:
-        click.secho("ID {} does not exist, Aborting!".format(pk), fg="red")
+        click.secho(f"ID {pk} does not exist, Aborting!", fg="red")
         raise click.Abort()
     data = record.format_dict(hashkey=True, path_length=None)
     click.echo(yaml.safe_dump(data, sort_keys=False), nl=False)
@@ -93,7 +93,7 @@ def cache_file(db, nbpath, validate, overwrite, artifact_paths=()):
 
     from jupyter_cache.base import NbValidityError
 
-    click.echo("Caching: {}".format(nbpath))
+    click.echo(f"Caching: {nbpath}")
     try:
         db.cache_notebook_file(
             nbpath,
@@ -112,11 +112,11 @@ def cache_file(db, nbpath, validate, overwrite, artifact_paths=()):
                     check_validity=False,
                     overwrite=overwrite,
                 )
-            except IOError as error:
+            except OSError as error:
                 click.secho("Artifact Error: ", fg="red", nl=False)
                 click.echo(str(error))
                 return False
-    except IOError as error:
+    except OSError as error:
         click.secho("Artifact Error: ", fg="red", nl=False)
         click.echo(str(error))
         return False
@@ -182,7 +182,7 @@ def remove_caches(cache, pks, remove_all):
         pks = [r.pk for r in db.list_cache_records()]
     for pk in pks:
         # TODO deal with errors (print all at end? or option to ignore)
-        click.echo("Removing Cache ID = {}".format(pk))
+        click.echo(f"Removing Cache ID = {pk}")
         try:
             db.remove_cache(pk)
         except KeyError:

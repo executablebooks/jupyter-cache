@@ -30,7 +30,7 @@ def create_db(path: Union[str, Path]) -> Engine:
     :param path: The path to the cache folder.
     """
     exists = (Path(path) / DB_NAME).exists()
-    engine = create_engine("sqlite:///{}".format(os.path.join(path, DB_NAME)))
+    engine = create_engine(f"sqlite:///{os.path.join(path, DB_NAME)}")
     if not exists:
         # add all the tables, and a version identifier
         OrmBase.metadata.create_all(engine)
@@ -74,7 +74,7 @@ class Setting(OrmBase):
     value = Column(JSON())
 
     def __repr__(self):
-        return "{0}(pk={1},{2}={3})".format(
+        return "{}(pk={},{}={})".format(
             self.__class__.__name__, self.pk, self.key, self.value
         )
 
@@ -99,7 +99,7 @@ class Setting(OrmBase):
                 if default is not None:
                     result = [default]
                 else:
-                    raise KeyError("Setting not found in DB: {}".format(key))
+                    raise KeyError(f"Setting not found in DB: {key}")
             value = result[0]
         return value
 
@@ -128,7 +128,7 @@ class NbProjectRecord(OrmBase):
     """A traceback is added if a notebook fails to execute fully."""
 
     def __repr__(self):
-        return "{0}(pk={1})".format(self.__class__.__name__, self.pk)
+        return f"{self.__class__.__name__}(pk={self.pk})"
 
     def to_dict(self):
         return {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
@@ -232,7 +232,7 @@ class NbProjectRecord(OrmBase):
         with session_context(db) as session:  # type: Session
             result = session.query(NbProjectRecord).filter_by(pk=pk).one_or_none()
             if result is None:
-                raise KeyError("Project record not found for NB with PK: {}".format(pk))
+                raise KeyError(f"Project record not found for NB with PK: {pk}")
             session.expunge(result)
         return result
 
@@ -241,9 +241,7 @@ class NbProjectRecord(OrmBase):
         with session_context(db) as session:  # type: Session
             result = session.query(NbProjectRecord).filter_by(uri=uri).one_or_none()
             if result is None:
-                raise KeyError(
-                    "Project record not found for NB with URI: {}".format(uri)
-                )
+                raise KeyError(f"Project record not found for NB with URI: {uri}")
             session.expunge(result)
         return result
 
@@ -266,9 +264,7 @@ class NbProjectRecord(OrmBase):
         with session_context(db) as session:  # type: Session
             result = session.query(NbProjectRecord).filter_by(uri=uri).one_or_none()
             if result is None:
-                raise KeyError(
-                    "Project record not found for NB with URI: {}".format(uri)
-                )
+                raise KeyError(f"Project record not found for NB with URI: {uri}")
             result.traceback = traceback
             try:
                 session.commit()
@@ -293,7 +289,7 @@ class NbCacheRecord(OrmBase):
     )
 
     def __repr__(self):
-        return "{0}(pk={1})".format(self.__class__.__name__, self.pk)
+        return f"{self.__class__.__name__}(pk={self.pk})"
 
     def to_dict(self):
         return {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
@@ -348,9 +344,7 @@ class NbCacheRecord(OrmBase):
                 session.query(NbCacheRecord).filter_by(hashkey=hashkey).one_or_none()
             )
             if result is None:
-                raise KeyError(
-                    "Cache record not found for NB with hashkey: {}".format(hashkey)
-                )
+                raise KeyError(f"Cache record not found for NB with hashkey: {hashkey}")
             session.expunge(result)
         return result
 
@@ -359,7 +353,7 @@ class NbCacheRecord(OrmBase):
         with session_context(db) as session:  # type: Session
             result = session.query(NbCacheRecord).filter_by(pk=pk).one_or_none()
             if result is None:
-                raise KeyError("Cache record not found for NB with PK: {}".format(pk))
+                raise KeyError(f"Cache record not found for NB with PK: {pk}")
             session.expunge(result)
         return result
 
@@ -368,7 +362,7 @@ class NbCacheRecord(OrmBase):
         with session_context(db) as session:  # type: Session
             record = session.query(NbCacheRecord).filter_by(pk=pk).one_or_none()
             if record is None:
-                raise KeyError("Cache record not found for NB with PK: {}".format(pk))
+                raise KeyError(f"Cache record not found for NB with PK: {pk}")
             record.accessed = datetime.utcnow()
             session.commit()
 
@@ -379,9 +373,7 @@ class NbCacheRecord(OrmBase):
                 session.query(NbCacheRecord).filter_by(hashkey=hashkey).one_or_none()
             )
             if record is None:
-                raise KeyError(
-                    "Cache record not found for NB with hashkey: {}".format(hashkey)
-                )
+                raise KeyError(f"Cache record not found for NB with hashkey: {hashkey}")
             record.accessed = datetime.utcnow()
             session.commit()
 

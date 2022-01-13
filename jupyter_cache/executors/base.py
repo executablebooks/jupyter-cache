@@ -51,7 +51,7 @@ class JupyterExecutorAbstract(ABC):
         self._logger = logger or logging.getLogger(__name__)
 
     def __repr__(self):
-        return "{0}(cache={1})".format(self.__class__.__name__, self._cache)
+        return f"{self.__class__.__name__}(cache={self._cache})"
 
     @property
     def cache(self):
@@ -91,7 +91,7 @@ class JupyterExecutorAbstract(ABC):
         timeout: Optional[int] = 30,
         allow_errors: bool = False,
         force: bool = False,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> ExecutorRunResult:
         """Run execution, cache successfully executed notebooks and return their URIs
 
@@ -116,7 +116,7 @@ def load_executor(
     ep = get_entry_point(ENTRY_POINT_GROUP_EXEC, entry_point)
     if ep is None:
         raise ImportError(
-            "Entry point not found: {}:{}".format(ENTRY_POINT_GROUP_EXEC, entry_point)
+            f"Entry point not found: {ENTRY_POINT_GROUP_EXEC}:{entry_point}"
         )
     execute_cls = ep.load()
     return execute_cls(cache=cache, logger=logger)

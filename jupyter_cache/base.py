@@ -53,7 +53,7 @@ class ProjectNb:
     )
     nb: nbf.NotebookNode = attr.ib(
         validator=instance_of(nbf.NotebookNode),
-        repr=lambda nb: "Notebook(cells={0})".format(len(nb.cells)),
+        repr=lambda nb: f"Notebook(cells={len(nb.cells)})",
         metadata={"help": "the notebook"},
     )
     assets: List[Path] = attr.ib(
@@ -75,9 +75,7 @@ class NbArtifactsAbstract(ABC):
         """Yield the relative path and open files (in bytes mode)"""
 
     def __repr__(self):
-        return "{0}(paths={1})".format(
-            self.__class__.__name__, len(self.relative_paths)
-        )
+        return f"{self.__class__.__name__}(paths={len(self.relative_paths)})"
 
 
 @attr.s(frozen=True, slots=True)
@@ -86,7 +84,7 @@ class CacheBundleIn:
 
     nb: nbf.NotebookNode = attr.ib(
         validator=instance_of(nbf.NotebookNode),
-        repr=lambda nb: "Notebook(cells={0})".format(len(nb.cells)),
+        repr=lambda nb: f"Notebook(cells={len(nb.cells)})",
         metadata={"help": "the notebook"},
     )
     uri: str = attr.ib(
@@ -119,7 +117,7 @@ class CacheBundleOut:
 
     nb: nbf.NotebookNode = attr.ib(
         validator=instance_of(nbf.NotebookNode),
-        repr=lambda nb: "Notebook(cells={0})".format(len(nb.cells)),
+        repr=lambda nb: f"Notebook(cells={len(nb.cells)})",
         metadata={"help": "the notebook"},
     )
     record: NbCacheRecord = attr.ib(metadata={"help": "the cache record"})
@@ -282,7 +280,7 @@ class JupyterCacheAbstract(ABC):
         uri: str,
         *,
         read_data: Mapping = DEFAULT_READ_DATA,
-        assets: List[str] = ()
+        assets: List[str] = (),
     ) -> NbProjectRecord:
         """Add a single notebook to the project.
 
