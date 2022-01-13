@@ -1,6 +1,5 @@
 import pytest
 
-from jupyter_cache import __version__
 from jupyter_cache.cache.db import NbCacheRecord, Setting, create_db
 
 
@@ -8,7 +7,7 @@ def test_setting(tmp_path):
     db = create_db(tmp_path)
     Setting.set_value("a", 1, db)
     assert Setting.get_value("a", db) == 1
-    assert Setting.get_dict(db) == {"a": 1, "__version__": __version__}
+    assert Setting.get_dict(db) == {"a": 1}
 
 
 def test_nb_record(tmp_path):

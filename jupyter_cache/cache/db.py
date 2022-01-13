@@ -15,22 +15,35 @@ from jupyter_cache import __version__
 from jupyter_cache.utils import shorten_path
 
 OrmBase = declarative_base()
+DB_NAME = "global.db"
 
-DB_VERSION = 2
+# version changes:
 # 0.5.0:
+#   - __version__ key added to settings table on creation
 #   - table: nbstage -> nbproject
 #   - added read_data field to nbproject
 
 
-def create_db(path: Union[str, Path], name="global.db") -> Engine:
-    """Get or create a database at the given path."""
-    exists = (Path(path) / name).exists()
-    engine = create_engine("sqlite:///{}".format(os.path.join(path, name)))
+def create_db(path: Union[str, Path]) -> Engine:
+    """Get or create a database at the given path.
+
+    :param path: The path to the cache folder.
+    """
+    exists = (Path(path) / DB_NAME).exists()
+    engine = create_engine("sqlite:///{}".format(os.path.join(path, DB_NAME)))
     if not exists:
+        # add all the tables, and a version identifier
         OrmBase.metadata.create_all(engine)
-        Setting.set_value("__version__", __version__, engine)
+        Path(path).joinpath("__version__.txt").write_text(__version__)
 
     return engine
+
+
+def get_version(path: Union[str, Path]) -> Optional[str]:
+    """Attempt to get the version of the cache."""
+    version_file = Path(path).joinpath("__version__.txt")
+    if version_file.exists():
+        return version_file.read_text().strip()
 
 
 @contextmanager

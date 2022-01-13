@@ -47,7 +47,7 @@ These files are now ready for execution:
 
 Now run the execution:
 
-```{jcache-cli} jupyter_cache.cli.commands.cmd_main:jcache
+```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
 :command: execute
 ```
 
@@ -60,13 +60,13 @@ Successfully executed files will now be associated with a record in the cache:
 The cache record includes execution statistics:
 
 ```{jcache-cli} jupyter_cache.cli.commands.cmd_cache:cmnd_cache
-:command: show
+:command: info
 :args: 1
 ```
 
 Next time we execute, jupyter-cache will check which files require re-execution:
 
-```{jcache-cli} jupyter_cache.cli.commands.cmd_main:jcache
+```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
 :command: execute
 ```
 
@@ -76,6 +76,17 @@ You can create a new "final" notebook, with the cached outputs merged into the s
 ```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
 :command: merge
 :args: 1 final_notebook.ipynb
+```
+
+You can also add notebooks with custom formats, such as those read by [jupytext](https://jupytext.readthedocs.io):
+
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
+:command: add
+:args: --reader jupytext tests/notebooks/basic.md
+```
+
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
+:command: list
 ```
 
 ## Design considerations

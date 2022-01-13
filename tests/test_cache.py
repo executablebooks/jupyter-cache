@@ -5,10 +5,17 @@ from textwrap import dedent
 import nbformat as nbf
 import pytest
 
+from jupyter_cache import __version__
 from jupyter_cache.base import NbValidityError
 from jupyter_cache.cache.main import JupyterCacheBase
 
 NB_PATH = os.path.join(os.path.realpath(os.path.dirname(__file__)), "notebooks")
+
+
+def test_get_version(tmp_path):
+    cache = JupyterCacheBase(str(tmp_path))
+    cache.db
+    assert cache.get_version() == __version__
 
 
 def test_basic_workflow(tmp_path):
@@ -166,6 +173,7 @@ def test_artifacts(tmp_path):
         str(p.relative_to(tmp_path)) for p in tmp_path.glob("**/*") if p.is_file()
     } == {
         "global.db",
+        "__version__.txt",
         f"executed/{hashkey}/base.ipynb",
         f"executed/{hashkey}/artifacts/artifact_folder/artifact.txt",
     }

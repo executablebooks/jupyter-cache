@@ -22,7 +22,7 @@ from jupyter_cache.base import (  # noqa: F401
 from jupyter_cache.readers import DEFAULT_READ_DATA, NbReadError, get_reader
 from jupyter_cache.utils import to_relative_paths
 
-from .db import NbCacheRecord, NbProjectRecord, Setting, create_db
+from .db import NbCacheRecord, NbProjectRecord, Setting, create_db, get_version
 
 CACHE_LIMIT_KEY = "cache_limit"
 DEFAULT_CACHE_LIMIT = 1000
@@ -81,6 +81,9 @@ class JupyterCacheBase(JupyterCacheAbstract):
         state = self.__dict__.copy()
         state["_db"] = None
         return state
+
+    def get_version(self) -> Optional[str]:
+        return get_version(self.path)
 
     def clear_cache(self):
         """Clear the cache completely."""

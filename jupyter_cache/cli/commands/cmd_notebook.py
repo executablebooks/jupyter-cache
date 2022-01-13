@@ -1,28 +1,29 @@
 import os
-import sys
 
 import click
 import nbformat
 
-from jupyter_cache import get_cache
-from jupyter_cache.cli import arguments, options
+from jupyter_cache.cli import arguments, options, pass_cache
 from jupyter_cache.cli.commands.cmd_main import jcache
 from jupyter_cache.readers import NbReadError
 from jupyter_cache.utils import tabulate_project_records
 
 
 @jcache.group("notebook")
-def cmnd_notebook():
-    """Commands for interacting with a project."""
+@options.CACHE_PATH
+@pass_cache
+def cmnd_notebook(cache, cache_path):
+    """Work with notebook(s) in a project."""
+    cache.set_cache_path(cache_path)
 
 
 @cmnd_notebook.command("add")
 @arguments.NB_PATHS
 @options.READER_KEY
-@options.CACHE_PATH
-def add_notebooks(cache_path, nbpaths, reader):
+@pass_cache
+def add_notebooks(cache, nbpaths, reader):
     """Add notebook(s) to the project."""
-    db = get_cache(cache_path)
+    db = cache.get_cache()
     for path in nbpaths:
         # TODO deal with errors (print all at end? or option to ignore)
         click.echo("Adding: {}".format(path))
@@ -34,10 +35,10 @@ def add_notebooks(cache_path, nbpaths, reader):
 @arguments.ASSET_PATHS
 @options.NB_PATH
 @options.READER_KEY
-@options.CACHE_PATH
-def add_notebook(cache_path, nbpath, reader, asset_paths):
+@pass_cache
+def add_notebook(cache, nbpath, reader, asset_paths):
     """Add notebook(s) to the project, with possible asset files."""
-    db = get_cache(cache_path)
+    db = cache.get_cache()
     db.add_nb_to_project(
         nbpath, read_data={"name": reader, "type": "plugin"}, assets=asset_paths
     )
@@ -45,11 +46,11 @@ def add_notebook(cache_path, nbpath, reader, asset_paths):
 
 
 @cmnd_notebook.command("clear")
-@options.CACHE_PATH
 @options.FORCE
-def clear_nbs(cache_path, force):
+@pass_cache
+def clear_nbs(cache, force):
     """Remove all notebooks from the project."""
-    db = get_cache(cache_path)
+    db = cache.get_cache()
     if not force:
         click.confirm(
             "Are you sure you want to permanently clear the project!?", abort=True
@@ -61,10 +62,10 @@ def clear_nbs(cache_path, force):
 
 @cmnd_notebook.command("remove")
 @arguments.PK_OR_PATHS
-@options.CACHE_PATH
-def remove_nbs(cache_path, pk_paths):
+@pass_cache
+def remove_nbs(cache, pk_paths):
     """Remove notebook(s) from the project (by ID/URI)."""
-    db = get_cache(cache_path)
+    db = cache.get_cache()
     for pk_path in pk_paths:
         # TODO deal with errors (print all at end? or option to ignore)
         click.echo("Removing: {}".format(pk_path))
@@ -77,10 +78,10 @@ def remove_nbs(cache_path, pk_paths):
 @cmnd_notebook.command("invalidate")
 @arguments.PK_OR_PATHS
 @options.INVALIDATE_ALL
-@options.CACHE_PATH
-def invalidate_nbs(cache_path, pk_paths, invalidate_all):
-    """Invalidate notebook(s) cache (by ID/URI)."""
-    db = get_cache(cache_path)
+@pass_cache
+def invalidate_nbs(cache, pk_paths, invalidate_all):
+    """Remove any matching cache of the notebook(s) (by ID/URI)."""
+    db = cache.get_cache()
     if invalidate_all:
         pk_paths = [str(record.pk) for record in db.list_project_records()]
     for pk_path in pk_paths:
@@ -95,7 +96,6 @@ def invalidate_nbs(cache_path, pk_paths, invalidate_all):
 
 
 @cmnd_notebook.command("list")
-@options.CACHE_PATH
 # @click.option(
 #     "--compare/--no-compare",
 #     default=True,
@@ -108,9 +108,10 @@ def invalidate_nbs(cache_path, pk_paths, invalidate_all):
     is_flag=True,
     help="Show the number of assets associated with each notebook",
 )
-def list_nbs_in_project(cache_path, path_length, assets):
+@pass_cache
+def list_nbs_in_project(cache, path_length, assets):
     """List notebooks in the project."""
-    db = get_cache(cache_path)
+    db = cache.get_cache()
     records = db.list_project_records()
     if not records:
         click.secho("No notebooks in project", fg="blue")
@@ -121,8 +122,7 @@ def list_nbs_in_project(cache_path, path_length, assets):
     )
 
 
-@cmnd_notebook.command("show")
-@options.CACHE_PATH
+@cmnd_notebook.command("info")
 @arguments.PK_OR_PATH
 @click.option(
     "--tb/--no-tb",
@@ -130,18 +130,19 @@ def list_nbs_in_project(cache_path, path_length, assets):
     show_default=True,
     help="Show traceback, if last execution failed.",
 )
-def show_project_record(cache_path, pk_path, tb):
+@pass_cache
+def show_project_record(cache, pk_path, tb):
     """Show details of a notebook (by ID)."""
     import yaml
 
-    db = get_cache(cache_path)
+    db = cache.get_cache()
     try:
         record = db.get_project_record(
             int(pk_path) if pk_path.isdigit() else os.path.abspath(pk_path)
         )
     except KeyError:
         click.secho("ID {} does not exist, Aborting!".format(pk_path), fg="red")
-        sys.exit(1)
+        raise click.Abort()
     cache_record = None
     try:
         cache_record = db.get_cached_project_nb(record.uri)
@@ -164,10 +165,10 @@ def show_project_record(cache_path, pk_path, tb):
 @cmnd_notebook.command("merge")
 @arguments.PK_OR_PATH
 @arguments.OUTPUT_PATH
-@options.CACHE_PATH
-def merge_executed(cache_path, pk_path, outpath):
-    """Write notebook merged with cached outputs (by ID/URI)."""
-    db = get_cache(cache_path)
+@pass_cache
+def merge_executed(cache, pk_path, outpath):
+    """Create notebook merged with cached outputs (by ID/URI)."""
+    db = cache.get_cache()
     nb = db.get_project_notebook(
         int(pk_path) if pk_path.isdigit() else os.path.abspath(pk_path)
     ).nb

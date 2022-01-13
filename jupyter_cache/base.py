@@ -136,6 +136,10 @@ class JupyterCacheAbstract(ABC):
     """
 
     @abstractmethod
+    def get_version(self) -> Optional[str]:
+        """Return the version of the cache."""
+
+    @abstractmethod
     def clear_cache(self) -> None:
         """Clear the cache completely."""
 

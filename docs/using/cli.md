@@ -2,10 +2,10 @@
 
 # Command-Line
 
+Note, you can follow this tutorial by cloning <https://github.com/executablebooks/jupyter-cache>, and running these commands inside it.:
+tox
 ```{jcache-clear}
 ```
-
-Note, you can follow this tutorial by cloning <https://github.com/executablebooks/jupyter-cache>:
 
 ```{jcache-cli} jupyter_cache.cli.commands.cmd_main:jcache
 :args: --help
@@ -18,9 +18,12 @@ The first time the cache is required, it will be lazily created:
 :input: y
 ```
 
+You can specify the path to the cache, with the `--cache-path` option,
+or set the `JUPYTERCACHE` environment variable.
+
 You can also clear it at any time:
 
-```{jcache-cli} jupyter_cache.cli.commands.cmd_main:jcache
+```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
 :command: clear
 :input: y
 ```
@@ -114,7 +117,7 @@ jupyter-cache includes these executors:
 - `temp-serial`: execute notebooks with a temporary working directory, in serial mode (using a single process).
 - `temp-parallel`: execute notebooks with a temporary working directory, in parallel mode (using multiple processes).
 
-```{jcache-cli} jupyter_cache.cli.commands.cmd_main:jcache
+```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
 :command: execute
 :args: --executor local-serial
 ```
@@ -135,7 +138,7 @@ Note here both notebooks share the same cached notebook (denoted by `[1]` in the
 
 Next time you execute the project, only notebooks which don't match a cached record will be executed:
 
-```{jcache-cli} jupyter_cache.cli.commands.cmd_main:jcache
+```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
 :command: execute
 :args: --executor local-serial -v CRITICAL
 ```
@@ -160,14 +163,14 @@ change this default with `jcache config cache-limit`
 You can see the elapsed execution time of a notebook via its ID in the cache:
 
 ```{jcache-cli} jupyter_cache.cli.commands.cmd_cache:cmnd_cache
-:command: show
+:command: info
 :args: 1
 ```
 
 Failed execution tracebacks are also available on the project record:
 
 ```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
-:command: show
+:command: info
 :args: --tb tests/notebooks/basic_failing.ipynb
 ```
 
@@ -217,7 +220,7 @@ When executing in a temporary directory, you may want to specify additional "ass
 ```
 
 ```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
-:command: show
+:command: info
 :args: tests/notebooks/basic.ipynb
 ```
 

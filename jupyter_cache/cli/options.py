@@ -38,7 +38,7 @@ def callback_print_cache_path(ctx, param, value):
 
 PRINT_CACHE_PATH = click.option(
     "-p",
-    "--cache-path",
+    "--print-path",
     help="Print the current cache path and exit.",
     is_flag=True,
     expose_value=True,
@@ -47,24 +47,12 @@ PRINT_CACHE_PATH = click.option(
 )
 
 
-def check_cache_exists(ctx, param, value):
-    if os.path.exists(value):
-        return value
-    click.secho("Cache path: ", fg="green", nl=False)
-    click.echo(value)
-    if not click.confirm("The cache does not yet exist, do you want to create it?"):
-        click.secho("Aborted!", bold=True, fg="red")
-        ctx.exit()
-    return value
-
-
 CACHE_PATH = click.option(
     "-p",
     "--cache-path",
-    help="Path to cache.",
+    help="Path to project cache.",
     default=default_cache_path,
     show_default=".jupyter_cache",
-    callback=check_cache_exists,
 )
 
 
