@@ -14,6 +14,18 @@ Execute and cache multiple Jupyter Notebook-like files via an [API](use/api) and
 📖 [jupytext](https://jupytext.readthedocs.io) integration
 : Read and execute notebooks written in multiple formats
 
+## Why use jupyter-cache?
+
+If you have a number of notebooks whose execution outputs you want to ensure are kept up to date, without having to re-execute them every time (particularly for long running code, or text-based formats that do not store the outputs).
+
+The notebooks must have deterministic execution outputs:
+
+- You use the same environment to run them (e.g. the same installed packages)
+- They run no non-deterministic code (e.g. random numbers)
+- They do not depend on external resources (e.g. files or network connections) that change over time
+
+For example, it is utilised by [jupyter-book](https://jupyterbook.org/content/execute.html#caching-the-notebook-execution), to allow for fast document re-builds.
+
 ## Installation
 
 Install `jupyter-cache`, via pip or Conda:

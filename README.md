@@ -8,16 +8,17 @@
 
 A defined interface for working with a cache of jupyter notebooks.
 
-Some desired requirements (not yet all implemented):
+## Why use jupyter-cache?
 
-- Persistent
-- Separates out "edits to content" from "edits to code cells". Cell
-  rearranges and code cell changes should require a re-execution. Content changes should not.
-- Allow parallel access to notebooks (for execution)
-- Store execution statistics/reports
-- Store external assets: Notebooks being executed often require external assets: importing scripts/data/etc. These are prepared by the users.
-- Store execution artefacts: created during execution
-- A transparent and robust cache invalidation: imagine the user updating an external dependency or a Python module, or checking out a different git branch.
+If you have a number of notebooks whose execution outputs you want to ensure are kept up to date, without having to re-execute them every time (particularly for long running code, or text-based formats that do not store the outputs).
+
+The notebooks must have deterministic execution outputs:
+
+- You use the same environment to run them (e.g. the same installed packages)
+- They run no non-deterministic code (e.g. random numbers)
+- They do not depend on external resources (e.g. files or network connections) that change over time
+
+For example, it is utilised by [jupyter-book](https://jupyterbook.org/content/execute.html#caching-the-notebook-execution), to allow for fast document re-builds.
 
 ## Install
 
@@ -35,6 +36,19 @@ pip install -e .[cli,code_style,testing]
 ```
 
 See the documentation for usage.
+
+## Development
+
+Some desired requirements (not yet all implemented):
+
+- Persistent
+- Separates out "edits to content" from "edits to code cells". Cell
+  rearranges and code cell changes should require a re-execution. Content changes should not.
+- Allow parallel access to notebooks (for execution)
+- Store execution statistics/reports
+- Store external assets: Notebooks being executed often require external assets: importing scripts/data/etc. These are prepared by the users.
+- Store execution artefacts: created during execution
+- A transparent and robust cache invalidation: imagine the user updating an external dependency or a Python module, or checking out a different git branch.
 
 ## Contributing
 
