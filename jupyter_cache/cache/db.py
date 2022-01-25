@@ -1,25 +1,49 @@
-import os
 from contextlib import contextmanager
 from datetime import datetime
+import os
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from sqlalchemy import JSON, Column, DateTime, Integer, String, Text
 from sqlalchemy.engine import Engine, create_engine
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, sessionmaker, validates
 from sqlalchemy.sql.expression import desc
 
+from jupyter_cache import __version__
 from jupyter_cache.utils import shorten_path
 
 OrmBase = declarative_base()
+DB_NAME = "global.db"
+
+# version changes:
+# 0.5.0:
+#   - __version__.txt file written to cache on creation
+#   - table: nbstage -> nbproject
+#   - added read_data and exec_data fields to nbproject
 
 
-def create_db(path, name="global.db") -> Engine:
-    engine = create_engine("sqlite:///{}".format(os.path.join(path, name)))
-    OrmBase.metadata.create_all(engine)
+def create_db(path: Union[str, Path]) -> Engine:
+    """Get or create a database at the given path.
+
+    :param path: The path to the cache folder.
+    """
+    exists = (Path(path) / DB_NAME).exists()
+    engine = create_engine(f"sqlite:///{os.path.join(path, DB_NAME)}")
+    if not exists:
+        # add all the tables, and a version identifier
+        OrmBase.metadata.create_all(engine)
+        Path(path).joinpath("__version__.txt").write_text(__version__)
+
     return engine
+
+
+def get_version(path: Union[str, Path]) -> Optional[str]:
+    """Attempt to get the version of the cache."""
+    version_file = Path(path).joinpath("__version__.txt")
+    if version_file.exists():
+        return version_file.read_text().strip()
 
 
 @contextmanager
@@ -28,6 +52,11 @@ def session_context(engine: Engine):
     session = sessionmaker(bind=engine)()
     try:
         yield session
+    except OperationalError as exc:
+        session.rollback()
+        raise RuntimeError(
+            "Unexpected error accessing jupyter cache, it may need to be cleared."
+        ) from exc
     except Exception:
         session.rollback()
         raise
@@ -45,7 +74,7 @@ class Setting(OrmBase):
     value = Column(JSON())
 
     def __repr__(self):
-        return "{0}(pk={1},{2}={3})".format(
+        return "{}(pk={},{}={})".format(
             self.__class__.__name__, self.pk, self.key, self.value
         )
 
@@ -68,10 +97,9 @@ class Setting(OrmBase):
             result = session.query(Setting.value).filter_by(key=key).one_or_none()
             if result is None:
                 if default is not None:
-                    Setting.set_value(key, default, db)
                     result = [default]
                 else:
-                    raise KeyError("Setting not found in DB: {}".format(key))
+                    raise KeyError(f"Setting not found in DB: {key}")
             value = result[0]
         return value
 
@@ -80,6 +108,168 @@ class Setting(OrmBase):
         with session_context(db) as session:  # type: Session
             results = session.query(Setting.key, Setting.value).all()
         return {k: v for k, v in results}
+
+
+class NbProjectRecord(OrmBase):
+    """A record of a notebook within the project."""
+
+    __tablename__ = "nbproject"
+
+    pk = Column(Integer(), primary_key=True)
+    uri = Column(String(255), nullable=False, unique=True)
+    read_data = Column(JSON(), nullable=False)
+    """Data on how to read the uri to a notebook."""
+    assets = Column(JSON(), nullable=False, default=list)
+    """A list of file assets required for the notebook to run."""
+    exec_data = Column(JSON(), nullable=True)
+    """Data on how to execute the notebook."""
+    created = Column(DateTime, nullable=False, default=datetime.utcnow)
+    traceback = Column(Text(), nullable=True, default="")
+    """A traceback is added if a notebook fails to execute fully."""
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(pk={self.pk})"
+
+    def to_dict(self):
+        return {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
+
+    def format_dict(
+        self,
+        cache_record: Optional["NbCacheRecord"] = None,
+        path_length: Optional[int] = None,
+        assets: bool = True,
+        read_error: Optional[str] = None,
+        read_name: bool = True,
+    ) -> dict:
+        """Return data for display."""
+        status = "-"
+        if cache_record:
+            status = f"✅ [{cache_record.pk}]"
+        elif self.traceback:
+            status = "❌"
+        elif read_error:
+            status = "❗️ (unreadable)"
+        data = {
+            "ID": self.pk,
+            "URI": str(shorten_path(self.uri, path_length)),
+            "Reader": self.read_data.get("name", "-") if read_name else self.read_data,
+            "Added": self.created.isoformat(" ", "minutes"),
+            "Status": status,
+        }
+        if assets:
+            data["Assets"] = len(self.assets)
+        return data
+
+    @validates("read_data")
+    def validate_read_data(self, key, value):
+        if not isinstance(value, dict):
+            raise ValueError("read_data must be a dict")
+        if "name" not in value:
+            raise ValueError("read_data must have a name")
+        return value
+
+    @validates("assets")
+    def validator_assets(self, key, value):
+        return self.validate_assets(value)
+
+    @staticmethod
+    def validate_assets(paths, uri=None):
+        """Validate asset paths are within same folder as the notebook URI"""
+        if not (
+            isinstance(paths, (list, tuple)) and all(isinstance(v, str) for v in paths)
+        ):
+            raise TypeError(f"assets must be interable of strings: {paths}")
+        if uri is None:
+            return list(paths)
+
+        uri_folder = Path(uri).parent
+        for path in paths:
+            try:
+                Path(path).relative_to(uri_folder)
+            except ValueError:
+                raise ValueError(f"Asset '{path}' is not in folder '{uri_folder}''")
+        return list(paths)
+
+    @staticmethod
+    def create_record(
+        uri: str,
+        db: Engine,
+        read_data: Dict[str, Any],
+        raise_on_exists=True,
+        *,
+        assets=(),
+    ) -> "NbProjectRecord":
+        assets = NbProjectRecord.validate_assets(assets, uri)
+        with session_context(db) as session:  # type: Session
+            record = NbProjectRecord(uri=uri, read_data=read_data, assets=assets)
+            session.add(record)
+            try:
+                session.commit()
+            except IntegrityError:
+                if raise_on_exists:
+                    raise ValueError(f"URI already in project: {uri}")
+                return NbProjectRecord.record_from_uri(uri, db)
+            session.refresh(record)
+            session.expunge(record)
+        return record
+
+    def remove_pks(pks: List[int], db: Engine):
+        with session_context(db) as session:  # type: Session
+            session.query(NbProjectRecord).filter(NbProjectRecord.pk.in_(pks)).delete(
+                synchronize_session=False
+            )
+            session.commit()
+
+    def remove_uris(uris: List[str], db: Engine):
+        with session_context(db) as session:  # type: Session
+            session.query(NbProjectRecord).filter(NbProjectRecord.uri.in_(uris)).delete(
+                synchronize_session=False
+            )
+            session.commit()
+
+    @staticmethod
+    def record_from_pk(pk: int, db: Engine) -> "NbProjectRecord":
+        with session_context(db) as session:  # type: Session
+            result = session.query(NbProjectRecord).filter_by(pk=pk).one_or_none()
+            if result is None:
+                raise KeyError(f"Project record not found for NB with PK: {pk}")
+            session.expunge(result)
+        return result
+
+    @staticmethod
+    def record_from_uri(uri: str, db: Engine) -> "NbProjectRecord":
+        with session_context(db) as session:  # type: Session
+            result = session.query(NbProjectRecord).filter_by(uri=uri).one_or_none()
+            if result is None:
+                raise KeyError(f"Project record not found for NB with URI: {uri}")
+            session.expunge(result)
+        return result
+
+    @staticmethod
+    def records_all(db: Engine) -> "NbProjectRecord":
+        with session_context(db) as session:  # type: Session
+            results = session.query(NbProjectRecord).order_by(NbProjectRecord.pk).all()
+            session.expunge_all()
+        return results
+
+    def remove_tracebacks(pks, db: Engine):
+        """Remove all tracebacks."""
+        with session_context(db) as session:  # type: Session
+            session.query(NbProjectRecord).filter(NbProjectRecord.pk.in_(pks)).update(
+                {NbProjectRecord.traceback: None}, synchronize_session=False
+            )
+            session.commit()
+
+    def set_traceback(uri: str, traceback: Optional[str], db: Engine):
+        with session_context(db) as session:  # type: Session
+            result = session.query(NbProjectRecord).filter_by(uri=uri).one_or_none()
+            if result is None:
+                raise KeyError(f"Project record not found for NB with URI: {uri}")
+            result.traceback = traceback
+            try:
+                session.commit()
+            except IntegrityError:
+                raise TypeError(traceback)
 
 
 class NbCacheRecord(OrmBase):
@@ -92,13 +282,14 @@ class NbCacheRecord(OrmBase):
     uri = Column(String(255), nullable=False, unique=False)
     description = Column(String(255), nullable=False, default="")
     data = Column(JSON())
+    """Extra data, such as the execution time."""
     created = Column(DateTime, nullable=False, default=datetime.utcnow)
     accessed = Column(
         DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
     )
 
     def __repr__(self):
-        return "{0}(pk={1})".format(self.__class__.__name__, self.pk)
+        return f"{self.__class__.__name__}(pk={self.pk})"
 
     def to_dict(self):
         return {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
@@ -133,6 +324,12 @@ class NbCacheRecord(OrmBase):
             session.expunge(record)
         return record
 
+    def remove_record(pk: int, db: Engine):
+        with session_context(db) as session:  # type: Session
+            record = session.get(NbCacheRecord, pk)
+            session.delete(record)
+            session.commit()
+
     def remove_records(pks: List[int], db: Engine):
         with session_context(db) as session:  # type: Session
             session.query(NbCacheRecord).filter(NbCacheRecord.pk.in_(pks)).delete(
@@ -147,9 +344,7 @@ class NbCacheRecord(OrmBase):
                 session.query(NbCacheRecord).filter_by(hashkey=hashkey).one_or_none()
             )
             if result is None:
-                raise KeyError(
-                    "Cache record not found for NB with hashkey: {}".format(hashkey)
-                )
+                raise KeyError(f"Cache record not found for NB with hashkey: {hashkey}")
             session.expunge(result)
         return result
 
@@ -158,7 +353,7 @@ class NbCacheRecord(OrmBase):
         with session_context(db) as session:  # type: Session
             result = session.query(NbCacheRecord).filter_by(pk=pk).one_or_none()
             if result is None:
-                raise KeyError("Cache record not found for NB with PK: {}".format(pk))
+                raise KeyError(f"Cache record not found for NB with PK: {pk}")
             session.expunge(result)
         return result
 
@@ -167,7 +362,7 @@ class NbCacheRecord(OrmBase):
         with session_context(db) as session:  # type: Session
             record = session.query(NbCacheRecord).filter_by(pk=pk).one_or_none()
             if record is None:
-                raise KeyError("Cache record not found for NB with PK: {}".format(pk))
+                raise KeyError(f"Cache record not found for NB with PK: {pk}")
             record.accessed = datetime.utcnow()
             session.commit()
 
@@ -178,9 +373,7 @@ class NbCacheRecord(OrmBase):
                 session.query(NbCacheRecord).filter_by(hashkey=hashkey).one_or_none()
             )
             if record is None:
-                raise KeyError(
-                    "Cache record not found for NB with hashkey: {}".format(hashkey)
-                )
+                raise KeyError(f"Cache record not found for NB with hashkey: {hashkey}")
             record.accessed = datetime.utcnow()
             session.commit()
 
@@ -215,135 +408,3 @@ class NbCacheRecord(OrmBase):
                 .all()
             ]
         return pks_to_delete
-
-
-class NbStageRecord(OrmBase):
-    """A record of a notebook staged for execution."""
-
-    __tablename__ = "nbstage"
-
-    pk = Column(Integer(), primary_key=True)
-    uri = Column(String(255), nullable=False, unique=True)
-    assets = Column(JSON(), nullable=False, default=list)
-    traceback = Column(Text(), nullable=True, default="")
-    created = Column(DateTime, nullable=False, default=datetime.utcnow)
-
-    def __repr__(self):
-        return "{0}(pk={1})".format(self.__class__.__name__, self.pk)
-
-    def to_dict(self):
-        return {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
-
-    def format_dict(self, cache_record=None, path_length=None, assets=True):
-        data = {
-            "ID": self.pk,
-            "URI": str(shorten_path(self.uri, path_length)),
-            "Created": self.created.isoformat(" ", "minutes"),
-        }
-        if assets:
-            data["Assets"] = len(self.assets)
-        if cache_record is not None:
-            data["Cache ID"] = cache_record.pk
-        return data
-
-    @validates("assets")
-    def validator_assets(self, key, value):
-        return self.validate_assets(value)
-
-    @staticmethod
-    def validate_assets(paths, uri=None):
-        """Validate asset paths are within same folder as the notebook URI"""
-        if not (
-            isinstance(paths, (list, tuple)) and all(isinstance(v, str) for v in paths)
-        ):
-            raise TypeError(f"assets must be interable of strings: {paths}")
-        if uri is None:
-            return list(paths)
-
-        uri_folder = Path(uri).parent
-        for path in paths:
-            try:
-                Path(path).relative_to(uri_folder)
-            except ValueError:
-                raise ValueError(f"Asset '{path}' is not in folder '{uri_folder}''")
-        return list(paths)
-
-    @staticmethod
-    def create_record(
-        uri: str, db: Engine, raise_on_exists=True, assets=()
-    ) -> "NbStageRecord":
-        assets = NbStageRecord.validate_assets(assets, uri)
-        with session_context(db) as session:  # type: Session
-            record = NbStageRecord(uri=uri, assets=assets)
-            session.add(record)
-            try:
-                session.commit()
-            except IntegrityError:
-                if raise_on_exists:
-                    raise ValueError(f"uri already staged: {uri}")
-                return NbStageRecord.record_from_uri(uri, db)
-            session.refresh(record)
-            session.expunge(record)
-        return record
-
-    def remove_pks(pks: List[int], db: Engine):
-        with session_context(db) as session:  # type: Session
-            session.query(NbStageRecord).filter(NbStageRecord.pk.in_(pks)).delete(
-                synchronize_session=False
-            )
-            session.commit()
-
-    def remove_uris(uris: List[str], db: Engine):
-        with session_context(db) as session:  # type: Session
-            session.query(NbStageRecord).filter(NbStageRecord.uri.in_(uris)).delete(
-                synchronize_session=False
-            )
-            session.commit()
-
-    @staticmethod
-    def record_from_pk(pk: int, db: Engine) -> "NbStageRecord":
-        with session_context(db) as session:  # type: Session
-            result = session.query(NbStageRecord).filter_by(pk=pk).one_or_none()
-            if result is None:
-                raise KeyError("Staging record not found for NB with PK: {}".format(pk))
-            session.expunge(result)
-        return result
-
-    @staticmethod
-    def record_from_uri(uri: str, db: Engine) -> "NbStageRecord":
-        with session_context(db) as session:  # type: Session
-            result = session.query(NbStageRecord).filter_by(uri=uri).one_or_none()
-            if result is None:
-                raise KeyError(
-                    "Staging record not found for NB with URI: {}".format(uri)
-                )
-            session.expunge(result)
-        return result
-
-    @staticmethod
-    def records_all(db: Engine) -> "NbStageRecord":
-        with session_context(db) as session:  # type: Session
-            results = session.query(NbStageRecord).all()
-            session.expunge_all()
-        return results
-
-    def remove_tracebacks(pks, db: Engine):
-        """Remove all tracebacks."""
-        with session_context(db) as session:  # type: Session
-            session.query(NbStageRecord).filter(NbStageRecord.pk.in_(pks)).update(
-                {NbStageRecord.traceback: None}, synchronize_session=False
-            )
-            session.commit()
-
-    def set_traceback(uri: str, traceback: Optional[str], db: Engine):
-        with session_context(db) as session:  # type: Session
-            result = session.query(NbStageRecord).filter_by(uri=uri).one_or_none()
-            if result is None:
-                raise KeyError(
-                    "Staging record not found for NB with URI: {}".format(uri)
-                )
-            result.traceback = traceback
-            try:
-                session.commit()
-            except IntegrityError:
-                raise TypeError(traceback)

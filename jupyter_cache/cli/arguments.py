@@ -30,7 +30,17 @@ ASSET_PATHS = click.argument(
     type=click.Path(dir_okay=False, exists=True, readable=True, resolve_path=True),
 )
 
+OUTPUT_PATH = click.argument(
+    "outpath",
+    metavar="OUTPUT_PATH",
+    type=click.Path(dir_okay=False, writable=True, resolve_path=True),
+)
+
 
 PK = click.argument("pk", metavar="ID", type=int)
 
 PKS = click.argument("pks", metavar="IDs", nargs=-1, type=int)
+
+PK_OR_PATH = click.argument("pk_path", metavar="ID_OR_PATH", type=str)
+
+PK_OR_PATHS = click.argument("pk_paths", metavar="ID_OR_PATHS", nargs=-1)

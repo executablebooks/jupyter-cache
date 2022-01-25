@@ -6,6 +6,17 @@
 [![Code style: black][black-badge]][black-link]
 [![PyPI][pypi-badge]][pypi-link]
 
+## Installation
+
+For package development:
+
+```bash
+git clone https://github.com/executablebooks/jupyter-cache
+cd jupyter-cache
+git checkout develop
+pip install -e .[cli,code_style,testing,rtd]
+```
+
 ## Code Style
 
 Code style is tested using [flake8](http://flake8.pycqa.org),

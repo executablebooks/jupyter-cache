@@ -1,21 +1,19 @@
-import sys
-
 import click
 
-from jupyter_cache import get_cache
-from jupyter_cache.cli import arguments, options
+from jupyter_cache.cli import arguments, options, pass_cache
 from jupyter_cache.cli.commands.cmd_main import jcache
 from jupyter_cache.utils import tabulate_cache_records
 
 
 @jcache.group("cache")
-def cmnd_cache():
-    """Commands for adding to and inspecting the cache."""
-    pass
+@options.CACHE_PATH
+@pass_cache
+def cmnd_cache(cache, cache_path):
+    """Work with cached execution(s) in a project."""
+    cache.set_cache_path(cache_path)
 
 
 @cmnd_cache.command("list")
-@options.CACHE_PATH
 @click.option(
     "-l",
     "--latest-only",
@@ -24,9 +22,10 @@ def cmnd_cache():
 )
 @click.option("-h", "--hashkeys", is_flag=True, help="Show the hashkey of notebook.")
 @options.PATH_LENGTH
-def list_caches(cache_path, latest_only, hashkeys, path_length):
-    """List cached notebook records in the cache."""
-    db = get_cache(cache_path)
+@pass_cache
+def list_caches(cache, latest_only, hashkeys, path_length):
+    """List cached notebook records."""
+    db = cache.get_cache()
     records = db.list_cache_records()
     if not records:
         click.secho("No Cached Notebooks", fg="blue")
@@ -45,19 +44,19 @@ def list_caches(cache_path, latest_only, hashkeys, path_length):
     )
 
 
-@cmnd_cache.command("show")
-@options.CACHE_PATH
+@cmnd_cache.command("info")
 @arguments.PK
-def show_cache(cache_path, pk):
-    """Show details of a cached notebook in the cache."""
+@pass_cache
+def cached_info(cache, pk):
+    """Show details of a cached notebook."""
     import yaml
 
-    db = get_cache(cache_path)
+    db = cache.get_cache()
     try:
         record = db.get_cache_record(pk)
     except KeyError:
-        click.secho("ID {} does not exist, Aborting!".format(pk), fg="red")
-        sys.exit(1)
+        click.secho(f"ID {pk} does not exist, Aborting!", fg="red")
+        raise click.Abort()
     data = record.format_dict(hashkey=True, path_length=None)
     click.echo(yaml.safe_dump(data, sort_keys=False), nl=False)
     with db.cache_artefacts_temppath(pk) as folder:
@@ -71,21 +70,21 @@ def show_cache(cache_path, pk):
             click.echo(f"- {path}")
 
 
-@cmnd_cache.command("cat-artifact")
-@options.CACHE_PATH
+@cmnd_cache.command("cat-artefact")
 @arguments.PK
 @arguments.ARTIFACT_RPATH
-def cat_artifact(cache_path, pk, artifact_rpath):
+@pass_cache
+def cat_artifact(cache, pk, artifact_rpath):
     """Print the contents of a cached artefact."""
-    db = get_cache(cache_path)
+    db = cache.get_cache()
     with db.cache_artefacts_temppath(pk) as path:
         artifact_path = path.joinpath(artifact_rpath)
         if not artifact_path.exists():
             click.secho("Artifact does not exist", fg="red")
-            sys.exit(1)
+            raise click.Abort()
         if not artifact_path.is_file():
             click.secho("Artifact is not a file", fg="red")
-            sys.exit(1)
+            raise click.Abort()
         text = artifact_path.read_text(encoding="utf8")
     click.echo(text)
 
@@ -94,7 +93,7 @@ def cache_file(db, nbpath, validate, overwrite, artifact_paths=()):
 
     from jupyter_cache.base import NbValidityError
 
-    click.echo("Caching: {}".format(nbpath))
+    click.echo(f"Caching: {nbpath}")
     try:
         db.cache_notebook_file(
             nbpath,
@@ -113,11 +112,11 @@ def cache_file(db, nbpath, validate, overwrite, artifact_paths=()):
                     check_validity=False,
                     overwrite=overwrite,
                 )
-            except IOError as error:
+            except OSError as error:
                 click.secho("Artifact Error: ", fg="red", nl=False)
                 click.echo(str(error))
                 return False
-    except IOError as error:
+    except OSError as error:
         click.secho("Artifact Error: ", fg="red", nl=False)
         click.echo(str(error))
         return False
@@ -127,12 +126,12 @@ def cache_file(db, nbpath, validate, overwrite, artifact_paths=()):
 @cmnd_cache.command("add-with-artefacts")
 @arguments.ARTIFACT_PATHS
 @options.NB_PATH
-@options.CACHE_PATH
 @options.VALIDATE_NB
 @options.OVERWRITE_CACHED
-def cache_nb(cache_path, artifact_paths, nbpath, validate, overwrite):
+@pass_cache
+def cache_nb(cache, artifact_paths, nbpath, validate, overwrite):
     """Cache a notebook, with possible artefact files."""
-    db = get_cache(cache_path)
+    db = cache.get_cache()
     success = cache_file(db, nbpath, validate, overwrite, artifact_paths)
     if success:
         click.secho("Success!", fg="green")
@@ -140,12 +139,12 @@ def cache_nb(cache_path, artifact_paths, nbpath, validate, overwrite):
 
 @cmnd_cache.command("add")
 @arguments.NB_PATHS
-@options.CACHE_PATH
 @options.VALIDATE_NB
 @options.OVERWRITE_CACHED
-def cache_nbs(cache_path, nbpaths, validate, overwrite):
+@pass_cache
+def cache_nbs(cache, nbpaths, validate, overwrite):
     """Cache notebook(s) that have already been executed."""
-    db = get_cache(cache_path)
+    db = cache.get_cache()
     success = True
     for nbpath in nbpaths:
         # TODO deal with errors (print all at end? or option to ignore)
@@ -155,20 +154,35 @@ def cache_nbs(cache_path, nbpaths, validate, overwrite):
         click.secho("Success!", fg="green")
 
 
+@cmnd_cache.command("clear")
+@options.FORCE
+@pass_cache
+def clear_cache_cmd(cache, force):
+    """Remove all executed notebooks from the cache."""
+    db = cache.get_cache()
+    if not force:
+        click.confirm(
+            "Are you sure you want to permanently clear the cache!?", abort=True
+        )
+    for record in db.list_cache_records():
+        db.remove_cache(record.pk)
+    click.secho("Cache cleared!", fg="green")
+
+
 @cmnd_cache.command("remove")
 @arguments.PKS
-@options.CACHE_PATH
 @options.REMOVE_ALL
-def remove_caches(cache_path, pks, remove_all):
+@pass_cache
+def remove_caches(cache, pks, remove_all):
     """Remove notebooks stored in the cache."""
     from jupyter_cache.base import CachingError
 
-    db = get_cache(cache_path)
+    db = cache.get_cache()
     if remove_all:
         pks = [r.pk for r in db.list_cache_records()]
     for pk in pks:
         # TODO deal with errors (print all at end? or option to ignore)
-        click.echo("Removing Cache ID = {}".format(pk))
+        click.echo(f"Removing Cache ID = {pk}")
         try:
             db.remove_cache(pk)
         except KeyError:
@@ -179,12 +193,12 @@ def remove_caches(cache_path, pks, remove_all):
     click.secho("Success!", fg="green")
 
 
-@cmnd_cache.command("diff-nb")
+@cmnd_cache.command("diff")
 @arguments.PK
 @arguments.NB_PATH
-@options.CACHE_PATH
-def diff_nb(cache_path, pk, nbpath):
+@pass_cache
+def diff_nb(cache, pk, nbpath):
     """Print a diff of a notebook to one stored in the cache."""
-    db = get_cache(cache_path)
+    db = cache.get_cache()
     click.echo(db.diff_nbfile_with_cache(pk, nbpath, as_str=True))
     click.secho("Success!", fg="green")

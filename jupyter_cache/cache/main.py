@@ -1,26 +1,28 @@
+from contextlib import contextmanager
 import copy
 import hashlib
 import io
-import shutil
-from contextlib import contextmanager
 from pathlib import Path
-from typing import Callable, Iterable, List, Optional, Tuple, Union
+import shutil
+from typing import Iterable, List, Mapping, Optional, Tuple, Union
 
 import nbformat as nbf
 
 from jupyter_cache.base import (  # noqa: F401
     NB_VERSION,
+    CacheBundleIn,
+    CacheBundleOut,
     CachingError,
     JupyterCacheAbstract,
     NbArtifactsAbstract,
-    NbBundleIn,
-    NbBundleOut,
     NbValidityError,
+    ProjectNb,
     RetrievalError,
 )
+from jupyter_cache.readers import DEFAULT_READ_DATA, NbReadError, get_reader
 from jupyter_cache.utils import to_relative_paths
 
-from .db import NbCacheRecord, NbStageRecord, Setting, create_db
+from .db import NbCacheRecord, NbProjectRecord, Setting, create_db, get_version
 
 CACHE_LIMIT_KEY = "cache_limit"
 DEFAULT_CACHE_LIMIT = 1000
@@ -72,13 +74,16 @@ class JupyterCacheBase(JupyterCacheAbstract):
         return self._db
 
     def __repr__(self):
-        return "{0}({1})".format(self.__class__.__name__, repr(str(self._path)))
+        return f"{self.__class__.__name__}({repr(str(self._path))})"
 
     def __getstate__(self):
         """For pickling instances, db must be removed."""
         state = self.__dict__.copy()
         state["_db"] = None
         return state
+
+    def get_version(self) -> Optional[str]:
+        return get_version(self.path)
 
     def clear_cache(self):
         """Clear the cache completely."""
@@ -89,7 +94,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         """Retrieve a relative path in the cache to a notebook, from its hash."""
         path = self.path.joinpath(Path("executed", hashkey, "base.ipynb"))
         if not path.exists() and raise_on_missing:
-            raise RetrievalError("hashkey not in cache: {}".format(hashkey))
+            raise RetrievalError(f"hashkey not in cache: {hashkey}")
         return path
 
     def _get_artifact_path_cache(self, hashkey) -> Path:
@@ -171,7 +176,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
 
         return (nb, hash_string)
 
-    def _validate_nb_bundle(self, nb_bundle: NbBundleIn):
+    def _validate_nb_bundle(self, nb_bundle: CacheBundleIn):
         """Validate that a notebook bundle should be cached.
 
         We check that the notebook has been executed correctly,
@@ -194,7 +199,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
 
     def cache_notebook_bundle(
         self,
-        bundle: NbBundleIn,
+        bundle: CacheBundleIn,
         check_validity: bool = True,
         overwrite: bool = False,
         description="",
@@ -214,9 +219,13 @@ class JupyterCacheBase(JupyterCacheAbstract):
                     "Notebook already exists in cache and overwrite=False."
                 )
             shutil.rmtree(path.parent)
+
+        try:
             record = NbCacheRecord.record_from_hashkey(hashkey, self.db)
-            # TODO record should be changed rather than deleted?
-            NbCacheRecord.remove_records([record.pk], self.db)
+        except KeyError:
+            pass
+        else:
+            NbCacheRecord.remove_record(record.pk, self.db)
 
         record = NbCacheRecord.create_record(
             uri=bundle.uri,
@@ -266,7 +275,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         """
         notebook = nbf.read(str(path), nbf.NO_CONVERT)
         return self.cache_notebook_bundle(
-            NbBundleIn(
+            CacheBundleIn(
                 notebook,
                 uri or str(path),
                 artifacts=NbArtifacts(artifacts, in_folder=Path(path).parent),
@@ -282,17 +291,15 @@ class JupyterCacheBase(JupyterCacheAbstract):
     def get_cache_record(self, pk: int) -> NbCacheRecord:
         return NbCacheRecord.record_from_pk(pk, self.db)
 
-    def get_cache_bundle(self, pk: int) -> NbBundleOut:
+    def get_cache_bundle(self, pk: int) -> CacheBundleOut:
         record = NbCacheRecord.record_from_pk(pk, self.db)
         NbCacheRecord.touch(pk, self.db)
         path = self._get_notebook_path_cache(record.hashkey)
         artifact_folder = self._get_artifact_path_cache(record.hashkey)
         if not path.exists():
-            raise KeyError(
-                "Notebook file does not exist for cache record PK: {}".format(pk)
-            )
+            raise KeyError(f"Notebook file does not exist for cache record PK: {pk}")
 
-        return NbBundleOut(
+        return CacheBundleOut(
             nbf.reads(path.read_text(encoding="utf8"), nbf.NO_CONVERT),
             record=record,
             artifacts=NbArtifacts(
@@ -318,9 +325,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         record = NbCacheRecord.record_from_pk(pk, self.db)
         path = self._get_notebook_path_cache(record.hashkey)
         if not path.exists():
-            raise KeyError(
-                "Notebook file does not exist for cache record PK: {}".format(pk)
-            )
+            raise KeyError(f"Notebook file does not exist for cache record PK: {pk}")
         shutil.rmtree(path.parent)
         NbCacheRecord.remove_records([pk], self.db)
 
@@ -382,7 +387,12 @@ class JupyterCacheBase(JupyterCacheAbstract):
 
         Note: this will not diff markdown content, since it is not stored in the cache.
         """
-        import nbdime
+        try:
+            import nbdime
+        except ImportError:
+            raise ImportError(
+                "nbdime is required to diff notebooks, install with `pip install nbdime`"
+            )
         from nbdime.prettyprint import PrettyPrintConfig, pretty_print_diff
 
         cached_nb = self.get_cache_bundle(pk).nb
@@ -398,75 +408,91 @@ class JupyterCacheBase(JupyterCacheAbstract):
         )
         return stream.getvalue()
 
-    def stage_notebook_file(self, path: str, assets=()) -> NbStageRecord:
-        """Stage a single notebook for execution.
-
-        :param uri: The path to the file
-        :param assets: The path of files required by the notebook to run.
-            These must be within the same folder as the notebook.
-        """
-        return NbStageRecord.create_record(
-            str(Path(path).absolute()), self.db, raise_on_exists=False, assets=assets
+    def add_nb_to_project(
+        self,
+        path: str,
+        *,
+        read_data: Mapping = DEFAULT_READ_DATA,
+        assets: List[str] = (),
+    ) -> NbProjectRecord:
+        # check the reader can be loaded
+        read_data = dict(read_data)
+        _ = get_reader(read_data)
+        # TODO should we test that the file can be read by the reader?
+        return NbProjectRecord.create_record(
+            str(Path(path).absolute()),
+            self.db,
+            raise_on_exists=False,
+            read_data=read_data,
+            assets=assets,
         )
         # TODO physically copy to cache?
         # TODO assets
 
-    def list_staged_records(self) -> List[NbStageRecord]:
-        return NbStageRecord.records_all(self.db)
+    def list_project_records(
+        self,
+        filter_uris: Optional[List[str]] = None,
+        filter_pks: Optional[List[int]] = None,
+    ) -> List[NbProjectRecord]:
+        records = NbProjectRecord.records_all(self.db)
+        if filter_uris is not None:
+            records = [r for r in records if r.uri in filter_uris]
+        if filter_pks is not None:
+            records = [r for r in records if r.pk in filter_pks]
+        return records
 
-    def get_staged_record(self, uri_or_pk: Union[int, str]) -> NbStageRecord:
+    def get_project_record(self, uri_or_pk: Union[int, str]) -> NbProjectRecord:
         if isinstance(uri_or_pk, int):
-            record = NbStageRecord.record_from_pk(uri_or_pk, self.db)
+            record = NbProjectRecord.record_from_pk(uri_or_pk, self.db)
         else:
-            record = NbStageRecord.record_from_uri(uri_or_pk, self.db)
+            record = NbProjectRecord.record_from_uri(uri_or_pk, self.db)
         return record
 
-    def discard_staged_notebook(self, uri_or_pk: Union[int, str]):
-        """Discard a staged notebook."""
+    def remove_nb_from_project(self, uri_or_pk: Union[int, str]):
         if isinstance(uri_or_pk, int):
-            NbStageRecord.remove_pks([uri_or_pk], self.db)
+            NbProjectRecord.remove_pks([uri_or_pk], self.db)
         else:
-            NbStageRecord.remove_uris([uri_or_pk], self.db)
+            NbProjectRecord.remove_uris([uri_or_pk], self.db)
 
-    # TODO add discard all/multiple staged records method
+    # TODO add discard all/multiple project records method
 
-    def get_staged_notebook(
-        self, uri_or_pk: Union[int, str], converter: Optional[Callable] = None
-    ) -> NbBundleIn:
-        """Return a single staged notebook."""
+    def get_project_notebook(self, uri_or_pk: Union[int, str]) -> ProjectNb:
         if isinstance(uri_or_pk, int):
-            uri_or_pk = NbStageRecord.record_from_pk(uri_or_pk, self.db).uri
-        if not Path(uri_or_pk).exists():
-            raise IOError(
-                "The URI of the staged record no longer exists: {}".format(uri_or_pk)
+            record = NbProjectRecord.record_from_pk(uri_or_pk, self.db)
+        else:
+            record = NbProjectRecord.record_from_uri(uri_or_pk, self.db)
+        if not Path(record.uri).exists():
+            raise OSError(
+                f"The URI of the project record no longer exists: {record.uri}"
             )
-        if converter is None:
-            notebook = nbf.read(uri_or_pk, nbf.NO_CONVERT)
-        else:
-            notebook = converter(uri_or_pk)
-        return NbBundleIn(notebook, uri_or_pk)
+        try:
+            reader = get_reader(record.read_data)
+            notebook = reader(record.uri)
+            assert isinstance(
+                notebook, nbf.NotebookNode
+            ), f"Reader did not return a v4 NotebookNode: {type(notebook)} {notebook}"
+        except Exception as exc:
+            raise NbReadError(f"Failed to read the notebook: {exc}") from exc
+        return ProjectNb(record.pk, record.uri, notebook, record.assets)
 
-    def get_cache_record_of_staged(
-        self, uri_or_pk: Union[int, str], converter: Optional[Callable] = None
+    def get_cached_project_nb(
+        self, uri_or_pk: Union[int, str]
     ) -> Optional[NbCacheRecord]:
-        if isinstance(uri_or_pk, int):
-            record = NbStageRecord.record_from_pk(uri_or_pk, self.db)
-        else:
-            record = NbStageRecord.record_from_uri(uri_or_pk, self.db)
-        nb = self.get_staged_notebook(record.uri, converter=converter).nb
+        nb = self.get_project_notebook(uri_or_pk).nb
         _, hashkey = self.create_hashed_notebook(nb)
         try:
             return NbCacheRecord.record_from_hashkey(hashkey, self.db)
         except KeyError:
             return None
 
-    def list_staged_unexecuted(
-        self, converter: Optional[Callable] = None
-    ) -> List[NbStageRecord]:
-        """List staged notebooks, whose hash is not present in the cached notebooks."""
+    def list_unexecuted(
+        self,
+        filter_uris: Optional[List[str]] = None,
+        filter_pks: Optional[List[int]] = None,
+    ) -> List[NbProjectRecord]:
         records = []
-        for record in self.list_staged_records():
-            nb = self.get_staged_notebook(record.uri, converter).nb
+        for record in self.list_project_records(filter_uris, filter_pks):
+            nb = self.get_project_notebook(record.uri).nb
             _, hashkey = self.create_hashed_notebook(nb)
             try:
                 NbCacheRecord.record_from_hashkey(hashkey, self.db)

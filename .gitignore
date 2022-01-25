@@ -133,3 +133,6 @@ _archive/
 *_old*
 .DS_Store
 .vscode/
+~$*
+_*.ipynb
+final_notebook.ipynb

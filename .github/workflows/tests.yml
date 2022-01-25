@@ -18,7 +18,7 @@ jobs:
     - name: Set up Python 3.8
       uses: actions/setup-python@v1
       with:
-        python-version: 3.8
+        python-version: "3.8"
     - uses: pre-commit/action@v2.0.0
 
   tests:
@@ -26,10 +26,10 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: [3.6, 3.7, 3.8, 3.9]
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
         include:
           - os: windows-latest
-            python-version: 3.7
+            python-version: "3.8"
 
     runs-on: ${{ matrix.os }}
 
@@ -67,14 +67,14 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v2
-      - name: Set up Python 3.7
+      - name: Set up Python 3.8
         uses: actions/setup-python@v1
         with:
-          python-version: 3.7
+          python-version: "3.8"
       - name: Build package
         run: |
-          pip install wheel
-          python setup.py sdist bdist_wheel
+          pip install build
+          python -m build
       - name: Publish
         uses: pypa/gh-action-pypi-publish@v1.1.0
         with:

@@ -1,21 +1,46 @@
-import logging
 from abc import ABC, abstractmethod
-from typing import Callable, List, Optional
+import logging
+from typing import Any, Dict, List, Optional, Set
 
-import pkg_resources
+import attr
 
 from jupyter_cache.base import JupyterCacheAbstract
-
-# TODO abstact
-from jupyter_cache.cache.db import NbCacheRecord
-
-ENTRY_POINT_GROUP = "jupyter_executors"
+from jupyter_cache.cache.db import NbProjectRecord
+from jupyter_cache.entry_points import (
+    ENTRY_POINT_GROUP_EXEC,
+    get_entry_point,
+    list_group_names,
+)
 
 base_logger = logging.getLogger(__name__)
 
 
 class ExecutionError(Exception):
     pass
+
+
+@attr.s(slots=True)
+class ExecutorRunResult:
+    """A container for the execution result."""
+
+    # URIs of notebooks which where successfully executed
+    succeeded: List[str] = attr.ib(factory=list)
+    # URIs of notebooks which excepted during execution
+    excepted: List[str] = attr.ib(factory=list)
+    # URIs of notebooks which errored before execution
+    errored: List[str] = attr.ib(factory=list)
+
+    def all(self) -> List[str]:
+        """Return all notebooks."""
+        return self.succeeded + self.excepted + self.errored
+
+    def as_json(self) -> Dict[str, Any]:
+        """Return the result as a JSON serializable dict."""
+        return {
+            "succeeded": self.succeeded,
+            "excepted": self.excepted,
+            "errored": self.errored,
+        }
 
 
 class JupyterExecutorAbstract(ABC):
@@ -26,7 +51,7 @@ class JupyterExecutorAbstract(ABC):
         self._logger = logger or logging.getLogger(__name__)
 
     def __repr__(self):
-        return "{0}(cache={1})".format(self.__class__.__name__, self._cache)
+        return f"{self.__class__.__name__}(cache={self._cache})"
 
     @property
     def cache(self):
@@ -36,45 +61,62 @@ class JupyterExecutorAbstract(ABC):
     def logger(self):
         return self._logger
 
-    @abstractmethod
-    def run_and_cache(
+    def get_records(
         self,
         filter_uris: Optional[List[str]] = None,
         filter_pks: Optional[List[int]] = None,
-        converter: Optional[Callable] = None,
-        **kwargs
-    ) -> List[NbCacheRecord]:
+        clear_tracebacks: bool = True,
+        force: bool = False,
+    ) -> List[NbProjectRecord]:
+        """Return records to execute.
+
+        :param clear_tracebacks: Remove any tracebacks from previous executions
+        """
+        if force:
+            execute_records = self.cache.list_project_records(filter_uris, filter_pks)
+        else:
+            execute_records = self.cache.list_unexecuted(filter_uris, filter_pks)
+        if clear_tracebacks:
+            NbProjectRecord.remove_tracebacks(
+                [r.pk for r in execute_records], self.cache.db
+            )
+        return execute_records
+
+    @abstractmethod
+    def run_and_cache(
+        self,
+        *,
+        filter_uris: Optional[List[str]] = None,
+        filter_pks: Optional[List[int]] = None,
+        timeout: Optional[int] = 30,
+        allow_errors: bool = False,
+        force: bool = False,
+        **kwargs: Any,
+    ) -> ExecutorRunResult:
         """Run execution, cache successfully executed notebooks and return their URIs
 
-        Parameters
-        ----------
-        filter_uris: list
-            If specified filter the staged notebooks to execute by these URIs
-        filter_pks: list
-            If specified filter the staged notebooks to execute by these PKs
-        converter:
-            An optional converter for staged notebooks,
-            which takes the URI and returns a notebook node
+        :param filter_uris: Filter the notebooks in the project to execute by these URIs
+        :param filter_pks: Filter the notebooks in the project to execute by these PKs
+        :param timeout: Maximum time in seconds to wait for a single cell to run for
+        :param allow_errors: Whether to halt execution on the first cell exception
+            (provided the cell is not tagged as an expected exception)
+        :param force: Whether to force execution of all notebooks, even if they are cached
+        :param kwargs: Additional keyword arguments to pass to the executor
         """
-        pass
 
 
-def list_executors():
-    return list(pkg_resources.iter_entry_points(ENTRY_POINT_GROUP))
+def list_executors() -> Set[str]:
+    return list_group_names(ENTRY_POINT_GROUP_EXEC)
 
 
 def load_executor(
     entry_point: str, cache: JupyterCacheAbstract, logger=None
 ) -> JupyterExecutorAbstract:
     """Retrieve an initialised JupyterExecutor from an entry point."""
-    entry_points = list(pkg_resources.iter_entry_points(ENTRY_POINT_GROUP, entry_point))
-    if len(entry_points) == 0:
+    ep = get_entry_point(ENTRY_POINT_GROUP_EXEC, entry_point)
+    if ep is None:
         raise ImportError(
-            "Entry point not found: {}.{}".format(ENTRY_POINT_GROUP, entry_point)
+            f"Entry point not found: {ENTRY_POINT_GROUP_EXEC}:{entry_point}"
         )
-    if len(entry_points) != 1:
-        raise ImportError(
-            "Multiple entry points found: {}.{}".format(ENTRY_POINT_GROUP, entry_point)
-        )
-    execute_cls = entry_points[0].load()
+    execute_cls = ep.load()
     return execute_cls(cache=cache, logger=logger)

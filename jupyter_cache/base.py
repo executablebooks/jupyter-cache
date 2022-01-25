@@ -3,17 +3,18 @@
 API access to the cache should use this interface,
 with no assumptions about the backend storage/retrieval mechanisms.
 """
-import io
 from abc import ABC, abstractmethod
+import io
 from pathlib import Path
-from typing import Callable, Iterable, List, Optional, Tuple, Union
+from typing import Iterable, List, Mapping, Optional, Tuple, Union
 
 import attr
-import nbformat as nbf
 from attr.validators import instance_of, optional
+import nbformat as nbf
 
 # TODO make these abstract
-from jupyter_cache.cache.db import NbCacheRecord, NbStageRecord
+from jupyter_cache.cache.db import NbCacheRecord, NbProjectRecord
+from jupyter_cache.readers import DEFAULT_READ_DATA
 
 NB_VERSION = 4
 
@@ -37,6 +38,30 @@ class NbValidityError(Exception):
         super().__init__(message, *args, **kwargs)
 
 
+@attr.s(frozen=True, slots=True)
+class ProjectNb:
+    """A notebook read from a project"""
+
+    pk: int = attr.ib(
+        validator=instance_of(int),
+        metadata={"help": "the ID of the notebook"},
+    )
+    uri: str = attr.ib(
+        converter=str,
+        validator=instance_of(str),
+        metadata={"help": "the URI of the notebook"},
+    )
+    nb: nbf.NotebookNode = attr.ib(
+        validator=instance_of(nbf.NotebookNode),
+        repr=lambda nb: f"Notebook(cells={len(nb.cells)})",
+        metadata={"help": "the notebook"},
+    )
+    assets: List[Path] = attr.ib(
+        factory=list,
+        metadata={"help": "File paths required to run the notebook"},
+    )
+
+
 class NbArtifactsAbstract(ABC):
     """Container for artefacts of a notebook execution."""
 
@@ -44,26 +69,22 @@ class NbArtifactsAbstract(ABC):
     @abstractmethod
     def relative_paths(self) -> List[Path]:
         """Return the list of paths (relative to the notebook folder)."""
-        pass
 
     @abstractmethod
     def __iter__(self) -> Iterable[Tuple[Path, io.BufferedReader]]:
         """Yield the relative path and open files (in bytes mode)"""
-        pass
 
     def __repr__(self):
-        return "{0}(paths={1})".format(
-            self.__class__.__name__, len(self.relative_paths)
-        )
+        return f"{self.__class__.__name__}(paths={len(self.relative_paths)})"
 
 
 @attr.s(frozen=True, slots=True)
-class NbBundleIn:
+class CacheBundleIn:
     """A container for notebooks and their associated data to cache."""
 
     nb: nbf.NotebookNode = attr.ib(
         validator=instance_of(nbf.NotebookNode),
-        repr=lambda nb: "Notebook(cells={0})".format(len(nb.cells)),
+        repr=lambda nb: f"Notebook(cells={len(nb.cells)})",
         metadata={"help": "the notebook"},
     )
     uri: str = attr.ib(
@@ -91,12 +112,12 @@ class NbBundleIn:
 
 
 @attr.s(frozen=True, slots=True)
-class NbBundleOut:
+class CacheBundleOut:
     """A container for notebooks and their associated data that have been cached."""
 
     nb: nbf.NotebookNode = attr.ib(
         validator=instance_of(nbf.NotebookNode),
-        repr=lambda nb: "Notebook(cells={0})".format(len(nb.cells)),
+        repr=lambda nb: f"Notebook(cells={len(nb.cells)})",
         metadata={"help": "the notebook"},
     )
     record: NbCacheRecord = attr.ib(metadata={"help": "the cache record"})
@@ -107,16 +128,25 @@ class NbBundleOut:
 
 
 class JupyterCacheAbstract(ABC):
-    """An abstract cache for storing pre/post executed notebooks."""
+    """An abstract cache for storing pre/post executed notebooks.
+
+    Note: class instances should be pickleable.
+    """
 
     @abstractmethod
-    def clear_cache(self):
+    def get_version(self) -> Optional[str]:
+        """Return the version of the cache."""
+
+    @abstractmethod
+    def clear_cache(self) -> None:
         """Clear the cache completely."""
-        pass
 
     @abstractmethod
     def cache_notebook_bundle(
-        self, bundle: NbBundleIn, check_validity: bool = True, overwrite: bool = False
+        self,
+        bundle: CacheBundleIn,
+        check_validity: bool = True,
+        overwrite: bool = False,
     ) -> NbCacheRecord:
         """Commit an executed notebook, returning its cache record.
 
@@ -128,7 +158,6 @@ class JupyterCacheAbstract(ABC):
         :param overwrite: Allow overwrite of cache with matching hash
         :return: The primary key of the cache
         """
-        pass
 
     @abstractmethod
     def cache_notebook_file(
@@ -154,21 +183,18 @@ class JupyterCacheAbstract(ABC):
         :param overwrite: Allow overwrite of cache with matching hash
         :return: The primary key of the cache
         """
-        pass
 
     @abstractmethod
     def list_cache_records(self) -> List[NbCacheRecord]:
         """Return a list of cached notebook records."""
-        pass
-
-    def get_cache_record(self, pk: int) -> NbCacheRecord:
-        """Return the record of a cache, by its primary key"""
-        pass
 
     @abstractmethod
-    def get_cache_bundle(self, pk: int) -> NbBundleOut:
+    def get_cache_record(self, pk: int) -> NbCacheRecord:
+        """Return the record of a cache, by its primary key"""
+
+    @abstractmethod
+    def get_cache_bundle(self, pk: int) -> CacheBundleOut:
         """Return an executed notebook bundle, by its primary key"""
-        pass
 
     @abstractmethod
     def cache_artefacts_temppath(self, pk: int) -> Path:
@@ -180,7 +206,6 @@ class JupyterCacheAbstract(ABC):
             with cache.cache_artefacts_temppath(1) as path:
                 shutil.copytree(path, destination)
         """
-        pass
 
     @abstractmethod
     def match_cache_notebook(self, nb: nbf.NotebookNode) -> NbCacheRecord:
@@ -188,7 +213,6 @@ class JupyterCacheAbstract(ABC):
 
         :raises KeyError: if no match is found
         """
-        pass
 
     def match_cache_file(self, path: str) -> NbCacheRecord:
         """Match to an executed notebook, returning its primary key.
@@ -213,7 +237,6 @@ class JupyterCacheAbstract(ABC):
         :raises KeyError: if no match is found
         :return: pk, input notebook with cached code cells and metadata merged.
         """
-        pass
 
     def merge_match_into_file(
         self,
@@ -240,7 +263,6 @@ class JupyterCacheAbstract(ABC):
 
         Note: this will not diff markdown content, since it is not stored in the cache.
         """
-        pass
 
     def diff_nbfile_with_cache(
         self, pk: int, path: str, as_str=False, **kwargs
@@ -253,65 +275,57 @@ class JupyterCacheAbstract(ABC):
         return self.diff_nbnode_with_cache(pk, nb, uri=path, as_str=as_str, **kwargs)
 
     @abstractmethod
-    def stage_notebook_file(self, uri: str, assets: List[str] = ()) -> NbStageRecord:
-        """Stage a single notebook for execution.
+    def add_nb_to_project(
+        self,
+        uri: str,
+        *,
+        read_data: Mapping = DEFAULT_READ_DATA,
+        assets: List[str] = (),
+    ) -> NbProjectRecord:
+        """Add a single notebook to the project.
 
         :param uri: The path to the file
+        :param read_data: Data to generate a function, to read the uri and return a NotebookNode
         :param assets: The path of files required by the notebook to run.
         :raises ValueError: assets not within the same folder as the notebook URI.
         """
-        pass
 
     @abstractmethod
-    def discard_staged_notebook(self, uri_or_pk: Union[int, str]):
-        """Discard a staged notebook."""
-        pass
+    def remove_nb_from_project(self, uri_or_pk: Union[int, str]):
+        """Remove a notebook from the project."""
 
     @abstractmethod
-    def list_staged_records(self) -> List[NbStageRecord]:
-        """list staged notebook URI's in the cache."""
-        pass
+    def list_project_records(
+        self,
+        filter_uris: Optional[List[str]] = None,
+        filter_pks: Optional[List[int]] = None,
+    ) -> List[NbProjectRecord]:
+        """Return a list of all notebook records in the project."""
 
     @abstractmethod
-    def get_staged_record(self, uri_or_pk: Union[int, str]) -> NbStageRecord:
-        """Return the record of a staged notebook, by its primary key or URI."""
-        pass
+    def get_project_record(self, uri_or_pk: Union[int, str]) -> NbProjectRecord:
+        """Return the record of a notebook in the project, by its primary key or URI."""
 
     @abstractmethod
-    def get_staged_notebook(
-        self, uri_or_pk: Union[int, str], converter: Optional[Callable] = None
-    ) -> NbBundleIn:
-        """Return a single staged notebook, by its primary key or URI.
+    def get_project_notebook(self, uri_or_pk: Union[int, str]) -> ProjectNb:
+        """Return a single notebook in the project, by its primary key or URI.
 
-        :param converter: An optional converter for staged notebooks,
-            which takes the URI and returns a notebook node (default nbformat.read)
+        :raises NbReadError: if the notebook cannot be read
         """
-        pass
 
     @abstractmethod
-    def get_cache_record_of_staged(
-        self, uri_or_pk: Union[int, str], converter: Optional[Callable] = None
+    def get_cached_project_nb(
+        self, uri_or_pk: Union[int, str]
     ) -> Optional[NbCacheRecord]:
-        pass
+        """Get cache record for a notebook in the project.
+
+        :param uri_or_pk: The URI of pk of the file in the project
+        """
 
     @abstractmethod
-    def list_staged_unexecuted(
-        self, converter: Optional[Callable] = None
-    ) -> List[NbStageRecord]:
-        """List staged notebooks, whose hash is not present in the cache.
-
-        :param converter: An optional converter for staged notebooks,
-            which takes the URI and returns a notebook node (default nbformat.read)
-        """
-        pass
-
-    # removed until defined use case
-    # @abstractmethod
-    # def get_cache_codecell(self, pk: int, index: int) -> nbf.NotebookNode:
-    #     """Return a code cell from a cached notebook.
-
-    #     NOTE: the index **only** refers to the list of code cells, e.g.
-    #     `[codecell_0, textcell_1, codecell_2]`
-    #     would map {0: codecell_0, 1: codecell_2}
-    #     """
-    #     pass
+    def list_unexecuted(
+        self,
+        filter_uris: Optional[List[str]] = None,
+        filter_pks: Optional[List[int]] = None,
+    ) -> List[NbProjectRecord]:
+        """List notebooks in the project, whose hash is not present in the cache."""

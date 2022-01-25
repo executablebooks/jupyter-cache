@@ -2,28 +2,35 @@
 
 # Command-Line
 
-<!-- This section was auto-generated on 2020-03-12 17:31 by: /Users/cjs14/GitHub/jupyter-cache/tests/make_cli_readme.py -->
+Note, you can follow this tutorial by cloning <https://github.com/executablebooks/jupyter-cache>, and running these commands inside it.:
+tox
+```{jcache-clear}
+```
 
-From the checked-out repository folder:
+```{jcache-cli} jupyter_cache.cli.commands.cmd_main:jcache
+:args: --help
+```
 
-```console
-$ jcache --help
-Usage: jcache [OPTIONS] COMMAND [ARGS]...
+The first time the cache is required, it will be lazily created:
 
-  The command line interface of jupyter-cache.
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
+:command: list
+:input: y
+```
 
-Options:
-  -v, --version       Show the version and exit.
-  -p, --cache-path    Print the current cache path and exit.
-  -a, --autocomplete  Print the autocompletion command and exit.
-  -h, --help          Show this message and exit.
+You can specify the path to the cache, with the `--cache-path` option,
+or set the `JUPYTERCACHE` environment variable.
 
-Commands:
-  cache    Commands for adding to and inspecting the cache.
-  clear    Clear the cache completely.
-  config   Commands for configuring the cache.
-  execute  Execute staged notebooks that are outdated.
-  stage    Commands for staging notebooks to be executed.
+You can also clear it at any time:
+
+```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+:command: clear
+:input: y
+```
+
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
+:command: list
+:input: y
 ```
 
 ````{tip}
@@ -34,346 +41,238 @@ eval "$(_JCACHE_COMPLETE=source jcache)"
 ```
 ````
 
-## Caching Executed Notebooks
+## Adding notebooks to the project
 
-```console
-$ jcache cache --help
-Usage: cache [OPTIONS] COMMAND [ARGS]...
-
-  Commands for adding to and inspecting the cache.
-
-Options:
-  --help  Show this message and exit.
-
-Commands:
-  add                 Cache notebook(s) that have already been executed.
-  add-with-artefacts  Cache a notebook, with possible artefact files.
-  cat-artifact        Print the contents of a cached artefact.
-  diff-nb             Print a diff of a notebook to one stored in the cache.
-  list                List cached notebook records in the cache.
-  remove              Remove notebooks stored in the cache.
-  show                Show details of a cached notebook in the cache.
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
+:args: --help
 ```
 
-The first time the cache is required, it will be lazily created:
+A project consist of a set of notebooks to be executed.
 
-```console
-$ jcache cache list
-Cache path: ../.jupyter_cache
-The cache does not yet exist, do you want to create it? [y/N]: y
-No Cached Notebooks
+When adding notebooks to the project, they are recorded by their URI (e.g. file path),
+i.e. no physical copying takes place until execution time.
 
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
+:command: add
+:args: tests/notebooks/basic.ipynb tests/notebooks/basic_failing.ipynb tests/notebooks/basic_unrun.ipynb tests/notebooks/complex_outputs.ipynb tests/notebooks/external_output.ipynb
 ```
 
-You can add notebooks straight into the cache.
-When caching, a check will be made that the notebooks look to have been executed
-correctly, i.e. the cell execution counts go sequentially up from 1.
+You can list the notebooks in the project, at present none have an existing execution record in the cache:
 
-```console
-$ jcache cache add tests/notebooks/basic.ipynb
-Caching: ../tests/notebooks/basic.ipynb
-Validity Error: Expected cell 1 to have execution_count 1 not 2
-The notebook may not have been executed, continue caching? [y/N]: y
-Success!
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
+:command: list
 ```
 
-Or to skip validation:
+You can remove a notebook from the project by its URI or ID:
 
-```console
-$ jcache cache add --no-validate tests/notebooks/basic.ipynb tests/notebooks/basic_failing.ipynb tests/notebooks/basic_unrun.ipynb tests/notebooks/complex_outputs.ipynb tests/notebooks/external_output.ipynb
-Caching: ../tests/notebooks/basic.ipynb
-Caching: ../tests/notebooks/basic_failing.ipynb
-Caching: ../tests/notebooks/basic_unrun.ipynb
-Caching: ../tests/notebooks/complex_outputs.ipynb
-Caching: ../tests/notebooks/external_output.ipynb
-Success!
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
+:command: remove
+:args: 4
 ```
 
-Once you've cached some notebooks, you can look at the 'cache records'
-for what has been cached.
-
-Each notebook is hashed (code cells and kernel spec only),
-which is used to compare against 'staged' notebooks.
-Multiple hashes for the same URI can be added
-(the URI is just there for inspetion) and the size of the cache is limited
-(current default 1000) so that, at this size,
-the last accessed records begin to be deleted.
-You can remove cached records by their ID.
-
-```console
-$ jcache cache list
-  ID  Origin URI                             Created           Accessed
-----  -------------------------------------  ----------------  ----------------
-   5  tests/notebooks/external_output.ipynb  2020-03-12 17:31  2020-03-12 17:31
-   4  tests/notebooks/complex_outputs.ipynb  2020-03-12 17:31  2020-03-12 17:31
-   3  tests/notebooks/basic_unrun.ipynb      2020-03-12 17:31  2020-03-12 17:31
-   2  tests/notebooks/basic_failing.ipynb    2020-03-12 17:31  2020-03-12 17:31
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
+:command: list
 ```
 
-````{tip}
+or clear all notebooks from the project:
+
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
+:command: clear
+:input: y
+```
+
+## Add a custom reader to read notebook files
+
+By default, notebook files are read using the [nbformat reader](https://nbformat.readthedocs.io/en/latest/api.html#nbformat.read).
+However, you can also specify a custom reader, defined by an entry point in the `jcache.readers` group.
+Included with jupyter_cache is the [jupytext](https://jupytext.readthedocs.io) reader, for formats like MyST Markdown:
+
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
+:command: add
+:args: --reader nbformat tests/notebooks/basic.ipynb tests/notebooks/basic_failing.ipynb
+```
+
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
+:command: add
+:args: --reader jupytext tests/notebooks/basic.md
+```
+
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
+:command: list
+```
+
+:::{important}
+To use the `jupytext` reader, you must have the `jupytext` package installed.
+:::
+
+## Executing the notebooks
+
+Simply call the `execute` command, to execute all notebooks in the project that do not have an existing record in the cache.
+
+Executors are defined by entry points in the `jcache.executors` group.
+jupyter-cache includes these executors:
+
+- `local-serial`: execute notebooks with the working directory set to their path, in serial mode (using a single process).
+- `local-parallel`: execute notebooks with the working directory set to their path, in parallel mode (using multiple processes).
+- `temp-serial`: execute notebooks with a temporary working directory, in serial mode (using a single process).
+- `temp-parallel`: execute notebooks with a temporary working directory, in parallel mode (using multiple processes).
+
+```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+:command: execute
+:args: --executor local-serial
+```
+
+Successfully executed notebooks will now have a record in the cache, uniquely identified by the a hash of their code and metadata content:
+
+```{jcache-cli} jupyter_cache.cli.commands.cmd_cache:cmnd_cache
+:command: list
+:args: --hashkeys
+```
+
+These records are then compared to the hashes of notebooks in the project, to find which have up-to-date executions.
+Note here both notebooks share the same cached notebook (denoted by `[1]` in the status):
+
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
+:command: list
+```
+
+Next time you execute the project, only notebooks which don't match a cached record will be executed:
+
+```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+:command: execute
+:args: --executor local-serial -v CRITICAL
+```
+
+You can also `force` all notebooks to be re-executed:
+
+```{jcache-cli} jupyter_cache.cli.commands.cmd_project:cmnd_project
+:command: execute
+:args: --force
+```
+
+If you modify a code cell, the notebook will no longer match a cached notebook or, if you wish to re-execute unchanged notebook(s) (for example if the runtime environment has changed), you can remove their records from the cache (keeping the project record):
+
+```{jcache-cli} jupyter_cache.cli.commands.cmd_cache:cmnd_cache
+:command: clear
+:input: n
+:allow-exception:
+```
+
+:::{note}
+The number of notebooks in the cache is limited
+(current default 1000).
+Once this limit is reached, the oldest (last accessed) notebooks begin to be deleted.
+change this default with `jcache config cache-limit`
+:::
+
+## Analysing executed/excepted notebooks
+
+You can see the elapsed execution time of a notebook via its ID in the cache:
+
+```{jcache-cli} jupyter_cache.cli.commands.cmd_cache:cmnd_cache
+:command: info
+:args: 1
+```
+
+Failed execution tracebacks are also available on the project record:
+
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
+:command: info
+:args: --tb tests/notebooks/basic_failing.ipynb
+```
+
+```{tip}
+Code cells can be tagged with `raises-exception` to let the executor known that a cell *may* raise an exception
+(see [this issue on its behaviour](https://github.com/jupyter/nbconvert/issues/730)).
+```
+
+## Retrieving executed notebooks
+
+Notebooks added to the project are not modified in any way during or after execution:
+
+You can create a new "final" notebook, with the cached outputs merged into the source notebook with:
+
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
+:command: merge
+:args: tests/notebooks/basic.md final_notebook.ipynb
+```
+
+## Invalidating cached notebooks
+
+If you want to invalidate a notebook's cached execution,
+for example if you have changed the notebook's execution environment,
+you can do so by calling the `invalidate` command:
+
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
+:command: invalidate
+:args: tests/notebooks/basic.ipynb
+```
+
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
+:command: list
+```
+
+## Specifying notebooks with assets
+
+When executing in a temporary directory, you may want to specify additional "asset" files that also need to be be copied to this directory for the notebook to run.
+
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
+:command: remove
+:args: tests/notebooks/basic.ipynb
+```
+
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
+:command: add-with-assets
+:args: -nb tests/notebooks/basic.ipynb tests/notebooks/artifact_folder/artifact.txt
+```
+
+```{jcache-cli} jupyter_cache.cli.commands.cmd_notebook:cmnd_notebook
+:command: info
+:args: tests/notebooks/basic.ipynb
+```
+
+## Adding notebooks directly to the cache
+
+Pre-executed notebooks can be added to the cache directly, without executing them.
+
+A check will be made that the notebooks look to have been executed correctly,
+i.e. the cell execution counts go sequentially up from 1.
+
+```{jcache-cli} jupyter_cache.cli.commands.cmd_cache:cmnd_cache
+:command: add
+:args: tests/notebooks/complex_outputs.ipynb
+:input: y
+```
+
+Or to skip the validation:
+
+```{jcache-cli} jupyter_cache.cli.commands.cmd_cache:cmnd_cache
+:command: add
+:args: --no-validate tests/notebooks/external_output.ipynb
+```
+
+```{jcache-cli} jupyter_cache.cli.commands.cmd_cache:cmnd_cache
+:command: list
+```
+
+:::{tip}
 To only show the latest versions of cached notebooks.
 
 ```console
 $ jcache cache list --latest-only
 ```
-````
 
-You can also cache notebooks with artefacts
-(external outputs of the notebook execution).
+:::
 
-```console
-$ jcache cache add-with-artefacts -nb tests/notebooks/basic.ipynb tests/notebooks/artifact_folder/artifact.txt
-Caching: ../tests/notebooks/basic.ipynb
-Validity Error: Expected cell 1 to have execution_count 1 not 2
-The notebook may not have been executed, continue caching? [y/N]: y
-Success!
+## Diffing notebooks
+
+You can diff any of the cached notebooks with any (external) notebook:
+
+```{warning}
+This requires `pip install nbdime`
 ```
 
-Show a full description of a cached notebook by referring to its ID
-
-```console
-$ jcache cache show 6
-ID: 6
-Origin URI: ../tests/notebooks/basic.ipynb
-Created: 2020-03-12 17:31
-Accessed: 2020-03-12 17:31
-Hashkey: 818f3412b998fcf4fe9ca3cca11a3fc3
-Artifacts:
-- artifact_folder/artifact.txt
-```
-
-Note artefact paths must be 'upstream' of the notebook folder:
-
-```console
-$ jcache cache add-with-artefacts -nb tests/notebooks/basic.ipynb tests/test_db.py
-Caching: ../tests/notebooks/basic.ipynb
-Artifact Error: Path '../tests/test_db.py' is not in folder '../tests/notebooks''
-```
-
-To view the contents of an execution artefact:
-
-```console
-$ jcache cache cat-artifact 6 artifact_folder/artifact.txt
-An artifact
-
-```
-
-You can directly remove a cached notebook by its ID:
-
-```console
-$ jcache cache remove 4
-Removing Cache ID = 4
-Success!
-```
-
-You can also diff any of the cached notebooks with any (external) notebook:
-
-```console
-$ jcache cache diff-nb 2 tests/notebooks/basic.ipynb
-nbdiff
---- cached pk=2
-+++ other: ../tests/notebooks/basic.ipynb
-## inserted before nb/cells/0:
-+  code cell:
-+    execution_count: 2
-+    source:
-+      a=1
-+      print(a)
-+    outputs:
-+      output 0:
-+        output_type: stream
-+        name: stdout
-+        text:
-+          1
-
-## deleted nb/cells/0:
--  code cell:
--    source:
--      raise Exception('oopsie!')
-
-
-Success!
-```
-
-## Staging Notebooks for execution
-
-```console
-$ jcache stage --help
-Usage: stage [OPTIONS] COMMAND [ARGS]...
-
-  Commands for staging notebooks to be executed.
-
-Options:
-  --help  Show this message and exit.
-
-Commands:
-  add              Stage notebook(s) for execution.
-  add-with-assets  Stage a notebook, with possible asset files.
-  list             List notebooks staged for possible execution.
-  remove-ids       Un-stage notebook(s), by ID.
-  remove-uris      Un-stage notebook(s), by URI.
-  show             Show details of a staged notebook.
-```
-
-Staged notebooks are recorded as pointers to their URI,
-i.e. no physical copying takes place until execution time.
-
-If you stage some notebooks for execution, then
-you can list them to see which have existing records in the cache (by hash),
-and which will require execution:
-
-```console
-$ jcache stage add tests/notebooks/basic.ipynb tests/notebooks/basic_failing.ipynb tests/notebooks/basic_unrun.ipynb tests/notebooks/complex_outputs.ipynb tests/notebooks/external_output.ipynb
-Staging: ../tests/notebooks/basic.ipynb
-Staging: ../tests/notebooks/basic_failing.ipynb
-Staging: ../tests/notebooks/basic_unrun.ipynb
-Staging: ../tests/notebooks/complex_outputs.ipynb
-Staging: ../tests/notebooks/external_output.ipynb
-Success!
-```
-
-```console
-$ jcache stage list
-  ID  URI                                    Created             Assets    Cache ID
-----  -------------------------------------  ----------------  --------  ----------
-   5  tests/notebooks/external_output.ipynb  2020-03-12 17:31         0           5
-   4  tests/notebooks/complex_outputs.ipynb  2020-03-12 17:31         0
-   3  tests/notebooks/basic_unrun.ipynb      2020-03-12 17:31         0           6
-   2  tests/notebooks/basic_failing.ipynb    2020-03-12 17:31         0           2
-   1  tests/notebooks/basic.ipynb            2020-03-12 17:31         0           6
-```
-
-You can remove a staged notebook by its URI or ID:
-
-```console
-$ jcache stage remove-ids 4
-Unstaging ID: 4
-Success!
-```
-
-You can then run a basic execution of the required notebooks:
-
-```console
-$ jcache cache remove 6 2
-Removing Cache ID = 6
-Removing Cache ID = 2
-Success!
-```
-
-```console
-$ jcache execute
-Executing: ../tests/notebooks/basic.ipynb
-Execution Succeeded: ../tests/notebooks/basic.ipynb
-Executing: ../tests/notebooks/basic_failing.ipynb
-error: Execution Failed: ../tests/notebooks/basic_failing.ipynb
-Executing: ../tests/notebooks/basic_unrun.ipynb
-Execution Succeeded: ../tests/notebooks/basic_unrun.ipynb
-Finished! Successfully executed notebooks have been cached.
-succeeded:
-- ../tests/notebooks/basic.ipynb
-- ../tests/notebooks/basic_unrun.ipynb
-excepted:
-- ../tests/notebooks/basic_failing.ipynb
-errored: []
-
-```
-
-Successfully executed notebooks will be cached to the cache,
-along with any 'artefacts' created by the execution,
-that are inside the notebook folder, and data supplied by the executor.
-
-```console
-$ jcache stage list
-  ID  URI                                    Created             Assets    Cache ID
-----  -------------------------------------  ----------------  --------  ----------
-   5  tests/notebooks/external_output.ipynb  2020-03-12 17:31         0           5
-   3  tests/notebooks/basic_unrun.ipynb      2020-03-12 17:31         0           6
-   2  tests/notebooks/basic_failing.ipynb    2020-03-12 17:31         0
-   1  tests/notebooks/basic.ipynb            2020-03-12 17:31         0           6
-```
-
-Execution data (such as execution time) will be stored in the cache record:
-
-```console
-$ jcache cache show 6
-ID: 6
-Origin URI: ../tests/notebooks/basic_unrun.ipynb
-Created: 2020-03-12 17:31
-Accessed: 2020-03-12 17:31
-Hashkey: 818f3412b998fcf4fe9ca3cca11a3fc3
-Data:
-  execution_seconds: 1.0559415130000005
-
-```
-
-Failed notebooks will not be cached, but the exception traceback will be added to the stage record:
-
-```console
-$ jcache stage show 2
-ID: 2
-URI: ../tests/notebooks/basic_failing.ipynb
-Created: 2020-03-12 17:31
-Failed Last Execution!
-Traceback (most recent call last):
-  File "../jupyter_cache/executors/basic.py", line 152, in execute
-    executenb(nb_bundle.nb, cwd=tmpdirname)
-  File "/anaconda/envs/mistune/lib/python3.7/site-packages/nbconvert/preprocessors/execute.py", line 737, in executenb
-    return ep.preprocess(nb, resources, km=km)[0]
-  File "/anaconda/envs/mistune/lib/python3.7/site-packages/nbconvert/preprocessors/execute.py", line 405, in preprocess
-    nb, resources = super(ExecutePreprocessor, self).preprocess(nb, resources)
-  File "/anaconda/envs/mistune/lib/python3.7/site-packages/nbconvert/preprocessors/base.py", line 69, in preprocess
-    nb.cells[index], resources = self.preprocess_cell(cell, resources, index)
-  File "/anaconda/envs/mistune/lib/python3.7/site-packages/nbconvert/preprocessors/execute.py", line 448, in preprocess_cell
-    raise CellExecutionError.from_cell_and_msg(cell, out)
-nbconvert.preprocessors.execute.CellExecutionError: An error occurred while executing the following cell:
-------------------
-raise Exception('oopsie!')
-------------------
-
----------------------------------------------------------------------------
-Exception                                 Traceback (most recent call last)
-<ipython-input-1-714b2b556897> in <module>
-----> 1 raise Exception('oopsie!')
-
-Exception: oopsie!
-Exception: oopsie!
-
-
-```
-
-```{tip}
-Code cells can be tagged with `raises-exception` to let the executor known that
-a cell *may* raise an exception (see [this issue on its behaviour](https://github.com/jupyter/nbconvert/issues/730)).
-```
-
-Once executed you may leave staged notebooks, for later re-execution, or remove them:
-
-```console
-$ jcache stage remove-ids --all
-Are you sure you want to remove all? [y/N]: y
-Unstaging ID: 1
-Unstaging ID: 2
-Unstaging ID: 3
-Unstaging ID: 5
-Success!
-```
-
-You can also stage notebooks with assets;
-external files that are required by the notebook during execution.
-As with artefacts, these files must be in the same folder as the notebook,
-or a sub-folder.
-
-```console
-$ jcache stage add-with-assets -nb tests/notebooks/basic.ipynb tests/notebooks/artifact_folder/artifact.txt
-Success!
-```
-
-```console
-$ jcache stage show 1
-ID: 1
-URI: ../tests/notebooks/basic.ipynb
-Created: 2020-03-12 17:31
-Cache ID: 6
-Assets:
-- ../tests/notebooks/artifact_folder/artifact.txt
+```{jcache-cli} jupyter_cache.cli.commands.cmd_cache:cmnd_cache
+:command: diff
+:args: 1 tests/notebooks/basic_unrun.ipynb
 ```
