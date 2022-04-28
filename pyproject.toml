@@ -54,6 +54,7 @@ cli = ["click-log"]
 code_style = ["pre-commit~=2.12"]
 rtd = [
     "nbdime",
+    "ipykernel",
     "jupytext",
     "myst-nb @ git+https://github.com/executablebooks/MyST-NB.git",
     "sphinx-book-theme~=0.3.0",
