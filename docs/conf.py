@@ -26,7 +26,7 @@ extensions = [
     # "sphinx.ext.viewcode",
 ]
 myst_enable_extensions = ["colon_fence", "deflist"]
-jupyter_execute_notebooks = "off"
+nb_execution_mode = "off"
 html_theme_options = {
     "repository_url": "https://github.com/executablebooks/jupyter-cache",
     "use_repository_button": True,
