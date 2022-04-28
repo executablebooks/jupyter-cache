@@ -1,8 +1,99 @@
 [build-system]
-requires = ["setuptools>=46.4.0", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["flit_core >=3.4,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "jupyter-cache"
+dynamic = ["version"]
+description = "A defined interface for working with a cache of jupyter notebooks."
+authors = [{name = "Chris Sewell", email = "chrisj_sewell@hotmail.com"}]
+readme = "README.md"
+license = {file = "LICENSE"}
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: Sphinx :: Extension",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+keywords = ["sphinx extension material design web components"]
+requires-python = "~=3.7"
+dependencies = [
+    "attrs",
+    "click",
+    "importlib-metadata",
+    "nbclient>=0.2,<0.6",
+    "nbformat",
+    "pyyaml",
+    "sqlalchemy>=1.3.12,<1.5",
+    "tabulate",
+]
+
+[project.urls]
+Homepage = "https://github.com/executablebooks/jupyter-cache"
+Documentation = "https://jupyter-cache.readthedocs.io"
+
+[project.entry-points."jcache.executors"]
+local-serial = "jupyter_cache.executors.basic:JupyterExecutorLocalSerial"
+temp-serial = "jupyter_cache.executors.basic:JupyterExecutorTempSerial"
+local-parallel = "jupyter_cache.executors.basic:JupyterExecutorLocalMproc"
+temp-parallel = "jupyter_cache.executors.basic:JupyterExecutorTempMproc"
+
+[project.entry-points."jcache.readers"]
+nbformat = "jupyter_cache.readers:nbf_reader"
+jupytext = "jupyter_cache.readers:jupytext_reader"
+
+[project.optional-dependencies]
+cli = ["click-log"]
+code_style = ["pre-commit~=2.12"]
+rtd = [
+    "nbdime",
+    "jupytext",
+    "myst-nb~=0.12.3",
+    "sphinx-book-theme~=0.1.1",
+    "sphinx-copybutton",
+]
+testing = [
+    "nbdime",
+    "coverage",
+    "ipykernel",
+    "jupytext",
+    "matplotlib",
+    "nbformat>=5.1",
+    "numpy",
+    "pandas",
+    "pytest>=6,<7",
+    "pytest-cov",
+    "pytest-regressions",
+    "sympy",
+]
+
+[project.scripts]
+jcache = "jupyter_cache.cli.commands.cmd_main:jcache"
+
+[tool.flit.module]
+name = "jupyter_cache"
+
+[tool.flit.sdist]
+exclude = [
+    "docs/",
+    "tests/",
+]
 
 [tool.isort]
 profile = "black"
 src_paths = ["jupyter_cache", "tests"]
 force_sort_within_sections = true
+
+[tool.mypy]
+show_error_codes = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+no_implicit_optional = true
+strict_equality = true
