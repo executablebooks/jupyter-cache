@@ -9,22 +9,15 @@ exclude: >
 repos:
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.1.0
+    rev: v4.2.0
     hooks:
     - id: check-json
     - id: check-yaml
     - id: end-of-file-fixer
     - id: trailing-whitespace
 
-  - repo: https://github.com/mgedmin/check-manifest
-    rev: "0.47"
-    hooks:
-    - id: check-manifest
-      args: [--no-build-isolation]
-      additional_dependencies: [setuptools>=46.4.0]
-
   - repo: https://github.com/asottile/pyupgrade
-    rev: v2.31.0
+    rev: v2.32.0
     hooks:
     - id: pyupgrade
       args: [--py37-plus]
@@ -35,7 +28,7 @@ repos:
     - id: isort
 
   - repo: https://github.com/psf/black
-    rev: 21.12b0
+    rev: 22.3.0
     hooks:
     - id: black
 
@@ -49,8 +42,3 @@ repos:
   #   hooks:
   #   - id: mypy
   #     additional_dependencies: []
-
-  # - repo: https://github.com/asottile/setup-cfg-fmt
-  #   rev: v1.17.0
-  #   hooks:
-  #   - id: setup-cfg-fmt
