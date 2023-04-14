@@ -78,7 +78,6 @@ def test_list_caches_latest_only(runner: Runner):
 
 
 def test_cache_with_artifact(runner: Runner):
-
     nb_path = os.path.join(NB_PATH, "basic.ipynb")
     a_path = os.path.join(NB_PATH, "artifact_folder", "artifact.txt")
     result = runner.invoke(

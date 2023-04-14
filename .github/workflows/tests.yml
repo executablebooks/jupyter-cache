@@ -51,7 +51,7 @@ jobs:
       # for some reason the tests/conftest.py::check_nbs fixture breaks pytest-cov's cov-report outputting
       # this is why we run `coverage xml` afterwards (required by codecov)
     - name: Upload to Codecov
-      if: github.repository == 'executablebooks/jupyter-cache'
+      if: github.repository == 'executablebooks/jupyter-cache' && matrix.python-version == '3.9'
       uses: codecov/codecov-action@v1
       with:
         name: jupyter-cache-pytests-py3.7
