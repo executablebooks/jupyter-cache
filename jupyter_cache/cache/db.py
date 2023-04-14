@@ -8,7 +8,7 @@ from sqlalchemy import JSON, Column, DateTime, Integer, String, Text
 from sqlalchemy.engine import Engine, create_engine
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session, sessionmaker, validates
+from sqlalchemy.orm import sessionmaker, validates
 from sqlalchemy.sql.expression import desc
 
 from jupyter_cache import __version__

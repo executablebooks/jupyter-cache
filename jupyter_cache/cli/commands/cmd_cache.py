@@ -90,7 +90,6 @@ def cat_artifact(cache, pk, artifact_rpath):
 
 
 def cache_file(db, nbpath, validate, overwrite, artifact_paths=()):
-
     from jupyter_cache.base import NbValidityError
 
     click.echo(f"Caching: {nbpath}")
