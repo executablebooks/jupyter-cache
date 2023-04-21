@@ -56,6 +56,8 @@ rtd = [
     "nbdime",
     "ipykernel",
     "jupytext",
+    # TODO: MyST-NB pins jupyter-cache, so this may create unresolved environments
+    #   But if we pin to `main` then we cannot build wheels. Need to fix.
     "myst-nb",
     "sphinx-book-theme",
     "sphinx-copybutton",
