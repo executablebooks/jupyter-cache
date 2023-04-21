@@ -35,7 +35,6 @@ html_theme_options = {
     "repository_branch": "master",
     "path_to_docs": "docs",
     "home_page_in_toc": True,
-    "logo_only": True,
 }
 
 # Add any paths that contain templates here, relative to this directory.
