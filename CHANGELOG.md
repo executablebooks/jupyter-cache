@@ -1,5 +1,24 @@
 # CHANGELOG
 
+## v0.5.1 2023-04-21
+
+This is a minor release to improve our packaging infrastructure and to support the latest SQLAlchemy version.
+
+### Merged PRs
+
+- UPDATE: SQLAlchemy 2.0 [#93](https://github.com/executablebooks/jupyter-cache/pull/93) ([@jzluo](https://github.com/jzluo), [@choldgraf](https://github.com/choldgraf))
+- 🔧 MAINTAIN: setuptools -> flit [#82](https://github.com/executablebooks/jupyter-cache/pull/82) ([@chrisjsewell](https://github.com/chrisjsewell))
+
+### Contributors to this release
+
+The following people contributed discussions, new ideas, code and documentation contributions, and review.
+See [our definition of contributors](https://github-activity.readthedocs.io/en/latest/#how-does-this-tool-define-contributions-in-the-reports).
+
+([GitHub contributors page for this release](https://github.com/executablebooks/jupyter-cache/graphs/contributors?from=2022-01-25&to=2023-04-21&type=c))
+
+@AakashGfude ([activity](https://github.com/search?q=repo%3Aexecutablebooks%2Fjupyter-cache+involves%3AAakashGfude+updated%3A2022-01-25..2023-04-21&type=Issues)) | @choldgraf ([activity](https://github.com/search?q=repo%3Aexecutablebooks%2Fjupyter-cache+involves%3Acholdgraf+updated%3A2022-01-25..2023-04-21&type=Issues)) | @chrisjsewell ([activity](https://github.com/search?q=repo%3Aexecutablebooks%2Fjupyter-cache+involves%3Achrisjsewell+updated%3A2022-01-25..2023-04-21&type=Issues)) | @jstac ([activity](https://github.com/search?q=repo%3Aexecutablebooks%2Fjupyter-cache+involves%3Ajstac+updated%3A2022-01-25..2023-04-21&type=Issues)) | @jzluo ([activity](https://github.com/search?q=repo%3Aexecutablebooks%2Fjupyter-cache+involves%3Ajzluo+updated%3A2022-01-25..2023-04-21&type=Issues)) | @kloczek ([activity](https://github.com/search?q=repo%3Aexecutablebooks%2Fjupyter-cache+involves%3Akloczek+updated%3A2022-01-25..2023-04-21&type=Issues)) | @pre-commit-ci ([activity](https://github.com/search?q=repo%3Aexecutablebooks%2Fjupyter-cache+involves%3Apre-commit-ci+updated%3A2022-01-25..2023-04-21&type=Issues))
+
+
 ## 0.5.0 - 2021-01-25
 
 ♻️ REFACTOR: package API/CLI/documentation ([#74](https://github.com/executablebooks/jupyter-cache/pull/74))
