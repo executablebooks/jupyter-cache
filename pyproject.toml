@@ -51,7 +51,7 @@ jupytext = "jupyter_cache.readers:jupytext_reader"
 
 [project.optional-dependencies]
 cli = ["click-log"]
-code_style = ["pre-commit~=2.12"]
+code_style = ["pre-commit>=2.12,<4.0"]
 rtd = [
     "nbdime",
     "ipykernel",
@@ -69,7 +69,7 @@ testing = [
     "nbformat>=5.1",
     "numpy",
     "pandas",
-    "pytest>=6,<7",
+    "pytest>=6,<8",
     "pytest-cov",
     "pytest-regressions",
     "sympy",
