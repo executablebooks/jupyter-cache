@@ -52,7 +52,7 @@ jobs:
       # this is why we run `coverage xml` afterwards (required by codecov)
     - name: Upload to Codecov
       if: github.repository == 'executablebooks/jupyter-cache' && matrix.python-version == '3.9'
-      uses: codecov/codecov-action@v1
+      uses: codecov/codecov-action@v3
       with:
         name: jupyter-cache-pytests-py3.7
         flags: pytests
