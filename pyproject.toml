@@ -61,7 +61,6 @@ rtd = [
     "myst-nb",
     "sphinx-book-theme",
     "sphinx-copybutton",
-    "sphinx>4",
 ]
 testing = [
     "nbdime",
