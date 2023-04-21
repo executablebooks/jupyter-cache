@@ -1,11 +1,16 @@
 # CHANGELOG
 
-## v0.5.1 2023-04-21
+## v0.6.0 2023-04-21
 
-This is a minor release to improve our packaging infrastructure and to support the latest SQLAlchemy version.
+This is a minor release to improve our packaging infrastructure and to support several new versions of dependencies.
 
-### Merged PRs
+### Breaking changes
 
+- ‼️ BREAKING: Drop Python 3.7, add Python 3.11, unpin myst-nb in docs [#96](https://github.com/executablebooks/jupyter-cache/pull/96) ([@choldgraf](https://github.com/choldgraf))
+
+### Updated versions
+
+- Update nbclient requirement from <0.6,>=0.2 to >=0.2,<0.8 [#103](https://github.com/executablebooks/jupyter-cache/pull/103) ([@choldgraf](https://github.com/choldgraf))
 - UPDATE: SQLAlchemy 2.0 [#93](https://github.com/executablebooks/jupyter-cache/pull/93) ([@jzluo](https://github.com/jzluo), [@choldgraf](https://github.com/choldgraf))
 - 🔧 MAINTAIN: setuptools -> flit [#82](https://github.com/executablebooks/jupyter-cache/pull/82) ([@chrisjsewell](https://github.com/chrisjsewell))
 
