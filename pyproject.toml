@@ -57,7 +57,7 @@ rtd = [
     "ipykernel",
     "jupytext",
     "myst-nb @ git+https://github.com/executablebooks/MyST-NB.git",
-    "sphinx-book-theme~=0.3.0",
+    "sphinx-book-theme",
     "sphinx-copybutton",
 ]
 testing = [
