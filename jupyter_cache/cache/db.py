@@ -7,10 +7,12 @@ from typing import Any, Dict, List, Optional, Union
 from sqlalchemy import JSON, Column, DateTime, Integer, String, Text
 from sqlalchemy.engine import Engine, create_engine
 from sqlalchemy.exc import IntegrityError, OperationalError
+
 try:
     from sqlalchemy.orm import declarative_base  # sqlalchemy >= 1.4.0
 except ImportError:
     from sqlalchemy.ext.declarative import declarative_base  # sqlalchemy < 1.4.0
+
 from sqlalchemy.orm import sessionmaker, validates
 from sqlalchemy.sql.expression import desc
 
