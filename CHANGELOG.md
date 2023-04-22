@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.6.1 2023-04-22
+
+A patch release to fix compatibility with sqlalchemy <1.4.
+
+- FIX: compatibility with SQLAlchemy < 1.4.0 [#105](https://github.com/executablebooks/jupyter-cache/pull/105) @DimitriPapadopoulos
+
 ## v0.6.0 2023-04-21
 
 This is a minor release to improve our packaging infrastructure and to support several new versions of dependencies.
