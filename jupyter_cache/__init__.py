@@ -1,5 +1,5 @@
 # NOTE: never import anything here, in order to maintain CLI speed
-__version__ = "0.6.0"
+__version__ = "0.6.1"
 
 
 def get_cache(path, cache_cls=None):
