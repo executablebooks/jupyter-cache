@@ -28,7 +28,7 @@ dependencies = [
     "attrs",
     "click",
     "importlib-metadata",
-    "nbclient>=0.2,<0.8",
+    "nbclient>=0.2,<0.9",
     "nbformat",
     "pyyaml",
     "sqlalchemy>=1.3.12,<3",
