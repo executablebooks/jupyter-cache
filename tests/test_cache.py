@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 from textwrap import dedent
 
@@ -10,6 +11,7 @@ from jupyter_cache.base import NbValidityError
 from jupyter_cache.cache.main import JupyterCacheBase
 
 NB_PATH = os.path.join(os.path.realpath(os.path.dirname(__file__)), "notebooks")
+ANSI_REGEX = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
 
 def test_get_version(tmp_path):
@@ -238,7 +240,7 @@ def test_execution(tmp_path, executor_key):
 
     project_record = db.get_project_record(2)
     assert project_record.traceback is not None
-    assert "Exception: oopsie!" in project_record.traceback
+    assert "Exception: oopsie!" in ANSI_REGEX.sub("", project_record.traceback)
 
 
 def test_execution_jupytext(tmp_path):
