@@ -1,4 +1,5 @@
 """Module for dealing with entry points."""
+
 from typing import Optional, Set
 
 # TODO importlib.metadata was introduced into the standard library in python 3.8
