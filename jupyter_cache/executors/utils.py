@@ -94,12 +94,14 @@ def create_cache_bundle(
         project_nb.nb,
         project_nb.uri,
         # TODO retrieve assets that have changed file mtime?
-        artifacts=NbArtifacts(
-            [p for p in Path(execdir).glob("**/*") if p not in asset_files],
-            execdir,
-        )
-        if (execdir is not None and asset_files is not None)
-        else None,
+        artifacts=(
+            NbArtifacts(
+                [p for p in Path(execdir).glob("**/*") if p not in asset_files],
+                execdir,
+            )
+            if (execdir is not None and asset_files is not None)
+            else None
+        ),
         data={"execution_seconds": exec_time},
         traceback=exec_tb,
     )

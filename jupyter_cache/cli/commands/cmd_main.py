@@ -1,4 +1,5 @@
 """The main `jcache` click group."""
+
 import click
 
 from jupyter_cache.cli import options
