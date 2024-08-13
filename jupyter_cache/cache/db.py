@@ -1,5 +1,5 @@
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import UTC, datetime
 import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
@@ -128,7 +128,7 @@ class NbProjectRecord(OrmBase):
     """A list of file assets required for the notebook to run."""
     exec_data = Column(JSON(), nullable=True)
     """Data on how to execute the notebook."""
-    created = Column(DateTime, nullable=False, default=datetime.utcnow)
+    created = Column(DateTime, nullable=False, default=datetime.now(UTC))
     traceback = Column(Text(), nullable=True, default="")
     """A traceback is added if a notebook fails to execute fully."""
 
@@ -288,9 +288,9 @@ class NbCacheRecord(OrmBase):
     description = Column(String(255), nullable=False, default="")
     data = Column(JSON())
     """Extra data, such as the execution time."""
-    created = Column(DateTime, nullable=False, default=datetime.utcnow)
+    created = Column(DateTime, nullable=False, default=datetime.now(UTC))
     accessed = Column(
-        DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
+        DateTime, nullable=False, default=datetime.now(UTC), onupdate=datetime.now(UTC)
     )
 
     def __repr__(self):
@@ -368,7 +368,7 @@ class NbCacheRecord(OrmBase):
             record = session.query(NbCacheRecord).filter_by(pk=pk).one_or_none()
             if record is None:
                 raise KeyError(f"Cache record not found for NB with PK: {pk}")
-            record.accessed = datetime.utcnow()
+            record.accessed = datetime.now(UTC)
             session.commit()
 
     def touch_hashkey(hashkey, db: Engine):
@@ -379,7 +379,7 @@ class NbCacheRecord(OrmBase):
             )
             if record is None:
                 raise KeyError(f"Cache record not found for NB with hashkey: {hashkey}")
-            record.accessed = datetime.utcnow()
+            record.accessed = datetime.now(UTC)
             session.commit()
 
     @staticmethod
