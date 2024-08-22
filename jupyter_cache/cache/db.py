@@ -2,6 +2,7 @@ from contextlib import contextmanager
 import datetime
 import os
 from pathlib import Path
+import sys
 from typing import Any, Dict, List, Optional, Union
 
 from sqlalchemy import JSON, Column, DateTime, Integer, String, Text
@@ -49,6 +50,12 @@ def get_version(path: Union[str, Path]) -> Optional[str]:
     version_file = Path(path).joinpath("__version__.txt")
     if version_file.exists():
         return version_file.read_text().strip()
+
+
+def datetime_utcnow():
+    if sys.version_info.minor >= 11:
+        return lambda : datetime.datetime.now(datetime.UTC)
+    return datetime.datetime.utcnow
 
 
 @contextmanager
@@ -128,7 +135,7 @@ class NbProjectRecord(OrmBase):
     """A list of file assets required for the notebook to run."""
     exec_data = Column(JSON(), nullable=True)
     """Data on how to execute the notebook."""
-    created = Column(DateTime, nullable=False, default=lambda: datetime.datetime.now(datetime.UTC) )
+    created = Column(DateTime, nullable=False, default=datetime_utcnow())
     traceback = Column(Text(), nullable=True, default="")
     """A traceback is added if a notebook fails to execute fully."""
 
@@ -288,9 +295,9 @@ class NbCacheRecord(OrmBase):
     description = Column(String(255), nullable=False, default="")
     data = Column(JSON())
     """Extra data, such as the execution time."""
-    created = Column(DateTime, nullable=False, default=lambda: datetime.datetime.now(datetime.UTC))
+    created = Column(DateTime, nullable=False, default=datetime_utcnow())
     accessed = Column(
-        DateTime, nullable=False, default=lambda: datetime.datetime.now(datetime.UTC), onupdate=lambda: datetime.datetime.now(datetime.UTC)
+        DateTime, nullable=False, default=datetime_utcnow(), onupdate=datetime_utcnow()
     )
 
     def __repr__(self):
@@ -368,7 +375,7 @@ class NbCacheRecord(OrmBase):
             record = session.query(NbCacheRecord).filter_by(pk=pk).one_or_none()
             if record is None:
                 raise KeyError(f"Cache record not found for NB with PK: {pk}")
-            record.accessed = datetime.datetime.now(datetime.UTC)
+            record.accessed = datetime_utcnow()()
             session.commit()
 
     def touch_hashkey(hashkey, db: Engine):
@@ -379,7 +386,7 @@ class NbCacheRecord(OrmBase):
             )
             if record is None:
                 raise KeyError(f"Cache record not found for NB with hashkey: {hashkey}")
-            record.accessed = datetime.datetime.now(datetime.UTC)
+            record.accessed = datetime_utcnow()()
             session.commit()
 
     @staticmethod
