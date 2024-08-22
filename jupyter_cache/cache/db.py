@@ -2,7 +2,6 @@ from contextlib import contextmanager
 import datetime
 import os
 from pathlib import Path
-import sys
 from typing import Any, Dict, List, Optional, Union
 
 from sqlalchemy import JSON, Column, DateTime, Integer, String, Text
