@@ -52,7 +52,7 @@ def get_version(path: Union[str, Path]) -> Optional[str]:
 
 
 def datetime_utcnow():
-    return lambda : datetime.datetime.now(datetime.timezone.utc)
+    return lambda: datetime.datetime.now(datetime.timezone.utc)
 
 
 @contextmanager
