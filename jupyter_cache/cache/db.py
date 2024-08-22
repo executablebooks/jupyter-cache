@@ -53,9 +53,7 @@ def get_version(path: Union[str, Path]) -> Optional[str]:
 
 
 def datetime_utcnow():
-    if sys.version_info.minor >= 11:
-        return lambda : datetime.datetime.now(datetime.UTC)
-    return datetime.datetime.utcnow
+    return lambda : datetime.datetime.now(datetime.timezone.utc)
 
 
 @contextmanager
