@@ -14,9 +14,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Python 3.9
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: "3.9"
     - uses: pre-commit/action@v3.0.0
@@ -35,9 +35,9 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
@@ -52,7 +52,7 @@ jobs:
       # this is why we run `coverage xml` afterwards (required by codecov)
     - name: Upload to Codecov
       if: github.repository == 'executablebooks/jupyter-cache' && matrix.python-version == '3.10' && matrix.os == 'ubuntu-latest'
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         name: jupyter-cache-pytests-py3.10
         flags: pytests
@@ -67,9 +67,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: "3.10"
     - name: install flit
