@@ -71,7 +71,7 @@ testing = [
     "nbformat>=5.1",
     "numpy",
     "pandas",
-    "pytest>=6,<8",
+    "pytest>=6",
     "pytest-cov",
     "pytest-regressions",
     "sympy",
