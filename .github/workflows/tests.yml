@@ -2,10 +2,14 @@ name: continuous-integration
 
 on:
   push:
-    branches: [master]
+    branches:
+    - main
     tags:
-      - 'v*'
+    - '*'
   pull_request:
+  schedule:
+    - cron:  '0 5 * * 1'
+  workflow_dispatch:
 
 
 jobs:
