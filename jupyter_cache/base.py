@@ -5,10 +5,10 @@ with no assumptions about the backend storage/retrieval mechanisms.
 """
 
 from abc import ABC, abstractmethod
+from collections.abc import Iterable, Mapping
 import io
 from pathlib import Path
-from typing import List, Optional, Tuple, Union
-from collections.abc import Iterable, Mapping
+from typing import Optional, Union
 
 import attr
 from attr.validators import instance_of, optional

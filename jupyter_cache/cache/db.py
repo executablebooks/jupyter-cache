@@ -2,7 +2,7 @@ from contextlib import contextmanager
 import datetime
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
 from sqlalchemy import JSON, Column, DateTime, Integer, String, Text
 from sqlalchemy.engine import Engine, create_engine

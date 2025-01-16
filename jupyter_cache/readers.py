@@ -1,6 +1,6 @@
 """Module for handling different functions to read "notebook-like" files."""
 
-from typing import Any, Callable, Dict, Set
+from typing import Any, Callable
 
 import nbformat as nbf
 

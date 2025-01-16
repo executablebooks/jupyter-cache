@@ -1,7 +1,7 @@
 from pathlib import Path
 import shutil
 import traceback
-from typing import Any, List, Optional, Union
+from typing import Any, Optional, Union
 
 import attr
 from nbclient import execute as executenb

@@ -3,7 +3,7 @@ import multiprocessing as mproc
 import os
 from pathlib import Path
 import tempfile
-from typing import NamedTuple, Tuple
+from typing import NamedTuple
 
 from jupyter_cache.base import JupyterCacheAbstract, ProjectNb
 from jupyter_cache.cache.db import NbProjectRecord

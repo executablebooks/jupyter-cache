@@ -2,7 +2,7 @@
 
 from pathlib import Path
 import time
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from jupyter_cache.readers import NbReadError
 

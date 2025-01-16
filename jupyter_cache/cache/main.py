@@ -1,11 +1,11 @@
+from collections.abc import Iterable, Mapping
 from contextlib import contextmanager
 import copy
 import hashlib
 import io
 from pathlib import Path
 import shutil
-from typing import List, Optional, Tuple, Union
-from collections.abc import Iterable, Mapping
+from typing import Optional, Union
 
 import nbformat as nbf
 
