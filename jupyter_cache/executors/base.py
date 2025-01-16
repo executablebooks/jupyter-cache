@@ -24,17 +24,17 @@ class ExecutorRunResult:
     """A container for the execution result."""
 
     # URIs of notebooks which where successfully executed
-    succeeded: List[str] = attr.ib(factory=list)
+    succeeded: list[str] = attr.ib(factory=list)
     # URIs of notebooks which excepted during execution
-    excepted: List[str] = attr.ib(factory=list)
+    excepted: list[str] = attr.ib(factory=list)
     # URIs of notebooks which errored before execution
-    errored: List[str] = attr.ib(factory=list)
+    errored: list[str] = attr.ib(factory=list)
 
-    def all(self) -> List[str]:
+    def all(self) -> list[str]:
         """Return all notebooks."""
         return self.succeeded + self.excepted + self.errored
 
-    def as_json(self) -> Dict[str, Any]:
+    def as_json(self) -> dict[str, Any]:
         """Return the result as a JSON serializable dict."""
         return {
             "succeeded": self.succeeded,
@@ -63,11 +63,11 @@ class JupyterExecutorAbstract(ABC):
 
     def get_records(
         self,
-        filter_uris: Optional[List[str]] = None,
-        filter_pks: Optional[List[int]] = None,
+        filter_uris: Optional[list[str]] = None,
+        filter_pks: Optional[list[int]] = None,
         clear_tracebacks: bool = True,
         force: bool = False,
-    ) -> List[NbProjectRecord]:
+    ) -> list[NbProjectRecord]:
         """Return records to execute.
 
         :param clear_tracebacks: Remove any tracebacks from previous executions
@@ -86,8 +86,8 @@ class JupyterExecutorAbstract(ABC):
     def run_and_cache(
         self,
         *,
-        filter_uris: Optional[List[str]] = None,
-        filter_pks: Optional[List[int]] = None,
+        filter_uris: Optional[list[str]] = None,
+        filter_pks: Optional[list[int]] = None,
         timeout: Optional[int] = 30,
         allow_errors: bool = False,
         force: bool = False,
@@ -105,7 +105,7 @@ class JupyterExecutorAbstract(ABC):
         """
 
 
-def list_executors() -> Set[str]:
+def list_executors() -> set[str]:
     return list_group_names(ENTRY_POINT_GROUP_EXEC)
 
 

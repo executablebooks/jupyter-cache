@@ -7,7 +7,8 @@ with no assumptions about the backend storage/retrieval mechanisms.
 from abc import ABC, abstractmethod
 import io
 from pathlib import Path
-from typing import Iterable, List, Mapping, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
+from collections.abc import Iterable, Mapping
 
 import attr
 from attr.validators import instance_of, optional
@@ -57,7 +58,7 @@ class ProjectNb:
         repr=lambda nb: f"Notebook(cells={len(nb.cells)})",
         metadata={"help": "the notebook"},
     )
-    assets: List[Path] = attr.ib(
+    assets: list[Path] = attr.ib(
         factory=list,
         metadata={"help": "File paths required to run the notebook"},
     )
@@ -68,11 +69,11 @@ class NbArtifactsAbstract(ABC):
 
     @property
     @abstractmethod
-    def relative_paths(self) -> List[Path]:
+    def relative_paths(self) -> list[Path]:
         """Return the list of paths (relative to the notebook folder)."""
 
     @abstractmethod
-    def __iter__(self) -> Iterable[Tuple[Path, io.BufferedReader]]:
+    def __iter__(self) -> Iterable[tuple[Path, io.BufferedReader]]:
         """Yield the relative path and open files (in bytes mode)"""
 
     def __repr__(self):
@@ -165,7 +166,7 @@ class JupyterCacheAbstract(ABC):
         self,
         path: str,
         uri: Optional[str] = None,
-        artifacts: List[str] = (),
+        artifacts: list[str] = (),
         data: Optional[dict] = None,
         check_validity: bool = True,
         overwrite: bool = False,
@@ -186,7 +187,7 @@ class JupyterCacheAbstract(ABC):
         """
 
     @abstractmethod
-    def list_cache_records(self) -> List[NbCacheRecord]:
+    def list_cache_records(self) -> list[NbCacheRecord]:
         """Return a list of cached notebook records."""
 
     @abstractmethod
@@ -229,7 +230,7 @@ class JupyterCacheAbstract(ABC):
         nb: nbf.NotebookNode,
         nb_meta=("kernelspec", "language_info", "widgets"),
         cell_meta=None,
-    ) -> Tuple[int, nbf.NotebookNode]:
+    ) -> tuple[int, nbf.NotebookNode]:
         """Match to an executed notebook and return a merged version
 
         :param nb: The input notebook
@@ -244,7 +245,7 @@ class JupyterCacheAbstract(ABC):
         path: str,
         nb_meta=("kernelspec", "language_info", "widgets"),
         cell_meta=None,
-    ) -> Tuple[int, nbf.NotebookNode]:
+    ) -> tuple[int, nbf.NotebookNode]:
         """Match to an executed notebook and return a merged version
 
         :param path: The input notebook path
@@ -281,7 +282,7 @@ class JupyterCacheAbstract(ABC):
         uri: str,
         *,
         read_data: Mapping = DEFAULT_READ_DATA,
-        assets: List[str] = (),
+        assets: list[str] = (),
     ) -> NbProjectRecord:
         """Add a single notebook to the project.
 
@@ -298,9 +299,9 @@ class JupyterCacheAbstract(ABC):
     @abstractmethod
     def list_project_records(
         self,
-        filter_uris: Optional[List[str]] = None,
-        filter_pks: Optional[List[int]] = None,
-    ) -> List[NbProjectRecord]:
+        filter_uris: Optional[list[str]] = None,
+        filter_pks: Optional[list[int]] = None,
+    ) -> list[NbProjectRecord]:
         """Return a list of all notebook records in the project."""
 
     @abstractmethod
@@ -326,7 +327,7 @@ class JupyterCacheAbstract(ABC):
     @abstractmethod
     def list_unexecuted(
         self,
-        filter_uris: Optional[List[str]] = None,
-        filter_pks: Optional[List[int]] = None,
-    ) -> List[NbProjectRecord]:
+        filter_uris: Optional[list[str]] = None,
+        filter_pks: Optional[list[int]] = None,
+    ) -> list[NbProjectRecord]:
         """List notebooks in the project, whose hash is not present in the cache."""

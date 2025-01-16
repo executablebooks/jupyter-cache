@@ -4,7 +4,8 @@ import hashlib
 import io
 from pathlib import Path
 import shutil
-from typing import Iterable, List, Mapping, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
+from collections.abc import Iterable, Mapping
 
 import nbformat as nbf
 
@@ -31,7 +32,7 @@ DEFAULT_CACHE_LIMIT = 1000
 class NbArtifacts(NbArtifactsAbstract):
     """Container for artefacts of a notebook execution."""
 
-    def __init__(self, paths: List[str], in_folder, check_existence=True):
+    def __init__(self, paths: list[str], in_folder, check_existence=True):
         """Initiate NbArtifacts
 
         :param paths: list of paths
@@ -44,11 +45,11 @@ class NbArtifacts(NbArtifactsAbstract):
         to_relative_paths(self.paths, self.in_folder, check_existence=check_existence)
 
     @property
-    def relative_paths(self) -> List[Path]:
+    def relative_paths(self) -> list[Path]:
         """Return the list of paths (relative to the notebook folder)."""
         return to_relative_paths(self.paths, self.in_folder)
 
-    def __iter__(self) -> Iterable[Tuple[Path, io.BufferedReader]]:
+    def __iter__(self) -> Iterable[tuple[Path, io.BufferedReader]]:
         """Yield the relative path and open files (in bytes mode)"""
         for path in self.paths:
             with path.open("rb") as handle:
@@ -123,7 +124,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         nb: nbf.NotebookNode,
         nb_metadata: Optional[Iterable[str]] = ("kernelspec",),
         cell_metadata: Optional[Iterable[str]] = None,
-    ) -> Tuple[nbf.NotebookNode, str]:
+    ) -> tuple[nbf.NotebookNode, str]:
         """Convert a notebook to a standard format and hash.
 
         Note: we always hash notebooks as version 4.4,
@@ -254,7 +255,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         self,
         path: str,
         uri: Optional[str] = None,
-        artifacts: List[str] = (),
+        artifacts: list[str] = (),
         data: Optional[dict] = None,
         check_validity: bool = True,
         overwrite: bool = False,
@@ -285,7 +286,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
             overwrite=overwrite,
         )
 
-    def list_cache_records(self) -> List[NbCacheRecord]:
+    def list_cache_records(self) -> list[NbCacheRecord]:
         return NbCacheRecord.records_all(self.db)
 
     def get_cache_record(self, pk: int) -> NbCacheRecord:
@@ -343,7 +344,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         nb: nbf.NotebookNode,
         nb_meta: Optional[Iterable[str]] = ("kernelspec", "language_info", "widgets"),
         cell_meta: Optional[Iterable[str]] = None,
-    ) -> Tuple[int, nbf.NotebookNode]:
+    ) -> tuple[int, nbf.NotebookNode]:
         """Match to an executed notebook and return a merged version
 
         :param nb: The input notebook
@@ -413,7 +414,7 @@ class JupyterCacheBase(JupyterCacheAbstract):
         path: str,
         *,
         read_data: Mapping = DEFAULT_READ_DATA,
-        assets: List[str] = (),
+        assets: list[str] = (),
     ) -> NbProjectRecord:
         # check the reader can be loaded
         read_data = dict(read_data)
@@ -431,9 +432,9 @@ class JupyterCacheBase(JupyterCacheAbstract):
 
     def list_project_records(
         self,
-        filter_uris: Optional[List[str]] = None,
-        filter_pks: Optional[List[int]] = None,
-    ) -> List[NbProjectRecord]:
+        filter_uris: Optional[list[str]] = None,
+        filter_pks: Optional[list[int]] = None,
+    ) -> list[NbProjectRecord]:
         records = NbProjectRecord.records_all(self.db)
         if filter_uris is not None:
             records = [r for r in records if r.uri in filter_uris]
@@ -487,9 +488,9 @@ class JupyterCacheBase(JupyterCacheAbstract):
 
     def list_unexecuted(
         self,
-        filter_uris: Optional[List[str]] = None,
-        filter_pks: Optional[List[int]] = None,
-    ) -> List[NbProjectRecord]:
+        filter_uris: Optional[list[str]] = None,
+        filter_pks: Optional[list[int]] = None,
+    ) -> list[NbProjectRecord]:
         records = []
         for record in self.list_project_records(filter_uris, filter_pks):
             nb = self.get_project_notebook(record.uri).nb

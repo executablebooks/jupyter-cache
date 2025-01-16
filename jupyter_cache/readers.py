@@ -23,12 +23,12 @@ def jupytext_reader(uri: str) -> nbf.NotebookNode:
     return jupytext.read(uri)
 
 
-def list_readers() -> Set[str]:
+def list_readers() -> set[str]:
     """List all available readers."""
     return list_group_names(ENTRY_POINT_GROUP_READER)
 
 
-def get_reader(data: Dict[str, Any]) -> Callable[[str], nbf.NotebookNode]:
+def get_reader(data: dict[str, Any]) -> Callable[[str], nbf.NotebookNode]:
     """Returns a function to read a file URI and return a notebook."""
     if data.get("type") == "plugin":
         key = data.get("name", "")

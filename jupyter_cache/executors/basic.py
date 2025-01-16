@@ -45,7 +45,7 @@ class ExecutionWorkerBase:
     def execute(self, project_nb: ProjectNb, data: ProcessData) -> ExecutionResult:
         raise NotImplementedError
 
-    def __call__(self, data: ProcessData) -> Tuple[int, str]:
+    def __call__(self, data: ProcessData) -> tuple[int, str]:
         try:
             project_nb = data.cache.get_project_notebook(data.pk)
         except Exception:
