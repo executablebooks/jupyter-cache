@@ -1,4 +1,4 @@
-"""Non-core imports in this module are lazily loaded, in order to improve CLI speed """
+"""Non-core imports in this module are lazily loaded, in order to improve CLI speed"""
 
 from pathlib import Path
 import time
