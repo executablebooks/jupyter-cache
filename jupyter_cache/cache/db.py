@@ -2,7 +2,7 @@ from contextlib import contextmanager
 import datetime
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
 from sqlalchemy import JSON, Column, DateTime, Integer, String, Text
 from sqlalchemy.engine import Engine, create_engine
@@ -203,7 +203,7 @@ class NbProjectRecord(OrmBase):
     def create_record(
         uri: str,
         db: Engine,
-        read_data: Dict[str, Any],
+        read_data: dict[str, Any],
         raise_on_exists=True,
         *,
         assets=(),
@@ -222,14 +222,14 @@ class NbProjectRecord(OrmBase):
             session.expunge(record)
         return record
 
-    def remove_pks(pks: List[int], db: Engine):
+    def remove_pks(pks: list[int], db: Engine):
         with session_context(db) as session:  # type: Session
             session.query(NbProjectRecord).filter(NbProjectRecord.pk.in_(pks)).delete(
                 synchronize_session=False
             )
             session.commit()
 
-    def remove_uris(uris: List[str], db: Engine):
+    def remove_uris(uris: list[str], db: Engine):
         with session_context(db) as session:  # type: Session
             session.query(NbProjectRecord).filter(NbProjectRecord.uri.in_(uris)).delete(
                 synchronize_session=False
@@ -339,7 +339,7 @@ class NbCacheRecord(OrmBase):
             session.delete(record)
             session.commit()
 
-    def remove_records(pks: List[int], db: Engine):
+    def remove_records(pks: list[int], db: Engine):
         with session_context(db) as session:  # type: Session
             session.query(NbCacheRecord).filter(NbCacheRecord.pk.in_(pks)).delete(
                 synchronize_session=False
@@ -400,7 +400,7 @@ class NbCacheRecord(OrmBase):
             session.expunge_all()
         return results
 
-    def records_to_delete(keep: int, db: Engine) -> List[int]:
+    def records_to_delete(keep: int, db: Engine) -> list[int]:
         """Return pks of the oldest records, where keep is number to keep."""
         with session_context(db) as session:  # type: Session
             pks_to_keep = [
