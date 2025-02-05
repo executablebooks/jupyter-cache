@@ -1,7 +1,7 @@
 from pathlib import Path
 import shutil
 import traceback
-from typing import Any, List, Optional, Union
+from typing import Any, Optional, Union
 
 import attr
 from nbclient import execute as executenb
@@ -70,7 +70,7 @@ def single_nb_execution(
     return ExecutionResult(nb, cwd, timer.last_split, error, exc_string)
 
 
-def copy_assets(uri: str, assets: List[str], folder: str) -> List[Path]:
+def copy_assets(uri: str, assets: list[str], folder: str) -> list[Path]:
     """Copy notebook assets to the folder the notebook will be executed in."""
     asset_files = []
     relative_paths = to_relative_paths(assets, Path(uri).parent)
@@ -85,7 +85,7 @@ def copy_assets(uri: str, assets: List[str], folder: str) -> List[Path]:
 def create_cache_bundle(
     project_nb: ProjectNb,
     execdir: Optional[str],
-    asset_files: Optional[List[Path]],
+    asset_files: Optional[list[Path]],
     exec_time: float,
     exec_tb: Optional[str],
 ) -> CacheBundleIn:

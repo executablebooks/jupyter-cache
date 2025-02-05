@@ -1,6 +1,6 @@
 """Module for dealing with entry points."""
 
-from typing import Optional, Set
+from typing import Optional
 
 # TODO importlib.metadata was introduced into the standard library in python 3.8
 # so we can change this when we drop support for 3.7
@@ -14,7 +14,7 @@ ENTRY_POINT_GROUP_READER = "jcache.readers"
 ENTRY_POINT_GROUP_EXEC = "jcache.executors"
 
 
-def list_group_names(group: str) -> Set[str]:
+def list_group_names(group: str) -> set[str]:
     """Return the entry points within a group."""
     all_eps = eps()
     try:
