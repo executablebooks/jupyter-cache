@@ -2,7 +2,7 @@
 
 from pathlib import Path
 import time
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from jupyter_cache.readers import NbReadError
 
@@ -12,10 +12,10 @@ if TYPE_CHECKING:
 
 
 def to_relative_paths(
-    paths: List[Union[str, Path]],
+    paths: list[Union[str, Path]],
     folder: Union[str, Path],
     check_existence: bool = False,
-) -> List[Path]:
+) -> list[Path]:
     """Make paths relative to a reference folder.
 
     :param paths: list of paths
@@ -80,7 +80,7 @@ def shorten_path(file_path: Union[str, Path], length: Optional[int]) -> Path:
 
 
 def tabulate_cache_records(
-    records: List["NbCacheRecord"], hashkeys=False, path_length=None
+    records: list["NbCacheRecord"], hashkeys=False, path_length=None
 ) -> str:
     """Tabulate cache records.
 
@@ -100,7 +100,7 @@ def tabulate_cache_records(
 
 
 def tabulate_project_records(
-    records: List["NbProjectRecord"],
+    records: list["NbProjectRecord"],
     path_length: Optional[int] = None,
     cache: Optional["JupyterCacheAbstract"] = None,
     assets=False,
