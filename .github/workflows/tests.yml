@@ -27,7 +27,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
       with:
@@ -45,7 +45,7 @@ jobs:
       # this is why we run `coverage xml` afterwards (required by codecov)
     - name: Upload to Codecov
       if: github.repository == 'executablebooks/jupyter-cache' && matrix.python-version == '3.10' && matrix.os == 'ubuntu-latest' && false
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v5
       with:
         name: jupyter-cache-pytests-py3.10
         flags: pytests
@@ -60,7 +60,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
