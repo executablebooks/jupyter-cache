@@ -50,8 +50,7 @@ def test_basic_workflow(tmp_path):
 
     path = os.path.join(NB_PATH, "basic_failing.ipynb")
     diff = cache.diff_nbfile_with_cache(pk, path, as_str=True, use_color=False)
-    assert diff == dedent(
-        f"""\
+    assert diff == dedent(f"""\
         nbdiff
         --- cached pk=1
         +++ other: {path}
@@ -73,8 +72,7 @@ def test_basic_workflow(tmp_path):
         -        text:
         -          1
 
-        """
-    )
+        """)
     cache.remove_cache(pk)
     assert cache.list_cache_records() == []
 
@@ -113,7 +111,7 @@ def test_v4_2_to_v4_5(tmp_path):
         uri="basic.ipynb",
         check_validity=False,
     )
-    (pk, nb) = cache.merge_match_into_notebook(
+    pk, nb = cache.merge_match_into_notebook(
         nbf.read(os.path.join(NB_PATH, "basic_v4-5.ipynb"), nbf.NO_CONVERT)
     )
     assert cache_record.pk == pk
@@ -131,7 +129,7 @@ def test_v4_5_to_v4_2(tmp_path):
         uri="basic_v4-5.ipynb",
         check_validity=False,
     )
-    (pk, nb) = cache.merge_match_into_notebook(
+    pk, nb = cache.merge_match_into_notebook(
         nbf.read(os.path.join(NB_PATH, "basic.ipynb"), nbf.NO_CONVERT)
     )
     assert cache_record.pk == pk
